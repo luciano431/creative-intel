@@ -180,10 +180,34 @@ class GoogleTransparencyWebCollector:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=self.headless, executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_PATH") or None)
             page = browser.new_page(viewport={"width": 1400, "height": 1000}, locale="es-UY")
+            captured: list[tuple[str, str]] = []
+
+            def on_response(resp):
+                url = resp.url
+                if "adstransparency.google.com" not in url or "SearchCreatives" not in url and "SearchService" not in url:
+                    return
+                try:
+                    body = resp.text()
+                except Exception:
+                    return
+                for pair in ids_from_rpc(body):
+                    if pair not in captured:
+                        captured.append(pair)
+
+            page.on("response", on_response)
             for country in competitor.ad_countries:
+                captured.clear()
                 page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
                 page.wait_for_timeout(5000)
-                hrefs = self._load_grid(page)
+                hrefs = self._load_grid(page, captured)
+                # Links armados desde las respuestas de la API interna (cubren tarjetas sin <a>)
+                region = region_param(country)
+                for adv, cr in captured:
+                    if not any(cr in h for h in hrefs):
+                        hrefs.append(f"/advertiser/{adv}/creative/{cr}?region={region}")
+                hrefs = hrefs[: self.max_cards]
+                if debug:
+                    self._grid_debug(page, dbg, competitor.slug, country, hrefs, captured)
                 total = _declared_total(page.inner_text("body"))
                 print(f"[google_web] {competitor.slug} ({country}): {len(hrefs)} tarjetas capturadas"
                       + (f" de ~{total} que declara Google" if total is not None else ""))
@@ -230,10 +254,31 @@ class GoogleTransparencyWebCollector:
             browser.close()
         return out
 
-    def _load_grid(self, page) -> list[str]:
+    def _grid_debug(self, page, dbg, slug: str, country: str, hrefs: list[str], captured) -> None:
+        dbg.mkdir(parents=True, exist_ok=True)
+        info = page.evaluate("""() => {
+          const all = (root, acc) => { for (const el of root.querySelectorAll('*')) { acc.push(el); if (el.shadowRoot) all(el.shadowRoot, acc); } return acc; };
+          const els = all(document, []);
+          const tags = {}; els.forEach(e => { const t = e.tagName.toLowerCase(); if (t.includes('-')) tags[t] = (tags[t] || 0) + 1; });
+          const buttons = els.filter(e => e.tagName === 'BUTTON' || e.tagName === 'MATERIAL-BUTTON' || e.getAttribute('role') === 'button')
+                             .map(e => (e.innerText || e.getAttribute('aria-label') || '').trim()).filter(Boolean).slice(0, 60);
+          const scrollers = els.filter(e => e.scrollHeight > e.clientHeight + 50 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+                               .map(e => e.tagName.toLowerCase() + ' ' + e.scrollTop + '/' + e.scrollHeight);
+          return {tags, buttons, scrollers, anchors: document.querySelectorAll("a[href*='/creative/']").length, docHeight: document.documentElement.scrollHeight};
+        }""")
+        page.screenshot(path=str(dbg / f"google_grid_{slug}_{country}.png"), full_page=True)
+        (dbg / f"google_grid_{slug}_{country}.txt").write_text(
+            f"anchors: {info['anchors']} | hrefs finales: {len(hrefs)} | ids por API: {len(captured)} | alto doc: {info['docHeight']}\n"
+            + "\n===== BOTONES =====\n" + "\n".join(info["buttons"])
+            + "\n\n===== CONTENEDORES CON SCROLL =====\n" + "\n".join(info["scrollers"])
+            + "\n\n===== ELEMENTOS CUSTOM =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(info["tags"].items())), encoding="utf-8")
+
+    def _load_grid(self, page, captured=None) -> list[str]:
         """Carga la grilla completa: scroll sobre la grilla (no la esquina de la ventana),
         scrollIntoView de la última tarjeta y clic en "Ver más" si aparece. Corta cuando
-        deja de crecer o llega a max_cards."""
+        ni los links del DOM ni los IDs capturados de la API crecen, o al llegar a max_cards."""
+        captured = captured if captured is not None else []
+
         def current() -> list[str]:
             out: list[str] = []
             for h in page.locator("a[href*='/creative/']").evaluate_all("els => els.map(e => e.getAttribute('href'))"):
@@ -242,9 +287,10 @@ class GoogleTransparencyWebCollector:
             return out
 
         hrefs = current()
+        size = len(hrefs) + len(captured)
         stale = 0
         for _ in range(60):
-            if len(hrefs) >= self.max_cards:
+            if size >= self.max_cards:
                 break
             try:
                 page.mouse.move(700, 600)
@@ -252,19 +298,20 @@ class GoogleTransparencyWebCollector:
                 if last.count():
                     last.scroll_into_view_if_needed(timeout=3000)
                 page.mouse.wheel(0, 3000)
-                page.evaluate("() => { window.scrollBy(0, 3000); document.querySelectorAll('*').forEach(e => { if (e.scrollHeight > e.clientHeight + 50 && getComputedStyle(e).overflowY.match(/auto|scroll/)) e.scrollTop = e.scrollHeight; }); }")
-                more = page.get_by_role("button", name=re.compile(r"ver m[aá]s|mostrar m[aá]s|see more|show more|load more", re.I))
+                page.evaluate("() => { window.scrollBy(0, 3000); document.querySelectorAll('*').forEach(e => { if (e.scrollHeight > e.clientHeight + 50 && /auto|scroll/.test(getComputedStyle(e).overflowY)) e.scrollTop = e.scrollHeight; }); }")
+                more = page.get_by_role("button", name=re.compile(r"ver m[aá]s|mostrar m[aá]s|ver todos|see more|show more|see all|load more", re.I))
                 if more.count() and more.first.is_visible():
                     more.first.click(timeout=3000)
             except Exception:
                 pass
             page.wait_for_timeout(1500)
-            new = current()
-            stale = stale + 1 if len(new) <= len(hrefs) else 0
-            hrefs = new
+            hrefs = current()
+            new_size = len(hrefs) + len(captured)
+            stale = stale + 1 if new_size <= size else 0
+            size = new_size
             if stale >= 3:
                 break
-        return hrefs[: self.max_cards]
+        return hrefs
 
     def _detail(self, page, url: str, ext_id: str, shots, debug: bool, dbg, competitor: CompetitorConfig) -> dict:
         """Abre la página de detalle de un creativo y extrae contenido, fechas y captura."""
@@ -389,6 +436,18 @@ class GoogleTransparencyWebCollector:
             "scoped": scoped,
             "text_in_image": bool(not content and not removed and any("youtube.com/watch" not in u for u in media)),
         }
+
+
+def ids_from_rpc(body: str) -> list[tuple[str, str]]:
+    """Pares (anunciante AR..., creativo CR...) en el orden en que aparecen en una respuesta de la API."""
+    pairs: list[tuple[str, str]] = []
+    adv = ""
+    for m in re.finditer(r"\b(AR\d{10,})\b|\b(CR\d{10,})\b", body):
+        if m.group(1):
+            adv = m.group(1)
+        elif adv and (adv, m.group(2)) not in pairs:
+            pairs.append((adv, m.group(2)))
+    return pairs
 
 
 def _declared_total(text: str) -> int | None:

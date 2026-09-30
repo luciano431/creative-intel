@@ -152,3 +152,10 @@ def test_google_declared_total():
     assert _declared_total("~1.234 anuncios") == 1234
     assert _declared_total("Más de 2 mil anuncios") == 2000
     assert _declared_total("sin datos") is None
+
+
+def test_google_ids_from_rpc():
+    from creative_intel.collectors.google_web import ids_from_rpc
+
+    body = '{"1":[{"1":"AR05336417929390456833","2":"CR10149519646189944833","3":{}},{"1":"AR05336417929390456833","2":"CR01758643388061581313"}]}'
+    assert ids_from_rpc(body) == [("AR05336417929390456833", "CR10149519646189944833"), ("AR05336417929390456833", "CR01758643388061581313")]
