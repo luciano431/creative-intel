@@ -183,20 +183,17 @@ class GoogleTransparencyWebCollector:
             for country in competitor.ad_countries:
                 page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
                 page.wait_for_timeout(5000)
-                for _ in range(8):
-                    page.mouse.wheel(0, 4000)
-                    page.wait_for_timeout(1500)
-                hrefs: list[str] = []
-                for h in page.locator("a[href*='/creative/']").evaluate_all("els => els.map(e => e.getAttribute('href'))"):
-                    if h and h not in hrefs:
-                        hrefs.append(h)
+                hrefs = self._load_grid(page)
+                total = _declared_total(page.inner_text("body"))
+                print(f"[google_web] {competitor.slug} ({country}): {len(hrefs)} tarjetas capturadas"
+                      + (f" de ~{total} que declara Google" if total is not None else ""))
                 if not hrefs:
                     dbg.mkdir(parents=True, exist_ok=True)
                     page.screenshot(path=str(dbg / f"google_{competitor.slug}_{country}.png"), full_page=True)
                     (dbg / f"google_{competitor.slug}_{country}.html").write_text(page.content(), encoding="utf-8")
                     print(f"[google_web] 0 tarjetas para {competitor.slug} ({country}); diagnóstico guardado en {dbg}")
                     continue
-                for href in hrefs[: self.max_cards]:
+                for href in hrefs:
                     m = re.search(r"/creative/(CR\w+)", href)
                     if not m:
                         continue
@@ -232,6 +229,42 @@ class GoogleTransparencyWebCollector:
                     )
             browser.close()
         return out
+
+    def _load_grid(self, page) -> list[str]:
+        """Carga la grilla completa: scroll sobre la grilla (no la esquina de la ventana),
+        scrollIntoView de la última tarjeta y clic en "Ver más" si aparece. Corta cuando
+        deja de crecer o llega a max_cards."""
+        def current() -> list[str]:
+            out: list[str] = []
+            for h in page.locator("a[href*='/creative/']").evaluate_all("els => els.map(e => e.getAttribute('href'))"):
+                if h and h not in out:
+                    out.append(h)
+            return out
+
+        hrefs = current()
+        stale = 0
+        for _ in range(60):
+            if len(hrefs) >= self.max_cards:
+                break
+            try:
+                page.mouse.move(700, 600)
+                last = page.locator("a[href*='/creative/']").last
+                if last.count():
+                    last.scroll_into_view_if_needed(timeout=3000)
+                page.mouse.wheel(0, 3000)
+                page.evaluate("() => { window.scrollBy(0, 3000); document.querySelectorAll('*').forEach(e => { if (e.scrollHeight > e.clientHeight + 50 && getComputedStyle(e).overflowY.match(/auto|scroll/)) e.scrollTop = e.scrollHeight; }); }")
+                more = page.get_by_role("button", name=re.compile(r"ver m[aá]s|mostrar m[aá]s|see more|show more|load more", re.I))
+                if more.count() and more.first.is_visible():
+                    more.first.click(timeout=3000)
+            except Exception:
+                pass
+            page.wait_for_timeout(1500)
+            new = current()
+            stale = stale + 1 if len(new) <= len(hrefs) else 0
+            hrefs = new
+            if stale >= 3:
+                break
+        return hrefs[: self.max_cards]
 
     def _detail(self, page, url: str, ext_id: str, shots, debug: bool, dbg, competitor: CompetitorConfig) -> dict:
         """Abre la página de detalle de un creativo y extrae contenido, fechas y captura."""
@@ -356,6 +389,15 @@ class GoogleTransparencyWebCollector:
             "scoped": scoped,
             "text_in_image": bool(not content and not removed and any("youtube.com/watch" not in u for u in media)),
         }
+
+
+def _declared_total(text: str) -> int | None:
+    """Cantidad de anuncios que declara la página ("~1.234 anuncios", "12 ads")."""
+    m = re.search(r"~?\s*([\d.,]+)\s*(mil\s+)?(anuncios|ads)\b", text, re.I)
+    if not m:
+        return None
+    n = int(re.sub(r"[.,]", "", m.group(1)) or 0)
+    return n * 1000 if m.group(2) else n
 
 
 def _date_after(text: str, keyword_re: str):

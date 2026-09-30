@@ -143,3 +143,12 @@ def test_google_youtube_id_extraction():
     u = "https://www.youtube.com/embed/tksxh4uifec?rel=0&version=3&controls=0"
     assert YT_ID_RE.search(u).group(1) == "tksxh4uifec"
     assert YT_ID_RE.search("https://tpc.googlesyndication.com/pagead/gadgets/youtube_player_media/x.html") is None
+
+
+def test_google_declared_total():
+    from creative_intel.collectors.google_web import _declared_total
+
+    assert _declared_total("Nombre legal:\\n4 anuncios\\ncalendar_today") == 4
+    assert _declared_total("~1.234 anuncios") == 1234
+    assert _declared_total("Más de 2 mil anuncios") == 2000
+    assert _declared_total("sin datos") is None
