@@ -141,7 +141,8 @@ CTA_LABELS = {
     "learn more", "sign up", "get quote", "get offer", "shop now", "contact us", "apply now", "download", "book now", "send message",
     "whatsapp", "enviar mensaje de whatsapp", "llamar ahora", "call now", "suscribirte", "subscribe",
 }
-DOMAIN_RE = re.compile(r"^[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
+DOMAIN_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
+TIMESTAMP_RE = re.compile(r"^\d{1,2}:\d{2}(\s*/\s*\d{1,2}:\d{2})?$")
 
 
 def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
@@ -163,7 +164,7 @@ def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
         if re.match(r"(Ver detalles|See ad details)", l, re.I):
             skip_next = True
             continue
-        if UI_NOISE.search(l):
+        if UI_NOISE.search(l) or TIMESTAMP_RE.match(l):
             continue
         if skip_next:
             skip_next = False
@@ -177,7 +178,7 @@ def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
     landing, headline, description = "", "", ""
     for i, l in enumerate(lines):
         if DOMAIN_RE.match(l) and " " not in l:
-            landing = l.lower()
+            landing = re.sub(r"^https?://", "", l.lower())
             headline = lines[i + 1] if i + 1 < len(lines) else ""
             description = " ".join(lines[i + 2 :])
             lines = lines[:i]

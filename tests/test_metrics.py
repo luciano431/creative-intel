@@ -1,4 +1,4 @@
-from creative_intel.analysis.metrics import build_metrics, distribution, month_over_month, ours_vs_market, white_space
+from creative_intel.analysis.metrics import build_metrics, distribution, month_over_month, ours_vs_market, weighted_distribution, white_space
 from creative_intel.analysis.concepts import group_concepts
 
 
@@ -57,3 +57,12 @@ def test_concepts_group_variants():
     concepts = group_concepts(items)
     assert concepts[0]["variants"] == 2 and concepts[0]["formats"] == ["imagen", "video"]
     assert len(concepts) == 3
+
+
+def test_weighted_distribution_gives_each_competitor_equal_weight():
+    items = [_item(i, "Grande", family="oferta") for i in range(10)] + [_item(99, "Chico", family="proteccion")]
+    raw = {d["value"]: d["pct"] for d in distribution(items, lambda it: it["cls"]["angle_family"])}
+    weighted = {d["value"]: d for d in weighted_distribution(items, lambda it: it["cls"]["angle_family"])}
+    assert raw["oferta"] == 90.9
+    assert weighted["oferta"]["pct"] == 50.0 and weighted["proteccion"]["pct"] == 50.0
+    assert weighted["oferta"]["count"] == 1  # un competidor lo usa

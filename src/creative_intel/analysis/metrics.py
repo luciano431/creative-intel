@@ -62,6 +62,33 @@ def distribution(items: Iterable[dict[str, Any]], getter: Callable[[dict[str, An
     ]
 
 
+def weighted_distribution(items: Iterable[dict[str, Any]], getter: Callable[[dict[str, Any]], Any]) -> list[dict[str, Any]]:
+    """Distribución donde cada competidor pesa lo mismo (promedio de sus distribuciones).
+
+    Evita que un anunciante con 100 creativos domine el mapa frente a uno con 3.
+    `count` = cantidad de competidores que usan ese valor.
+    """
+    per_comp: dict[str, Counter] = defaultdict(Counter)
+    for it in items:
+        v = getter(it)
+        if v:
+            per_comp[it["competitor"]][v] += 1
+    if not per_comp:
+        return []
+    acc: dict[Any, float] = defaultdict(float)
+    users: Counter = Counter()
+    for comp, counts in per_comp.items():
+        total = sum(counts.values())
+        for v, n in counts.items():
+            acc[v] += 100 * n / total
+            users[v] += 1
+    n_comp = len(per_comp)
+    return [
+        {"value": v, "count": users[v], "pct": round(acc[v] / n_comp, 1)}
+        for v in sorted(acc, key=lambda x: (-acc[x], str(x)))
+    ]
+
+
 def _cls(key: str) -> Callable[[dict[str, Any]], Any]:
     return lambda it: (it.get("cls") or {}).get(key)
 
@@ -181,8 +208,11 @@ def build_metrics(
             "by_competitor": dict(sorted(Counter(it["competitor"] for it in market).items())),
         },
         "angle_family_dist": fam_dist,
+        "angle_family_dist_weighted": weighted_distribution(classified, _cls("angle_family")),
         "angle_dist": distribution(classified, _cls("primary_angle")),
         "hook_dist": hook_dist,
+        "hook_dist_weighted": weighted_distribution(classified, _cls("hook_type")),
+        "format_dist_weighted": weighted_distribution(classified, lambda it: it["format"]),
         "format_dist": distribution(classified, lambda it: it["format"]),
         "placement_dist": distribution(market, lambda it: ",".join(it["placements"]) if it["placements"] else None),
         "funnel_dist": distribution(classified, _cls("funnel_stage")),

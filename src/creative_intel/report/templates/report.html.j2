@@ -119,6 +119,23 @@
     </div>
   </div>
 
+  <h3>Ponderado por competidor</h3>
+  <p class="sub">Cada aseguradora pesa igual, tenga 3 o 100 anuncios activos. El número es la cantidad de competidores que usan ese valor.</p>
+  <div class="grid2">
+    <div>
+      <h3>Ángulos (familias)</h3>
+      {% for d in metrics.angle_family_dist_weighted %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} comp. · {{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+    <div>
+      <h3>Hooks</h3>
+      {% for d in metrics.hook_dist_weighted %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} comp. · {{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+  </div>
+
   <h3>Local vs global</h3>
   <p>{{ synthesis.local_vs_global }}</p>
   <div class="grid2">

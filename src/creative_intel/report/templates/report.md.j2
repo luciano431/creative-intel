@@ -27,6 +27,8 @@ Plan creativo para **{{ next_period_label }}** · {{ metrics.totals.competitors 
 
 **Ángulos (familias):** {% for d in metrics.angle_family_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
 
+**Ángulos ponderados por competidor:** {% for d in metrics.angle_family_dist_weighted %}{{ d.value }} {{ d.pct }}% ({{ d.count }} comp.){% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+
 **Hooks:** {% for d in metrics.hook_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
 
 **Formatos:** {% for d in metrics.format_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}

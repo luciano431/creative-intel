@@ -105,3 +105,12 @@ def test_parse_meta_card_text_skips_page_name_after_details_marker():
     p = parse_card_text(card, "Banco de Seguros del Estado (BSE)")
     assert p["body"] == "Tu yo del futuro te lo va a agradecer"
     assert p["headline"] == "Portal Comercial" and p["cta"] == "Learn More"
+
+
+def test_parse_meta_card_text_video_timestamps_and_scheme_domain():
+    from creative_intel.collectors.meta_web import parse_card_text
+
+    card = "Ver detalles del anuncio\nAXA\nWir sorgen uns um vieles.\n0:00\n0:20\n0:00 / 0:20\nHTTPS://LANDINGPAGE.AXA.DE/RISIKO\nDie wahren Risiken\nLearn More"
+    p = parse_card_text(card, "AXA")
+    assert p["body"] == "Wir sorgen uns um vieles."
+    assert p["landing"] == "landingpage.axa.de/risiko" and p["headline"] == "Die wahren Risiken" and p["cta"] == "Learn More"

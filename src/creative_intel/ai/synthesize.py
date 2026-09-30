@@ -87,7 +87,8 @@ Principios no negociables:
 5. Las oportunidades salen del white space y de los gaps entre mercado y miSeguro. Cada oportunidad trae conceptos ejecutables (formato + hook + ángulo + copy en español rioplatense).
 6. Los riesgos son de saturación: si 8 de 10 competidores dicen lo mismo, no queremos ser el número 11 sin un giro.
 7. Escribí en español, claro, para un equipo creativo que lo va a ejecutar la semana siguiente.
-8. Si los datos son escasos (pocos creativos, un solo mes), decilo explícitamente y bajá la confianza; no rellenes."""
+8. Las distribuciones `*_weighted` ponderan cada competidor por igual; usalas para hablar de 'cuántos competidores' y las crudas para 'cuántos anuncios'. Un anunciante con 100 creativos no define el mercado por sí solo.
+9. Si los datos son escasos (pocos creativos, un solo mes), decilo explícitamente y bajá la confianza; no rellenes."""
 
 
 def _compact_items(items: list[dict[str, Any]], limit: int = 400) -> list[dict[str, Any]]:
