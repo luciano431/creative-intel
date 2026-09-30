@@ -10,7 +10,7 @@ def test_competitors_flatten_with_tiers():
     own = next(c for c in comps if c.tier == "own")
     assert own.slug == "miseguro" and own.is_own
     axa = next(c for c in comps if c.slug == "axa")
-    assert axa.ad_countries == ["ES", "FR"]
+    assert axa.ad_countries == ["ES"]
     bse = next(c for c in comps if c.slug == "bse")
     assert bse.ad_countries == ["UY"]  # default al país
 
