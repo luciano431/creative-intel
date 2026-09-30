@@ -112,7 +112,7 @@ class MetaAdLibraryWebCollector:
                             media_urls=[u for u in (vids or imgs) if u],
                             thumbnail_url=next((u for u in imgs if u), ""),
                             snapshot_url=f"https://www.facebook.com/ads/library/?id={ext_id}",
-                            countries=[country],
+                            countries=[] if country.upper() == "ALL" else [country],
                             first_seen=parse_human_date(start.group(1)) if start else None,
                             is_active=True,
                             raw={"card_text": text, "screenshot": shot, "multiple_versions": parsed["multiple_versions"]},
@@ -132,7 +132,7 @@ UI_NOISE = re.compile(
     r"^(Library ID|Identificador de la biblioteca|ID de la biblioteca|Started running|Comenzó a publicarse|En circulación"
     r"|Activo$|Active$|Inactivo$|Inactive$|Plataformas|Platforms|Ver detalles|See ad details|Ver resumen|See summary"
     r"|Patrocinado$|Publicidad$|Sponsored$|Abrir menú|Open Drop|Este anuncio tiene varias versiones|This ad has multiple versions"
-    r"|Detalles del anuncio|Ad details|Categor[ií]a|Category)",
+    r"|Detalles del anuncio|Ad details|Categor[ií]a|Category|Transparencia de la UE|EU transparency)",
     re.I,
 )
 CTA_LABELS = {

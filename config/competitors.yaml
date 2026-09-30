@@ -9,6 +9,7 @@
 #   facebook.com/ads/library/?view_all_page_id=XXXX)
 # google_advertiser_id: ID del anunciante en adstransparency.google.com
 #   (formato AR0123456789...)
+# ad_countries: países donde observar sus anuncios en la Ad Library. ALL = todos los países.
 # ---------------------------------------------------------------------------
 countries:
   - code: UY
@@ -64,7 +65,7 @@ countries:
           website: https://www.axa.com
           meta_page_id: "1570002513271112"
           google_advertiser_id: ""
-          ad_countries: [ES]      # país donde observar sus anuncios en la Ad Library
+          ad_countries: [ALL]     # sin anuncios activos en ES al 30/09; observar en todos los países
           products: [auto, hogar, vida, viaje, salud]
           active: true
         - slug: allianz
@@ -72,7 +73,7 @@ countries:
           website: https://www.allianz.com
           meta_page_id: "450326391674911"
           google_advertiser_id: ""
-          ad_countries: [ES]      # país donde observar sus anuncios en la Ad Library
+          ad_countries: [ALL]     # sin anuncios activos en ES al 30/09; observar en todos los países
           products: [auto, hogar, vida, viaje]
           active: true
         - slug: zurich
