@@ -126,3 +126,12 @@ def test_google_detail_dates_from_page_text():
     assert _date_after("First shown: Sep 12, 2026", r"(first shown)") == dt.date(2026, 9, 12)
     c = CompetitorConfig(slug="bse", name="BSE", country="UY", tier="local", website="https://www.bse.com.uy/seguros")
     assert domain_of(c) == "bse.com.uy" and region_param("ALL") == "anywhere" and region_param("uy") == "UY"
+
+
+def test_google_clean_lines_drops_chrome_and_advertiser_name():
+    from creative_intel.collectors.google_web import clean_lines
+
+    raw = ["MAPFRE URUGUAY SEGUROS S.A.", "La información acerca de este anuncio puede variar según la ubicación", "30 sept 2026",
+           "Anuncio", "www.mapfre.com.uy", "Seguro de Auto MAPFRE", "Cotizá online en minutos", "Privacidad", "Blog de Ads",
+           "Se quitó debido a un incumplimiento de política", "hide_image"]
+    assert clean_lines(raw, "MAPFRE Uruguay") == ["www.mapfre.com.uy", "Seguro de Auto MAPFRE", "Cotizá online en minutos"]

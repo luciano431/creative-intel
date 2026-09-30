@@ -103,7 +103,7 @@ def upsert_creatives(
         creative.description = raw.description or creative.description
         creative.cta_text = raw.cta_text or creative.cta_text
         creative.landing_url = raw.landing_url or creative.landing_url
-        creative.media_urls = raw.media_urls or creative.media_urls
+        creative.media_urls = raw.media_urls or creative.media_urls or []
         creative.snapshot_url = raw.snapshot_url or creative.snapshot_url
         creative.countries = sorted(set(creative.countries or []) | set(raw.countries))
         if raw.engagement:

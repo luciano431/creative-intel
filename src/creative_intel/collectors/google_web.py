@@ -4,7 +4,9 @@ Dos modos:
 - por anunciante: https://adstransparency.google.com/advertiser/{AR...}?region={XX}
 - por dominio (cuando no hay ID): https://adstransparency.google.com/?region={XX}&domain={sitio}
   El dominio sale de `google_domain` o, si no está, del `website` del competidor.
-Hace scroll y captura las tarjetas de creativos (texto, imagen y video).
+Recorre la grilla, abre cada creativo y extrae el contenido desde el componente
+`creative-details` > `creative-preview` (shadow DOM + iframes propios del creativo),
+ignorando la grilla de "más anuncios de este anunciante" que aparece debajo.
 """
 from __future__ import annotations
 
@@ -16,37 +18,54 @@ from ..config import CompetitorConfig, settings
 from .base import RawCreative
 
 
-DEEP_DUMP_JS = """(rootSelector) => {
-  const out = {texts: [], images: [], iframes: [], tags: {}, scoped: false};
+DEEP_DUMP_JS = """() => {
   const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE']);
-  const walk = (root) => {
-    for (const el of root.querySelectorAll('*')) {
-      const t = el.tagName.toLowerCase();
-      if (t.includes('-')) out.tags[t] = (out.tags[t] || 0) + 1;
-      if (t === 'img') out.images.push({src: el.currentSrc || el.src, w: el.naturalWidth, h: el.naturalHeight, alt: el.alt || ''});
-      if (t === 'iframe') out.iframes.push(el.src || '');
-      if (el.shadowRoot) walk(el.shadowRoot);
-    }
-    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let n; while ((n = tw.nextNode())) {
-      if (n.parentElement && skip.has(n.parentElement.tagName)) continue;
-      const s = n.textContent.trim(); if (s) out.texts.push(s);
-    }
-  };
-  // Buscar el contenedor del creativo atravesando shadow roots
+  // Busca un selector atravesando shadow roots (incluido el del propio root)
   const find = (root, sel) => {
     const hit = root.querySelector(sel); if (hit) return hit;
+    if (root.shadowRoot) { const h = find(root.shadowRoot, sel); if (h) return h; }
     for (const el of root.querySelectorAll('*')) { if (el.shadowRoot) { const h = find(el.shadowRoot, sel); if (h) return h; } }
     return null;
   };
-  const scope = rootSelector ? find(document, rootSelector) : null;
-  out.scoped = !!scope;
-  walk(scope || document);
-  return out;
+  const dump = (root, label) => {
+    const out = {texts: [], images: [], iframes: 0, tags: {}};
+    const walk = (r) => {
+      for (const el of r.querySelectorAll('*')) {
+        const t = el.tagName.toLowerCase();
+        if (t.includes('-')) out.tags[t] = (out.tags[t] || 0) + 1;
+        if (t === 'img') out.images.push({src: el.currentSrc || el.src, w: el.naturalWidth, h: el.naturalHeight, alt: el.alt || ''});
+        if (t === 'iframe') { out.iframes++; el.setAttribute('data-ci-frame', label); }
+        if (el.shadowRoot) walk(el.shadowRoot);
+      }
+      const tw = document.createTreeWalker(r, NodeFilter.SHOW_TEXT);
+      let n; while ((n = tw.nextNode())) {
+        if (n.parentElement && skip.has(n.parentElement.tagName)) continue;
+        const s = n.textContent.trim(); if (s) out.texts.push(s);
+      }
+      if (r.shadowRoot) walk(r.shadowRoot);
+    };
+    walk(root);
+    return out;
+  };
+  const details = find(document, 'creative-details');
+  const preview = details ? (find(details, 'creative-preview') || find(details, 'html-renderer')) : null;
+  const d = dump(details || document, 'details');
+  const c = preview ? dump(preview, 'creative') : null;
+  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c};
 }"""
+FRAME_DUMP_JS = """() => ({
+  text: document.body ? document.body.innerText : '',
+  images: Array.from(document.images).map(i => ({src: i.currentSrc || i.src, w: i.naturalWidth, h: i.naturalHeight, alt: i.alt || ''})),
+})"""
 REMOVED_RE = re.compile(r"no podemos mostrar este anuncio|Se quit[oó] debido|can't show this ad|removed (due to|for) (a )?polic", re.I)
-UI_STRINGS = {"close", "flag", "chevron_left", "chevron_right", "arrow_forward", "keyboard_arrow_right", "Acceder", "Detalles del anuncio",
-              "Denunciar este anuncio", "Preguntas frecuentes", "Página principal", "Centro de transparencia de anuncios"}
+UI_STRINGS = {"close", "flag", "chevron_left", "chevron_right", "arrow_forward", "keyboard_arrow_right", "hide_image", "Acceder",
+              "Detalles del anuncio", "Denunciar este anuncio", "Preguntas frecuentes", "Página principal", "Centro de transparencia de anuncios",
+              "Privacidad", "Condiciones", "Políticas de Ads", "Principios", "Blog de Ads", "Privacy", "Terms", "Ads Policies",
+              "Nuestras políticas de anuncios", "Texto", "Imagen", "Video", "Anuncio", "Ad", "Patrocinado", "Sponsored", "Abrir"}
+CHROME_PREFIXES = ("Última vez que se mostró", "Last shown", "Formato:", "Format:", "Se mostraron en", "Shown in", "Denunciar este anuncio",
+                   "Ver más anuncios", "See more ads", "La información acerca de este anuncio", "Information about this ad")
+DATE_LINE_RE = re.compile(r"^\d{1,2}\s+\w{3,10}\.?\s+\d{4}$|^\w{3,10}\.?\s+\d{1,2},?\s+\d{4}$")
+DOMAIN_LINE_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
 
 
 def domain_of(competitor: CompetitorConfig) -> str:
@@ -59,6 +78,23 @@ def domain_of(competitor: CompetitorConfig) -> str:
 
 def region_param(country: str) -> str:
     return "anywhere" if country.upper() == "ALL" else country.upper()
+
+
+def clean_lines(texts: list[str], advertiser: str, extra_drop: tuple[str, ...] = ()) -> list[str]:
+    """Filtra el cromo de la página y deja solo el texto del anuncio."""
+    adv_tokens = {t for t in re.split(r"\W+", advertiser.lower()) if len(t) > 3}
+    out: list[str] = []
+    for t in texts:
+        if t in UI_STRINGS or t in extra_drop or any(t.startswith(p) for p in CHROME_PREFIXES):
+            continue
+        if DATE_LINE_RE.match(t) or re.match(r"^\d+ de \d+ variaci|^\d+ of \d+ variation", t) or REMOVED_RE.search(t):
+            continue
+        if t.lower() == advertiser.lower() or (t.isupper() and adv_tokens & set(re.split(r"\W+", t.lower()))):
+            continue  # nombre legal del anunciante en el encabezado
+        if not re.search(r"\w", t):
+            continue
+        out.append(t)
+    return out
 
 
 class GoogleTransparencyWebCollector:
@@ -115,7 +151,7 @@ class GoogleTransparencyWebCollector:
                     ext_id = m.group(1)
                     url = ("https://adstransparency.google.com" + href) if href.startswith("/") else href
                     try:
-                        detail = self._detail(page, url, ext_id, shots, debug, dbg, competitor.slug)
+                        detail = self._detail(page, url, ext_id, shots, debug, dbg, competitor)
                     except Exception as exc:
                         print(f"[google_web] detalle {ext_id} falló: {exc}")
                         continue
@@ -137,19 +173,21 @@ class GoogleTransparencyWebCollector:
                             first_seen=detail["first_seen"],
                             last_seen=detail["last_seen"],
                             is_active=True,
-                            raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5], "variations": detail["variations"], "regions": detail["regions"], "removed": detail["removed"]},
+                            raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5],
+                                 "variations": detail["variations"], "regions": detail["regions"], "removed": detail["removed"],
+                                 "scoped": detail["scoped"]},
                         )
                     )
             browser.close()
         return out
 
-    def _detail(self, page, url: str, ext_id: str, shots, debug: bool, dbg, slug: str) -> dict:
+    def _detail(self, page, url: str, ext_id: str, shots, debug: bool, dbg, competitor: CompetitorConfig) -> dict:
         """Abre la página de detalle de un creativo y extrae contenido, fechas y captura."""
         page.goto(url, wait_until="domcontentloaded", timeout=90_000)
-        # El anuncio se renderiza en un iframe que llega después del primer paint
+        # El creativo se renderiza después del primer paint (iframe propio o shadow DOM)
         for _ in range(10):
             page.wait_for_timeout(1000)
-            if page.locator("iframe").count() and len(page.frames) > 1:
+            if page.locator("creative-preview, html-renderer, iframe").count():
                 break
         page.wait_for_timeout(2500)
         page_text = page.inner_text("body")
@@ -160,56 +198,68 @@ class GoogleTransparencyWebCollector:
         variations = int(m_var.group(1) or m_var.group(2)) if m_var else 1
         m_reg = re.search(r"Se mostraron en\s+([^\n]+)|Shown in\s+([^\n]+)", page_text)
         regions = (m_reg.group(1) or m_reg.group(2)).strip() if m_reg else ""
-        # El creativo vive en shadow DOM (no en iframes): recorrer piercing shadow roots
-        deep = page.evaluate(DEEP_DUMP_JS, "creative-details")
-        removed = bool(REMOVED_RE.search(page_text) or REMOVED_RE.search("\n".join(deep["texts"])))
-        chrome = {"Última vez que se mostró:", "Formato:", "Se mostraron en", "Denunciar este anuncio", "Ver más anuncios de este anunciante"}
-        shadow_texts = [t for t in deep["texts"] if t not in UI_STRINGS and not any(t.startswith(c) for c in chrome)
-                        and not re.match(r"^\d+ de \d+ variaci", t) and not REMOVED_RE.search(t) and t != "Nuestras políticas de anuncios"
-                        and t not in (regions, fmt_label.capitalize(), "Texto", "Imagen", "Video", "hide_image")]
+
+        deep = page.evaluate(DEEP_DUMP_JS)
+        scope = deep["creative"] or deep["details"]
+        scoped = "creative" if deep["creative_scoped"] else "details" if deep["details_scoped"] else "none"
+        # "Quitado": el aviso de política aparece justo debajo de "Formato: ..." para el creativo principal;
+        # la grilla de otros anuncios (que también puede tener quitados) queda más abajo y no cuenta.
+        head = page_text[m_fmt.end(): m_fmt.end() + 300] if m_fmt else page_text[:600]
+        removed = bool(REMOVED_RE.search(head)) or bool(deep["creative"] and REMOVED_RE.search("\n".join(deep["creative"]["texts"])))
+
+        # Iframes propios del creativo (srcdoc / displayads) marcados por el JS
         frame_texts: list[str] = []
         frame_urls: list[str] = []
         media: list[str] = []
-        for fr in page.frames:
-            if fr == page.main_frame:
+        frame_images: list[dict] = []
+        label = "creative" if deep["creative_scoped"] else "details"
+        for handle in page.locator(f"iframe[data-ci-frame='{label}']").element_handles():
+            fr = handle.content_frame()
+            if fr is None:
                 continue
-            furl = fr.url or ""
-            frame_urls.append(furl)
-            if "youtube" in furl:
-                media.append(furl)
-                continue
-            if "feedback" in furl or "clients6.google.com" in furl:
-                continue
-            try:
-                t = fr.evaluate("() => document.body ? document.body.innerText : ''").strip()
-                if t:
-                    frame_texts.append(t)
-            except Exception:
-                continue
-        for im in deep["images"]:
+            stack = [fr]
+            while stack:
+                f = stack.pop()
+                stack.extend(f.child_frames)
+                furl = f.url or ""
+                frame_urls.append(furl)
+                if "youtube" in furl:
+                    media.append(furl)
+                    continue
+                if "feedback" in furl or "clients6.google.com" in furl:
+                    continue
+                try:
+                    fd = f.evaluate(FRAME_DUMP_JS)
+                except Exception:
+                    continue
+                if fd["text"].strip():
+                    frame_texts.append(fd["text"].strip())
+                frame_images.extend(fd["images"])
+        for im in scope["images"] + frame_images:
             src = im.get("src") or ""
             if src and im["w"] >= 100 and im["h"] >= 60 and "gstatic" not in src and "google.com/images" not in src and "googleusercontent.com/a/" not in src:
                 media.append(src)
-        for u in deep.get("iframes", []):
-            if u and "youtube" in u:
-                media.append(u)
         if fmt == "texto":
             media = [u for u in media if "youtube" in u]
+
+        advertiser = competitor.name
+        shadow_texts = clean_lines(scope["texts"], advertiser, extra_drop=(regions, fmt_label.capitalize()))
+        text_lines = clean_lines([l.strip() for t in frame_texts for l in t.splitlines() if l.strip()], advertiser) + shadow_texts
+        text_lines = list(dict.fromkeys(text_lines))
         if fmt == "desconocido":
-            fmt = "video" if any("youtube" in u for u in media) else "imagen" if media else "texto" if shadow_texts else "desconocido"
-        frame_texts = shadow_texts + frame_texts
-        text_lines = [l.strip() for t in frame_texts for l in t.splitlines() if l.strip()]
-        if removed:
-            text_lines = []
-        headline = text_lines[0] if text_lines else ""
-        body = "\n".join(text_lines[1:])[:4000] if len(text_lines) > 1 else ""
-        if removed:
-            body = "(Anuncio quitado por Google por incumplimiento de política: contenido no disponible)"
+            fmt = "video" if any("youtube" in u for u in media) else "imagen" if media else "texto" if text_lines else "desconocido"
         landing = ""
         for l in text_lines:
-            if re.match(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", l, re.I) and " " not in l:
+            if DOMAIN_LINE_RE.match(l) and " " not in l:
                 landing = re.sub(r"^https?://", "", l.lower())
                 break
+        content = [l for l in text_lines if not (DOMAIN_LINE_RE.match(l) and " " not in l)]
+        if removed:
+            content = []
+        headline = content[0] if content else ""
+        body = "\n".join(content[1:])[:4000] if len(content) > 1 else ""
+        if removed:
+            body = "(Anuncio quitado por Google por incumplimiento de política: contenido no disponible)"
         shot = shots / f"google_{ext_id}.png"
         try:
             page.screenshot(path=str(shot), full_page=False)
@@ -217,13 +267,16 @@ class GoogleTransparencyWebCollector:
             shot = None
         if debug:
             dbg.mkdir(parents=True, exist_ok=True)
-            (dbg / f"google_detail_{slug}_{ext_id}.txt").write_text(
-                page_text + "\n\n===== TEXTOS SOLO EN SHADOW DOM =====\n" + "\n".join(shadow_texts)
-                + "\n\n===== IMAGENES (src w x h alt) =====\n" + "\n".join(f"{i['src'][:140]} {i['w']}x{i['h']} {i['alt'][:40]}" for i in deep["images"])
-                + "\n\n===== IFRAMES =====\n" + "\n".join(deep.get("iframes", []))
-                + "\n\n===== SCOPED A creative-details: " + str(deep.get("scoped")) + " | REMOVED: " + str(removed) + " =====\n"
-                + "\n\n===== ELEMENTOS CUSTOM =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(deep["tags"].items()))
-                + "\n\n===== MEDIA ELEGIDA =====\n" + "\n".join(media), encoding="utf-8")
+            (dbg / f"google_detail_{competitor.slug}_{ext_id}.txt").write_text(
+                page_text
+                + f"\n\n===== SCOPE: {scoped} | REMOVED: {removed} | FORMATO: {fmt} =====\n"
+                + "\n===== TEXTOS DEL CREATIVO (shadow DOM, filtrados) =====\n" + "\n".join(shadow_texts)
+                + "\n\n===== TEXTOS DEL CREATIVO (crudos) =====\n" + "\n".join(scope["texts"][:80])
+                + "\n\n===== IFRAMES DEL CREATIVO =====\n" + "\n".join(frame_urls)
+                + "\n\n===== TEXTOS EN IFRAMES =====\n" + "\n---\n".join(frame_texts)
+                + "\n\n===== IMAGENES (src w x h alt) =====\n" + "\n".join(f"{i['src'][:140]} {i['w']}x{i['h']} {i['alt'][:40]}" for i in scope["images"] + frame_images)
+                + "\n\n===== ELEMENTOS CUSTOM (details) =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(deep["details"]["tags"].items()))
+                + "\n\n===== RESULTADO =====\n" + f"titular: {headline!r}\nlanding: {landing!r}\nbody: {body[:300]!r}\nmedia: {media}\n", encoding="utf-8")
         return {
             "format": fmt,
             "headline": headline,
@@ -238,6 +291,7 @@ class GoogleTransparencyWebCollector:
             "variations": variations,
             "regions": regions,
             "removed": removed,
+            "scoped": scoped,
         }
 
 
