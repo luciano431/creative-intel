@@ -114,3 +114,15 @@ def test_parse_meta_card_text_video_timestamps_and_scheme_domain():
     p = parse_card_text(card, "AXA")
     assert p["body"] == "Wir sorgen uns um vieles."
     assert p["landing"] == "landingpage.axa.de/risiko" and p["headline"] == "Die wahren Risiken" and p["cta"] == "Learn More"
+
+
+def test_google_detail_dates_from_page_text():
+    from creative_intel.collectors.google_web import _date_after, domain_of, region_param
+    from creative_intel.config import CompetitorConfig
+
+    text = "Formato: Imagen\nSe publicó por primera vez el 12 sep 2026\nSe publicó por última vez el 30 sep 2026\nRegiones: Uruguay"
+    assert _date_after(text, r"(primera vez|first shown)") == dt.date(2026, 9, 12)
+    assert _date_after(text, r"(última vez|last shown)") == dt.date(2026, 9, 30)
+    assert _date_after("First shown: Sep 12, 2026", r"(first shown)") == dt.date(2026, 9, 12)
+    c = CompetitorConfig(slug="bse", name="BSE", country="UY", tier="local", website="https://www.bse.com.uy/seguros")
+    assert domain_of(c) == "bse.com.uy" and region_param("ALL") == "anywhere" and region_param("uy") == "UY"
