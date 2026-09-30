@@ -49,3 +49,34 @@ def test_basecamp_next_link_parsing():
 
     assert _next_link('<https://3.basecampapi.com/1/projects.json?page=2>; rel="next"') == "https://3.basecampapi.com/1/projects.json?page=2"
     assert _next_link("") is None
+
+
+def test_parse_meta_card_text_strips_ui_noise_and_splits_fields():
+    from creative_intel.collectors.meta_web import parse_card_text
+
+    card = """
+Identificador de la biblioteca: 1028284793592494
+Comenzó a publicarse el 31 ago 2026
+Plataformas
+Este anuncio tiene varias versiones
+
+Abrir menú desplegable
+
+Seguros SURA Uruguay
+¿Qué más podés pedir?
+Pedí SURA y contratá tu Seguro de Auto 🚗.
+Disfrutá de cobertura sin letra chica.
+SEGUROS.SURA.COM.UY
+Seguro de Auto SURA
+Cotizá online en minutos
+Más información
+"""
+    p = parse_card_text(card, "SURA Uruguay")
+    assert p["body"] == "¿Qué más podés pedir?\nPedí SURA y contratá tu Seguro de Auto 🚗.\nDisfrutá de cobertura sin letra chica."
+    assert p["landing"] == "seguros.sura.com.uy"
+    assert p["headline"] == "Seguro de Auto SURA"
+    assert p["description"] == "Cotizá online en minutos"
+    assert p["cta"] == "Más información"
+    assert p["multiple_versions"] is True
+    # Una línea de copy que contiene "activo" no se descarta
+    assert "activo" in parse_card_text("Seguros SURA Uruguay\nMantené tu auto activo todo el año", "SURA Uruguay")["body"]

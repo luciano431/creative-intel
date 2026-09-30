@@ -84,7 +84,8 @@ class MetaAdLibraryWebCollector:
                     if not ext_id:
                         continue
                     start = START_RE.search(text)
-                    imgs = card.locator("img").evaluate_all("els => els.map(e => e.src)")
+                    img_info = card.locator("img").evaluate_all("els => els.map(e => ({src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height}))")
+                    imgs = [i["src"] for i in sorted(img_info, key=lambda i: -(i["w"] * i["h"])) if i["src"] and i["w"] >= 150 and i["h"] >= 150]
                     vids = card.locator("video").evaluate_all("els => els.map(e => e.src || (e.querySelector('source')||{}).src)")
                     shot = ""
                     if self.screenshots:
@@ -94,7 +95,7 @@ class MetaAdLibraryWebCollector:
                             shot = str(shot_path)
                         except Exception:
                             shot = ""
-                    body = _extract_body(text)
+                    parsed = parse_card_text(text, competitor.name)
                     out.append(
                         RawCreative(
                             competitor_slug=competitor.slug,
@@ -103,14 +104,18 @@ class MetaAdLibraryWebCollector:
                             external_id=ext_id,
                             format="video" if any(vids) else "imagen" if any(imgs) else "desconocido",
                             placements=["feed"],
-                            body_text=body,
+                            headline=parsed["headline"],
+                            body_text=parsed["body"],
+                            description=parsed["description"],
+                            cta_text=parsed["cta"],
+                            landing_url=parsed["landing"],
                             media_urls=[u for u in (vids or imgs) if u],
                             thumbnail_url=next((u for u in imgs if u), ""),
                             snapshot_url=f"https://www.facebook.com/ads/library/?id={ext_id}",
                             countries=[country],
                             first_seen=parse_human_date(start.group(1)) if start else None,
                             is_active=True,
-                            raw={"card_text": text, "screenshot": shot},
+                            raw={"card_text": text, "screenshot": shot, "multiple_versions": parsed["multiple_versions"]},
                         )
                     )
             browser.close()
@@ -123,17 +128,60 @@ class MetaAdLibraryWebCollector:
             page.wait_for_timeout(1500)
 
 
-def _extract_body(card_text: str) -> str:
-    """Se queda con el texto del anuncio, quitando metadatos de la tarjeta."""
-    lines = [l.strip() for l in card_text.splitlines() if l.strip()]
-    keep: list[str] = []
-    skip = re.compile(r"(Library ID|Identificador|Started running|Comenzó a publicarse|En circulación|Active|Activo|Platforms|Plataformas|See ad details|Ver detalles|Sponsored|Publicidad|Open Dropdown)", re.I)
-    for l in lines:
-        if skip.search(l):
+UI_NOISE = re.compile(
+    r"^(Library ID|Identificador de la biblioteca|ID de la biblioteca|Started running|Comenzó a publicarse|En circulación"
+    r"|Activo$|Active$|Inactivo$|Inactive$|Plataformas|Platforms|Ver detalles|See ad details|Ver resumen|See summary"
+    r"|Patrocinado$|Sponsored$|Abrir menú|Open Drop|Este anuncio tiene varias versiones|This ad has multiple versions"
+    r"|Detalles del anuncio|Ad details|Categor[ií]a|Category)",
+    re.I,
+)
+CTA_LABELS = {
+    "más información", "mas informacion", "más info", "cotizar", "cotizá", "cotiza", "contratar", "contratá", "comprar", "comprá",
+    "registrarte", "registrarse", "descargar", "enviar mensaje", "obtener oferta", "reservar", "solicitar", "ver más", "ver mas",
+    "learn more", "sign up", "get quote", "get offer", "shop now", "contact us", "apply now", "download", "book now", "send message",
+    "whatsapp", "enviar mensaje de whatsapp", "llamar ahora", "call now", "suscribirte", "subscribe",
+}
+DOMAIN_RE = re.compile(r"^[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
+
+
+def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
+    """Separa el texto de una tarjeta de Ad Library en body / landing / headline / description / cta.
+
+    Orden típico de la tarjeta: metadatos → nombre de página → texto principal → [imagen] →
+    dominio de la landing → titular → descripción → botón CTA.
+    """
+    name = (advertiser_name or "").lower()
+    lines: list[str] = []
+    multiple = False
+    for raw in card_text.splitlines():
+        l = raw.strip()
+        if not l or not re.search(r"[\wáéíóúñ]", l, re.I):
             continue
-        keep.append(l)
-    return "\n".join(keep)[:4000]
+        if re.search(r"varias versiones|multiple versions", l, re.I):
+            multiple = True
+        if UI_NOISE.search(l):
+            continue
+        if name and name in l.lower() and len(l) <= len(name) + 15:
+            continue  # nombre de la página
+        lines.append(l)
+    cta = ""
+    if lines and lines[-1].lower().strip("¡!.") in CTA_LABELS:
+        cta = lines.pop()
+    landing, headline, description = "", "", ""
+    for i, l in enumerate(lines):
+        if DOMAIN_RE.match(l) and " " not in l:
+            landing = l.lower()
+            headline = lines[i + 1] if i + 1 < len(lines) else ""
+            description = " ".join(lines[i + 2 :])
+            lines = lines[:i]
+            break
+    body = "\n".join(lines)[:4000]
+    return {"body": body, "landing": landing, "headline": headline, "description": description[:1000], "cta": cta, "multiple_versions": multiple}
 
 
-__all__ = ["MetaAdLibraryWebCollector", "parse_human_date"]
+def _extract_body(card_text: str) -> str:  # compat
+    return parse_card_text(card_text)["body"]
+
+
+__all__ = ["MetaAdLibraryWebCollector", "parse_human_date", "parse_card_text"]
 _ = Path  # mantener import para type hints externos
