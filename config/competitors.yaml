@@ -26,35 +26,35 @@ countries:
         - slug: bse
           name: Banco de Seguros del Estado (BSE)
           website: https://www.bse.com.uy
-          meta_page_id: ""
+          meta_page_id: "1672629656389763"
           google_advertiser_id: ""
           products: [auto, hogar, vida, viaje]
           active: true
         - slug: sura-uy
           name: SURA Uruguay
           website: https://seguros.sura.com.uy
-          meta_page_id: ""
+          meta_page_id: "1021050167970839"
           google_advertiser_id: ""
           products: [auto, hogar, vida, celular]
           active: true
         - slug: mapfre-uy
           name: MAPFRE Uruguay
           website: https://www.mapfre.com.uy
-          meta_page_id: ""
+          meta_page_id: "614124581947485"
           google_advertiser_id: ""
           products: [auto, hogar, vida, viaje]
           active: true
         - slug: porto-seguro-uy
           name: Porto Seguro Uruguay
           website: https://www.portoseguro.com.uy
-          meta_page_id: ""
+          meta_page_id: "198423454085215"
           google_advertiser_id: ""
           products: [auto, hogar, vida]
           active: true
         - slug: sancor-uy
           name: Sancor Seguros Uruguay
           website: https://www.sancorseguros.com.uy
-          meta_page_id: ""
+          meta_page_id: "632148993627811"
           google_advertiser_id: ""
           products: [auto, hogar, vida, viaje]
           active: true

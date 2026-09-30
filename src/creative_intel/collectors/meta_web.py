@@ -131,7 +131,7 @@ class MetaAdLibraryWebCollector:
 UI_NOISE = re.compile(
     r"^(Library ID|Identificador de la biblioteca|ID de la biblioteca|Started running|Comenzó a publicarse|En circulación"
     r"|Activo$|Active$|Inactivo$|Inactive$|Plataformas|Platforms|Ver detalles|See ad details|Ver resumen|See summary"
-    r"|Patrocinado$|Sponsored$|Abrir menú|Open Drop|Este anuncio tiene varias versiones|This ad has multiple versions"
+    r"|Patrocinado$|Publicidad$|Sponsored$|Abrir menú|Open Drop|Este anuncio tiene varias versiones|This ad has multiple versions"
     r"|Detalles del anuncio|Ad details|Categor[ií]a|Category)",
     re.I,
 )
