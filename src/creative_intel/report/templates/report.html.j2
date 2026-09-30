@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competitive Creative Intelligence — {{ period_label }}</title>
+<style>
+  :root { --ink:#1b1f24; --muted:#5f6b7a; --line:#e6e9ee; --accent:#0f62fe; --bg:#ffffff; --soft:#f5f7fa; --warn:#b54708; --ok:#027a48; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.55 -apple-system, "Segoe UI", Inter, Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 21px; margin: 44px 0 12px; padding-top: 18px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  .sub { color: var(--muted); }
+  .kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin: 18px 0; }
+  .kpi { background: var(--soft); border-radius: 10px; padding: 12px 14px; }
+  .kpi b { display:block; font-size: 24px; }
+  .kpi span { color: var(--muted); font-size: 13px; }
+  .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius: 999px; background:var(--soft); color:var(--muted); margin-right:6px; }
+  .badge.dato { background:#e8f1ff; color:#0043ce; }
+  .badge.inferencia { background:#fff4e5; color:var(--warn); }
+  .badge.conf-low { background:#fde8e8; color:#b42318; } .badge.conf-medium { background:#fff4e5; color:var(--warn);} .badge.conf-high { background:#e6f4ea; color:var(--ok);}
+  table { width:100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align:left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .bar { display:flex; align-items:center; gap:10px; margin: 4px 0; }
+  .bar .label { width: 190px; flex: 0 0 190px; font-size: 14px; }
+  .bar .track { flex:1; background: var(--soft); border-radius: 6px; height: 14px; overflow:hidden; }
+  .bar .fill { height:100%; background: var(--accent); border-radius: 6px; }
+  .bar .num { width: 110px; flex: 0 0 110px; color: var(--muted); font-size: 13px; text-align:right; }
+  .grid2 { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 14px 0; }
+  .card h3 { margin-top: 0; }
+  .creative { display:grid; grid-template-columns: 220px 1fr; gap: 18px; }
+  .creative img { width: 100%; border-radius: 8px; border: 1px solid var(--line); }
+  .creative .ph { width:100%; aspect-ratio: 4/5; border-radius: 8px; background: var(--soft); display:flex; align-items:center; justify-content:center; color: var(--muted); font-size: 12px; text-align:center; padding: 10px; }
+  .delta-up { color: var(--ok); } .delta-down { color: #b42318; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .note { background: var(--soft); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin: 14px 0; font-size: 14px; }
+  ol li, ul li { margin: 4px 0; }
+  .review { border: 1px dashed var(--line); padding: 10px 14px; border-radius: 8px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 640px) { .creative { grid-template-columns: 1fr; } .bar .label { width: 120px; flex-basis: 120px; } }
+  @media print { h2 { page-break-after: avoid; } .card { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="sub">COMPETITIVE CREATIVE INTELLIGENCE · miSeguro</p>
+  <h1>Plan creativo para {{ next_period_label }}</h1>
+  <p class="sub">Periodo analizado: {{ period_label }} · {{ metrics.totals.competitors }} competidores · Plataformas: {{ metrics.totals.platforms.keys() | join(' + ') }} · Generado {{ generated_at }}</p>
+  {% if review %}
+  <div class="review">Validación estratégica: <b>{{ review.status }}</b>{% if review.reviewer %} por {{ review.reviewer }}{% endif %}{% if review.notes %} — {{ review.notes }}{% endif %}</div>
+  {% endif %}
+
+  <div class="kpis">
+    <div class="kpi"><b>{{ metrics.totals.creatives }}</b><span>creativos observados</span></div>
+    <div class="kpi"><b>{{ metrics.totals.active }}</b><span>activos al cierre</span></div>
+    <div class="kpi"><b>{{ metrics.totals.classified }}</b><span>clasificados</span></div>
+    <div class="kpi"><b>{{ metrics.longevity.median_days }}</b><span>días activo (mediana)</span></div>
+    {% if metrics.mom.has_previous %}<div class="kpi"><b>{{ metrics.mom.previous_creatives }}</b><span>creativos mes anterior</span></div>{% endif %}
+    {% if metrics.ours_vs_market.has_own %}<div class="kpi"><b>{{ metrics.totals.own_creatives }}</b><span>creativos propios</span></div>{% endif %}
+  </div>
+
+  <div class="note"><span class="badge dato">DATO</span> conteos, fechas y porcentajes observados en Meta Ad Library y Google Ads Transparency Center. <span class="badge inferencia">INFERENCIA</span> hipótesis del análisis, redactadas como tales. El sistema no estima rendimiento real de los competidores.</div>
+
+  <h2>01 — Executive summary</h2>
+  <p class="sub">3 cosas que cambiaron este mes</p>
+  <ol>
+  {% for s in synthesis.executive_summary %}<li>{{ s }}</li>{% endfor %}
+  </ol>
+
+  <h2>02 — Top 3 insights</h2>
+  {% for i in synthesis.top_insights %}
+  <div class="card">
+    <h3>{{ loop.index }}. {{ i.title }} <span class="badge conf-{{ i.confidence }}">confianza {{ i.confidence }}</span></h3>
+    <p><span class="badge dato">DATO</span> {{ i.observation }}</p>
+    <p><span class="badge inferencia">INFERENCIA</span> {{ i.interpretation }}</p>
+    <p><b>Implicancia para nosotros:</b> {{ i.implication_for_us }}</p>
+    <p class="sub mono">{{ i.evidence | join(' · ') }}</p>
+  </div>
+  {% endfor %}
+
+  <h2>03 — Competitive landscape</h2>
+  <p class="sub">Mapa de comunicación por familia de ángulo (cantidad de creativos). No es un ranking.</p>
+  <table>
+    <thead><tr><th>Competidor</th><th>Tier</th>{% for f in families %}<th>{{ f }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for comp, row in matrix.items() %}
+      <tr><td>{{ comp }}</td><td class="sub">{{ tier_of.get(comp, '') }}</td>{% for f in families %}<td title="{{ row[f] }}">{{ row[f] | dots(max_cell) }} <span class="sub">{{ row[f] }}</span></td>{% endfor %}</tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="grid2">
+    <div>
+      <h3>Ángulos (familias)</h3>
+      {% for d in metrics.angle_family_dist %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+    <div>
+      <h3>Hooks</h3>
+      {% for d in metrics.hook_dist %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+    <div>
+      <h3>Formatos</h3>
+      {% for d in metrics.format_dist %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+    <div>
+      <h3>Etapa del funnel</h3>
+      {% for d in metrics.funnel_dist %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <h3>Local vs global</h3>
+  <p>{{ synthesis.local_vs_global }}</p>
+  <div class="grid2">
+    {% for tier, data in metrics.by_tier.items() %}
+    <div>
+      <h3>{{ tier | capitalize }} · {{ data.creatives }} creativos</h3>
+      {% for d in data.angle_family_dist %}
+      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.pct }}%</div></div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if metrics.mom.has_previous %}
+  <h3>Mes vs mes anterior (familias de ángulo)</h3>
+  <table><thead><tr><th>Familia</th><th>Este mes</th><th>Mes anterior</th><th>Δ puntos</th></tr></thead><tbody>
+  {% for r in metrics.mom.angle_family %}
+  <tr><td>{{ r.value }}</td><td>{{ r.pct }}%</td><td>{{ r.prev_pct }}%</td><td class="{{ 'delta-up' if r.delta > 0 else 'delta-down' if r.delta < 0 else '' }}">{{ '%+.1f' % r.delta }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+  {% else %}
+  <p class="note">Primer mes con datos: la comparación mes a mes se habilita a partir del próximo ciclo.</p>
+  {% endif %}
+
+  <h3>Longevidad de creativos</h3>
+  <table><thead><tr><th>0-6 días</th><th>7-30</th><th>31-90</th><th>91+</th><th>Mediana</th></tr></thead>
+  <tbody><tr>{% for k, v in metrics.longevity.buckets.items() %}<td>{{ v }}</td>{% endfor %}<td>{{ metrics.longevity.median_days }} días</td></tr></tbody></table>
+
+  <h2>04 — Creativos de referencia</h2>
+  <p class="sub">Elegidos por longevidad, cantidad de variantes o novedad de ángulo. Se adaptan, no se copian.</p>
+  {% for r in reference_creatives %}
+  {% set it = r.item %}
+  <div class="card creative">
+    <div>
+      {% if it.thumbnail_rel %}<img src="{{ it.thumbnail_rel }}" alt="Creativo #{{ it.id }} de {{ it.competitor }}">{% else %}<div class="ph">Sin captura disponible{% if it.snapshot_url %}<br><a href="{{ it.snapshot_url }}">Ver en la biblioteca</a>{% endif %}</div>{% endif %}
+    </div>
+    <div>
+      <h3>CREATIVE #{{ '%03d' % it.id }} · {{ it.competitor }}</h3>
+      <p><span class="badge">{{ it.platform }}</span><span class="badge">{{ it.format }}</span><span class="badge">{{ it.cls.product }}</span><span class="badge">{{ it.cls.funnel_stage }}</span><span class="badge dato">activo {{ it.days_active }} días</span></p>
+      {% if it.headline %}<p><b>Hook / titular:</b> “{{ it.headline }}”</p>{% endif %}
+      {% if it.body_text %}<p class="sub">{{ it.body_text[:300] }}{% if it.body_text | length > 300 %}…{% endif %}</p>{% endif %}
+      <p><b>Ángulo:</b> {{ it.cls.primary_angle }}{% if it.cls.secondary_angle %} + {{ it.cls.secondary_angle }}{% endif %} · <b>Hook:</b> {{ it.cls.hook_type }} · <b>Estilo:</b> {{ it.cls.creative_style }}</p>
+      <p><b>Por qué nos interesa:</b> {{ r.why_relevant }}</p>
+      <p><b>No copiar:</b> {{ r.what_not_to_copy }}</p>
+      <p><b>Adaptación sugerida:</b></p>
+      <ul>{% for a in r.adaptation_ideas %}<li>{{ a }}</li>{% endfor %}</ul>
+      {% if it.snapshot_url %}<p class="sub"><a href="{{ it.snapshot_url }}">Ver anuncio original</a></p>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if concepts %}
+  <h3>Familias creativas detectadas</h3>
+  <table><thead><tr><th>Competidor</th><th>Concepto</th><th>Variantes</th><th>Formatos</th><th>Primera vez</th><th>Última vez</th></tr></thead><tbody>
+  {% for c in concepts %}
+  <tr><td>{{ c.competitor }}</td><td>{{ c.name }}<br><span class="sub">{{ c.example_headline[:100] }}</span></td><td>{{ c.variants }}</td><td>{{ c.formats | join(', ') }}</td><td>{{ c.first_seen }}</td><td>{{ c.last_seen }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+  {% endif %}
+
+  <h2>05 — Creative opportunities</h2>
+  <h3>Ángulos que no estamos explotando</h3>
+  <ul>{% for a in synthesis.unexploited_angles %}<li>{{ a }}</li>{% endfor %}</ul>
+
+  <h3>White space del mercado</h3>
+  <div class="grid2">
+    <div>
+      <p class="sub">Familias de ángulo con menos de {{ metrics.white_space.threshold_pct }}% de participación</p>
+      {% for w in metrics.white_space.angle_families %}<div class="bar"><div class="label">{{ w.value }}</div><div class="track"><div class="fill" style="width:{{ w.pct | bar }}%"></div></div><div class="num">{{ w.pct }}%</div></div>{% endfor %}
+    </div>
+    <div>
+      <p class="sub">Hooks poco usados</p>
+      {% for w in metrics.white_space.hooks %}<div class="bar"><div class="label">{{ w.value }}</div><div class="track"><div class="fill" style="width:{{ w.pct | bar }}%"></div></div><div class="num">{{ w.pct }}%</div></div>{% endfor %}
+    </div>
+  </div>
+
+  {% for o in synthesis.white_space + synthesis.recommendations %}
+  <div class="card">
+    <h3>Oportunidad #{{ '%02d' % loop.index }} · {{ o.title }}</h3>
+    <p>{{ o.rationale }}</p>
+    <p class="sub mono">{{ o.evidence | join(' · ') }}</p>
+    <table><thead><tr><th>Formato</th><th>Hook</th><th>Ángulo</th><th>Copy / guion</th></tr></thead><tbody>
+    {% for c in o.concepts %}<tr><td>{{ c.format }}</td><td>{{ c.hook_type }}</td><td>{{ c.angle }}</td><td>{{ c.copy_draft }}</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  {% endfor %}
+
+  <h2>06 — Riesgos y saturación</h2>
+  {% for r in synthesis.risks %}
+  <div class="card"><h3>{{ r.title }}</h3><p>{{ r.description }}</p><p class="sub mono">{{ r.evidence | join(' · ') }}</p></div>
+  {% endfor %}
+
+  {% if metrics.ours_vs_market.has_own %}
+  <h2>07 — Mercado vs miSeguro</h2>
+  {% if synthesis.ours_vs_market %}<p>{{ synthesis.ours_vs_market }}</p>{% endif %}
+  <table><thead><tr><th>Familia de ángulo</th><th>Mercado</th><th>miSeguro</th><th>Gap (pts)</th></tr></thead><tbody>
+  {% for g in metrics.ours_vs_market.angle_family.gaps %}
+  <tr><td>{{ g.value }}</td><td>{{ g.market_pct }}%</td><td>{{ g.ours_pct }}%</td><td class="{{ 'delta-up' if g.gap > 0 else 'delta-down' if g.gap < 0 else '' }}">{{ '%+.1f' % g.gap }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+  {% endif %}
+
+  <h2>08 — Plan de acción</h2>
+  <table><thead><tr><th>#</th><th>Acción</th><th>Responsable</th><th>Plazo</th></tr></thead><tbody>
+  {% for a in synthesis.action_items %}
+  <tr><td>{{ loop.index }}</td><td><b>{{ a.title }}</b><br><span class="sub">{{ a.description }}</span></td><td>{{ a.owner_role }}</td><td>{{ a.due_in_days }} días</td></tr>
+  {% endfor %}
+  </tbody></table>
+
+  <h2>Anexo — Todos los creativos observados</h2>
+  <table><thead><tr><th>#</th><th>Competidor</th><th>Plat.</th><th>Formato</th><th>Producto</th><th>Ángulo</th><th>Hook</th><th>Días</th><th>Estado</th><th>QA</th></tr></thead><tbody>
+  {% for it in items %}
+  <tr><td>{{ it.id }}</td><td>{{ it.competitor }}</td><td>{{ it.platform }}</td><td>{{ it.format }}</td><td>{{ it.cls.product }}</td><td>{{ it.cls.primary_angle }}</td><td>{{ it.cls.hook_type }}</td><td>{{ it.days_active }}</td><td>{{ it.status }}</td><td>{{ it.qa_status }}</td></tr>
+  {% endfor %}
+  </tbody></table>
+
+  <h2>Metodología</h2>
+  <p class="sub">Fuentes: Meta Ad Library y Google Ads Transparency Center (más importaciones manuales validadas). Cada creativo se clasifica con IA dentro de una taxonomía cerrada (config/taxonomy.yaml) y luego se agrega. Longevidad = última vez visto − primera vez visto. El engagement solo se reporta cuando es visible en la fuente. Las interpretaciones son hipótesis validadas por una persona antes de publicarse.</p>
+</main>
+</body>
+</html>

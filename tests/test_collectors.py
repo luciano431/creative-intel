@@ -1,0 +1,44 @@
+import datetime as dt
+
+from creative_intel.collectors.google_serpapi import GoogleSerpApiCollector
+from creative_intel.collectors.manual import row_to_raw
+from creative_intel.collectors.meta_api import MetaAdLibraryApiCollector
+from creative_intel.collectors.meta_web import parse_human_date
+from creative_intel.config import CompetitorConfig
+
+
+def _comp(**kw):
+    base = dict(slug="axa", name="AXA", country="UY", tier="global", meta_page_id="123", google_advertiser_id="AR1", ad_countries=["ES"])
+    base.update(kw)
+    return CompetitorConfig(**base)
+
+
+def test_meta_api_mapping_marks_active_when_no_stop_time():
+    ad = {"id": "555", "ad_creative_bodies": ["Cuerpo"], "ad_creative_link_titles": ["Titulo"], "ad_delivery_start_time": "2026-08-01",
+          "publisher_platforms": ["facebook", "instagram"], "ad_snapshot_url": "https://fb/ad/555"}
+    raw = MetaAdLibraryApiCollector.to_raw(ad, _comp())
+    assert raw.external_id == "555" and raw.is_active and raw.first_seen == dt.date(2026, 8, 1)
+    assert raw.placements == ["feed"] and raw.headline == "Titulo" and raw.countries == ["ES"]
+    raw2 = MetaAdLibraryApiCollector.to_raw({**ad, "ad_delivery_stop_time": "2026-08-20T10:00:00+0000"}, _comp())
+    assert not raw2.is_active and raw2.last_seen == dt.date(2026, 8, 20)
+
+
+def test_serpapi_mapping_formats_to_placements():
+    ad = {"ad_id": "CR1", "format": "text", "title": "Seguro", "text": "Cotizá", "target_domain": "axa.es", "first_shown": "2026-07-01", "last_shown": "2026-09-01"}
+    raw = GoogleSerpApiCollector.to_raw(ad, _comp(), "ES")
+    assert raw.format == "texto" and raw.placements == ["search"] and raw.first_seen == dt.date(2026, 7, 1)
+    vid = GoogleSerpApiCollector.to_raw({**ad, "format": "video", "video": "https://yt/x"}, _comp(), "ES")
+    assert vid.format == "video" and vid.placements == ["youtube"] and vid.media_urls == ["https://yt/x"]
+
+
+def test_manual_row_parsing_and_engagement():
+    raw = row_to_raw({"competitor_slug": "bse", "platform": "meta", "placements": "feed|stories", "likes": "10", "comments": "", "first_seen": "12/08/2026", "is_active": "false"})
+    assert raw.placements == ["feed", "stories"] and raw.engagement == {"likes": 10}
+    assert raw.first_seen == dt.date(2026, 8, 12) and raw.is_active is False
+
+
+def test_parse_human_dates_en_and_es():
+    assert parse_human_date("Sep 12, 2026") == dt.date(2026, 9, 12)
+    assert parse_human_date("12 de septiembre de 2026") == dt.date(2026, 9, 12)
+    assert parse_human_date("1 ago 2026") == dt.date(2026, 8, 1)
+    assert parse_human_date("sin fecha") is None

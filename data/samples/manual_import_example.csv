@@ -1,0 +1,3 @@
+competitor_slug,platform,external_id,format,placements,headline,body_text,description,cta_text,landing_url,media_urls,thumbnail_url,countries,first_seen,last_seen,is_active,likes,comments,shares
+sura-uy,meta,123456789,video,feed|reels,"¿Qué harías si mañana te roban el celular?","Seguro de celular con reposición en 48 hs.","","Cotizá ahora",https://ejemplo.com/landing,,https://ejemplo.com/thumb.jpg,UY,2026-08-14,,true,143,27,11
+bse,google,CR0001,texto,search,"Seguro de Auto BSE | Cotizá Online","Cobertura total con auxilio 24 hs.","","",bse.com.uy,,,UY,2026-06-02,,true,,,

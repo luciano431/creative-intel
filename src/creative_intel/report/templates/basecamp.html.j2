@@ -1,0 +1,62 @@
+{# Basecamp acepta un subconjunto de HTML (div, h1, strong, em, a, ul/ol, blockquote, pre, bc-attachment). Sin tablas ni CSS. #}
+<div>
+<h1>Plan creativo para {{ next_period_label }}</h1>
+<div><em>Periodo analizado: {{ period_label }} · {{ metrics.totals.competitors }} competidores · {{ metrics.totals.creatives }} creativos ({{ metrics.totals.active }} activos)</em></div>
+<blockquote><strong>DATO</strong> = conteos y fechas observadas en Meta Ad Library y Google Ads Transparency Center. <strong>INFERENCIA</strong> = hipótesis validadas por el equipo. No se estima rendimiento real de competidores.</blockquote>
+
+<h1>01 — Executive summary</h1>
+<ol>{% for s in synthesis.executive_summary %}<li>{{ s }}</li>{% endfor %}</ol>
+
+<h1>02 — Top 3 insights</h1>
+{% for i in synthesis.top_insights %}
+<div><strong>{{ loop.index }}. {{ i.title }}</strong> (confianza {{ i.confidence }})</div>
+<ul>
+<li><strong>Dato:</strong> {{ i.observation }}</li>
+<li><strong>Inferencia:</strong> {{ i.interpretation }}</li>
+<li><strong>Implicancia:</strong> {{ i.implication_for_us }}</li>
+<li><em>{{ i.evidence | join(' · ') }}</em></li>
+</ul>
+{% endfor %}
+
+<h1>03 — Landscape</h1>
+<div><strong>Ángulos:</strong> {% for d in metrics.angle_family_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}</div>
+<div><strong>Hooks:</strong> {% for d in metrics.hook_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}</div>
+<div><strong>Formatos:</strong> {% for d in metrics.format_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}</div>
+<div><strong>Longevidad:</strong> mediana {{ metrics.longevity.median_days }} días</div>
+<div><strong>Local vs global:</strong> {{ synthesis.local_vs_global }}</div>
+<ul>{% for comp, row in matrix.items() %}<li><strong>{{ comp }}</strong>: {% for f in families %}{{ f }} {{ row[f] }}{% if not loop.last %} · {% endif %}{% endfor %}</li>{% endfor %}</ul>
+
+<h1>04 — Creativos de referencia</h1>
+{% for r in reference_creatives %}{% set it = r.item %}
+<div><strong>CREATIVE #{{ '%03d' % it.id }} · {{ it.competitor }}</strong> — {{ it.platform }} · {{ it.format }} · {{ it.cls.product }} · activo {{ it.days_active }} días</div>
+{% if it.attachment_sgid %}<bc-attachment sgid="{{ it.attachment_sgid }}"></bc-attachment>{% endif %}
+<ul>
+{% if it.headline %}<li>Hook: “{{ it.headline }}”</li>{% endif %}
+<li>Ángulo: {{ it.cls.primary_angle }} · Hook: {{ it.cls.hook_type }} · Estilo: {{ it.cls.creative_style }}</li>
+<li>Por qué nos interesa: {{ r.why_relevant }}</li>
+<li>No copiar: {{ r.what_not_to_copy }}</li>
+<li>Adaptación: {{ r.adaptation_ideas | join(' / ') }}</li>
+{% if it.snapshot_url %}<li><a href="{{ it.snapshot_url }}">Ver anuncio original</a></li>{% endif %}
+</ul>
+{% endfor %}
+
+<h1>05 — Oportunidades</h1>
+<div><strong>Ángulos no explotados:</strong> {{ synthesis.unexploited_angles | join(', ') }}</div>
+{% for o in synthesis.white_space + synthesis.recommendations %}
+<div><strong>Oportunidad #{{ '%02d' % loop.index }} · {{ o.title }}</strong></div>
+<div>{{ o.rationale }} <em>({{ o.evidence | join(' · ') }})</em></div>
+<ul>{% for c in o.concepts %}<li><strong>{{ c.format }} / {{ c.hook_type }} / {{ c.angle }}:</strong> {{ c.copy_draft }}</li>{% endfor %}</ul>
+{% endfor %}
+
+<h1>06 — Riesgos y saturación</h1>
+<ul>{% for r in synthesis.risks %}<li><strong>{{ r.title }}:</strong> {{ r.description }} <em>({{ r.evidence | join(' · ') }})</em></li>{% endfor %}</ul>
+
+{% if metrics.ours_vs_market.has_own %}
+<h1>07 — Mercado vs miSeguro</h1>
+{% if synthesis.ours_vs_market %}<div>{{ synthesis.ours_vs_market }}</div>{% endif %}
+<ul>{% for g in metrics.ours_vs_market.angle_family.gaps %}<li>{{ g.value }}: mercado {{ g.market_pct }}% · miSeguro {{ g.ours_pct }}% · gap {{ '%+.1f' % g.gap }}</li>{% endfor %}</ul>
+{% endif %}
+
+<h1>08 — Plan de acción</h1>
+<ol>{% for a in synthesis.action_items %}<li><strong>{{ a.title }}</strong> — {{ a.description }} ({{ a.owner_role }}, {{ a.due_in_days }} días)</li>{% endfor %}</ol>
+</div>

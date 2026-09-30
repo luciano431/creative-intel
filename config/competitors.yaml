@@ -1,0 +1,101 @@
+# ---------------------------------------------------------------------------
+# Universo de competidores.
+# Agregar un competidor o un país = agregar un bloque acá y correr
+#   creative-intel competitors sync
+# No hay que tocar código.
+#
+# tier: local | global | own
+# meta_page_id: ID de la página de Facebook (lo ves en la URL de Ad Library:
+#   facebook.com/ads/library/?view_all_page_id=XXXX)
+# google_advertiser_id: ID del anunciante en adstransparency.google.com
+#   (formato AR0123456789...)
+# ---------------------------------------------------------------------------
+countries:
+  - code: UY
+    name: Uruguay
+    languages: [es]
+    own:
+      slug: miseguro
+      name: miSeguro
+      website: https://miseguro.com.uy
+      meta_page_id: ""
+      google_advertiser_id: ""
+      products: [celular, auto, hogar, viaje, vida]
+    competitors:
+      local:
+        - slug: bse
+          name: Banco de Seguros del Estado (BSE)
+          website: https://www.bse.com.uy
+          meta_page_id: ""
+          google_advertiser_id: ""
+          products: [auto, hogar, vida, viaje]
+          active: true
+        - slug: sura-uy
+          name: SURA Uruguay
+          website: https://seguros.sura.com.uy
+          meta_page_id: ""
+          google_advertiser_id: ""
+          products: [auto, hogar, vida, celular]
+          active: true
+        - slug: mapfre-uy
+          name: MAPFRE Uruguay
+          website: https://www.mapfre.com.uy
+          meta_page_id: ""
+          google_advertiser_id: ""
+          products: [auto, hogar, vida, viaje]
+          active: true
+        - slug: porto-seguro-uy
+          name: Porto Seguro Uruguay
+          website: https://www.portoseguro.com.uy
+          meta_page_id: ""
+          google_advertiser_id: ""
+          products: [auto, hogar, vida]
+          active: true
+        - slug: sancor-uy
+          name: Sancor Seguros Uruguay
+          website: https://www.sancorseguros.com.uy
+          meta_page_id: ""
+          google_advertiser_id: ""
+          products: [auto, hogar, vida, viaje]
+          active: true
+      global:
+        - slug: axa
+          name: AXA
+          website: https://www.axa.com
+          meta_page_id: ""
+          google_advertiser_id: ""
+          ad_countries: [ES, FR]      # países donde observar sus anuncios
+          products: [auto, hogar, vida, viaje, salud]
+          active: true
+        - slug: allianz
+          name: Allianz
+          website: https://www.allianz.com
+          meta_page_id: ""
+          google_advertiser_id: ""
+          ad_countries: [ES, DE]
+          products: [auto, hogar, vida, viaje]
+          active: true
+        - slug: zurich
+          name: Zurich
+          website: https://www.zurich.com
+          meta_page_id: ""
+          google_advertiser_id: ""
+          ad_countries: [ES, AR]
+          products: [auto, hogar, vida]
+          active: true
+        - slug: generali
+          name: Generali
+          website: https://www.generali.com
+          meta_page_id: ""
+          google_advertiser_id: ""
+          ad_countries: [ES, IT]
+          products: [auto, hogar, vida, salud]
+          active: true
+        - slug: mapfre-global
+          name: MAPFRE (global)
+          website: https://www.mapfre.com
+          meta_page_id: ""
+          google_advertiser_id: ""
+          ad_countries: [ES, MX]
+          products: [auto, hogar, vida, viaje, salud]
+          active: true

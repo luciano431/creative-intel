@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.env
+data/creative_intel.db
+data/assets/
+reports/
+!reports/.gitkeep
+.venv/

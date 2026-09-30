@@ -1,0 +1,91 @@
+# Competitive Creative Intelligence — {{ period_label }}
+
+Plan creativo para **{{ next_period_label }}** · {{ metrics.totals.competitors }} competidores · {{ metrics.totals.creatives }} creativos ({{ metrics.totals.active }} activos) · Generado {{ generated_at }}
+
+> **DATO** = conteos y fechas observadas. **INFERENCIA** = hipótesis del análisis. No se estima rendimiento real de competidores.
+
+## 01 — Executive summary
+{% for s in synthesis.executive_summary %}
+{{ loop.index }}. {{ s }}
+{% endfor %}{{ '' }}
+
+## 02 — Top 3 insights
+{% for i in synthesis.top_insights %}
+### {{ loop.index }}. {{ i.title }} (confianza: {{ i.confidence }})
+- **Dato:** {{ i.observation }}
+- **Inferencia:** {{ i.interpretation }}
+- **Implicancia:** {{ i.implication_for_us }}
+- Evidencia: {{ i.evidence | join(' · ') }}
+{% endfor %}{{ '' }}
+
+## 03 — Competitive landscape
+| Competidor | Tier |{% for f in families %} {{ f }} |{% endfor %}{{ '' }}
+|---|---|{% for f in families %}---|{% endfor %}{{ '' }}
+{% for comp, row in matrix.items() %}
+| {{ comp }} | {{ tier_of.get(comp, '') }} |{% for f in families %} {{ row[f] }} |{% endfor %}{{ '' }}
+{% endfor %}{{ '' }}
+
+**Ángulos (familias):** {% for d in metrics.angle_family_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+
+**Hooks:** {% for d in metrics.hook_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+
+**Formatos:** {% for d in metrics.format_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+
+**Local vs global:** {{ synthesis.local_vs_global }}
+
+**Longevidad:** mediana {{ metrics.longevity.median_days }} días · {% for k, v in metrics.longevity.buckets.items() %}{{ k }}: {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+
+{% if metrics.mom.has_previous %}
+**Mes vs mes anterior:** {% for r in metrics.mom.angle_family %}{{ r.value }} {{ '%+.1f' % r.delta }}{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+{% endif %}
+
+## 04 — Creativos de referencia
+{% for r in reference_creatives %}
+{% set it = r.item %}
+### CREATIVE #{{ '%03d' % it.id }} · {{ it.competitor }}
+- {{ it.platform }} · {{ it.format }} · {{ it.cls.product }} · {{ it.cls.funnel_stage }} · **activo {{ it.days_active }} días**
+{% if it.headline %}- Hook: “{{ it.headline }}”
+{% endif %}
+- Ángulo: {{ it.cls.primary_angle }} · Hook: {{ it.cls.hook_type }} · Estilo: {{ it.cls.creative_style }}
+- Por qué nos interesa: {{ r.why_relevant }}
+- No copiar: {{ r.what_not_to_copy }}
+- Adaptación: {% for a in r.adaptation_ideas %}{{ a }}{% if not loop.last %} / {% endif %}{% endfor %}{{ '' }}
+{% if it.thumbnail_rel %}- ![captura]({{ it.thumbnail_rel }})
+{% endif %}
+{% if it.snapshot_url %}- [Ver anuncio original]({{ it.snapshot_url }})
+{% endif %}
+{% endfor %}{{ '' }}
+
+## 05 — Creative opportunities
+**Ángulos no explotados:** {{ synthesis.unexploited_angles | join(', ') }}
+
+**White space (familias):** {% for w in metrics.white_space.angle_families %}{{ w.value }} {{ w.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+{% for o in synthesis.white_space + synthesis.recommendations %}
+
+### Oportunidad #{{ '%02d' % loop.index }} · {{ o.title }}
+{{ o.rationale }} ({{ o.evidence | join(' · ') }})
+{% for c in o.concepts %}
+- **{{ c.format }} / {{ c.hook_type }} / {{ c.angle }}:** {{ c.copy_draft }}
+{% endfor %}{{ '' }}
+{% endfor %}{{ '' }}
+
+## 06 — Riesgos y saturación
+{% for r in synthesis.risks %}
+- **{{ r.title }}:** {{ r.description }} ({{ r.evidence | join(' · ') }})
+{% endfor %}{{ '' }}
+
+{% if metrics.ours_vs_market.has_own %}
+## 07 — Mercado vs miSeguro
+{% if synthesis.ours_vs_market %}{{ synthesis.ours_vs_market }}
+{% endif %}
+| Familia | Mercado | miSeguro | Gap |
+|---|---|---|---|
+{% for g in metrics.ours_vs_market.angle_family.gaps %}
+| {{ g.value }} | {{ g.market_pct }}% | {{ g.ours_pct }}% | {{ '%+.1f' % g.gap }} |
+{% endfor %}{{ '' }}
+{% endif %}
+
+## 08 — Plan de acción
+{% for a in synthesis.action_items %}
+- [ ] **{{ a.title }}** — {{ a.description }} · {{ a.owner_role }} · {{ a.due_in_days }} días
+{% endfor %}{{ '' }}

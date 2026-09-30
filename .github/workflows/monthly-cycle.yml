@@ -1,0 +1,43 @@
+# Corre el ciclo mensual el día 23 de cada mes a las 12:00 UTC (09:00 Montevideo):
+# collect -> classify -> analyze -> synthesize -> report (borrador) -> alerta al equipo.
+# La publicación en Basecamp se hace después de la validación humana (`creative-intel publish`).
+name: monthly-creative-intel
+on:
+  schedule:
+    - cron: "0 12 23 * *"
+  workflow_dispatch:
+    inputs:
+      period:
+        description: "Periodo YYYY-MM (default: mes actual)"
+        required: false
+      mock_ai:
+        description: "Usar clasificador heurístico (sin API)"
+        type: boolean
+        default: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+      SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[scraping]" && playwright install --with-deps chromium
+      - name: Run cycle
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.period }}" ]; then ARGS="$ARGS --period ${{ inputs.period }}"; fi
+          if [ "${{ inputs.mock_ai }}" = "true" ]; then ARGS="$ARGS --mock-ai"; fi
+          creative-intel run-cycle --source meta_api --source meta_web --source google_serpapi --source manual $ARGS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: reports/

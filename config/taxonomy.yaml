@@ -1,0 +1,86 @@
+# ---------------------------------------------------------------------------
+# Taxonomía cerrada. La IA clasifica SOLO dentro de estos valores para que
+# las distribuciones sean comparables mes a mes.
+# ---------------------------------------------------------------------------
+angle_families:
+  proteccion: [robo, accidente, danio, perdida, imprevistos, responsabilidad]
+  economico: [ahorro, precio, cuotas, evitar_gastos_inesperados, costo_bajo]
+  emocional: [tranquilidad, familia, miedo, seguridad, perdida_emocional]
+  conveniencia: [facilidad, rapidez, digital, contratacion_online, asistencia]
+  lifestyle: [movilidad, tecnologia, deporte, viajes, trabajo, entretenimiento]
+  social_proof: [cantidad_clientes, testimonios, reputacion, confianza, trayectoria]
+  oferta: [descuento, promocion, bundle, beneficio, cashback, precio_especial]
+
+hook_types:
+  - pregunta
+  - problema
+  - estadistica
+  - miedo
+  - precio
+  - oferta
+  - testimonial
+  - demostracion
+  - storytelling
+  - humor
+  - comparacion
+  - before_after
+  - educativo
+  - direct_response
+  - branding
+
+formats:
+  - video
+  - imagen
+  - carousel
+  - texto        # anuncios de búsqueda
+  - collection
+  - desconocido
+
+placements:
+  - feed
+  - stories
+  - reels
+  - search
+  - display
+  - youtube
+  - desconocido
+
+funnel_stages: [tofu, mofu, bofu]
+
+cta_types:
+  - cotizar
+  - contratar
+  - mas_info
+  - descargar_app
+  - contactar
+  - comprar
+  - registrarse
+  - sin_cta
+
+creative_styles:
+  - ugc
+  - produccion
+  - motion_graphics
+  - foto_stock
+  - ilustracion
+  - texto_plano
+  - testimonial
+  - institucional
+
+products:
+  - auto
+  - moto
+  - hogar
+  - celular
+  - vida
+  - salud
+  - viaje
+  - mascotas
+  - empresa
+  - multiproducto
+  - marca
+
+confidence_levels: [low, medium, high]
+
+# Umbral: un ángulo con participación menor a este % se considera "white space"
+white_space_threshold_pct: 6
