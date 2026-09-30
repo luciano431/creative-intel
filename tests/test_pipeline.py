@@ -67,3 +67,22 @@ def test_review_edit_creates_new_approved_version(session, sample_raws, tmp_path
     assert latest_synthesis(session, run).data["executive_summary"][0] == "Editado por humano 1"
     paths = pipeline.build_report(session, "2026-09", tmp_path)
     assert "Editado por humano 1" in paths["report.html"].read_text(encoding="utf-8")
+
+
+
+def test_purge_removes_classifications_and_orphans(session, sample_raws):
+    from sqlalchemy import func, select
+
+    from creative_intel.db import Classification, Sighting, purge_creatives
+
+    run = get_or_create_run(session, "2026-09")
+    upsert_creatives(session, run, sample_raws, dt.date(2026, 9, 25))
+    pipeline.classify(session, "2026-09", mock=True)
+    n = session.scalar(select(func.count()).select_from(Creative))
+    slug = sample_raws[0].competitor_slug
+    out = purge_creatives(session, slugs=[slug])
+    assert out["creatives"] > 0
+    assert session.scalar(select(func.count()).select_from(Creative)) == n - out["creatives"]
+    alive = select(Creative.id)
+    assert session.scalar(select(func.count()).select_from(Classification).where(Classification.creative_id.not_in(alive))) == 0
+    assert session.scalar(select(func.count()).select_from(Sighting).where(Sighting.creative_id.not_in(alive))) == 0

@@ -250,6 +250,25 @@ def basecamp_projects() -> None:
             rprint(f"    lista '{t['name']}'  BASECAMP_TODOLIST_ID={t['id']}")
 
 
+@app.command()
+def purge(
+    platform: Optional[str] = typer.Option(None, "--platform", help="meta | google"),
+    only: list[str] = typer.Option([], "--only", help="slug de competidor (repetible)"),
+    source: Optional[str] = typer.Option(None, "--source", help="meta_web, google_web, ..."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="No pedir confirmación"),
+) -> None:
+    """Borra creativos (con sus clasificaciones y avistamientos) para volver a recolectarlos limpios."""
+    from .db import purge_creatives
+
+    _init()
+    if not (platform or only or source):
+        raise typer.BadParameter("Indicá al menos --platform, --only o --source")
+    if not yes:
+        typer.confirm(f"Borrar creativos platform={platform} only={only or 'todos'} source={source}?", abort=True)
+    with session_scope() as s:
+        console.print(purge_creatives(s, platform=platform, slugs=only or None, source=source))
+
+
 @app.command("debug-html")
 def debug_html(file: Path = typer.Argument(..., exists=True), top: int = typer.Option(40, help="cantidad de etiquetas a listar")) -> None:
     """Resume un HTML guardado por el modo diagnóstico: etiquetas más frecuentes, links a creativos, textos visibles."""

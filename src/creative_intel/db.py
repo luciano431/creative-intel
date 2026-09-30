@@ -99,9 +99,9 @@ class Creative(Base):
 
     competitor: Mapped[Competitor] = relationship(back_populates="creatives")
     classifications: Mapped[list["Classification"]] = relationship(
-        back_populates="creative", order_by="Classification.created_at.desc()"
+        back_populates="creative", order_by="Classification.created_at.desc()", cascade="all, delete-orphan"
     )
-    sightings: Mapped[list["Sighting"]] = relationship(back_populates="creative")
+    sightings: Mapped[list["Sighting"]] = relationship(back_populates="creative", cascade="all, delete-orphan")
 
     @property
     def days_active(self) -> int:
@@ -252,3 +252,24 @@ def sync_competitors(session: Session, configs: list[Any]) -> int:
         n += 1
     session.flush()
     return n
+
+
+def purge_creatives(session: Session, platform: str | None = None, slugs: list[str] | None = None, source: str | None = None) -> dict[str, int]:
+    """Borra creativos junto con sus clasificaciones y avistamientos, y limpia huérfanos viejos."""
+    from sqlalchemy import delete, select
+
+    q = select(Creative)
+    if platform:
+        q = q.where(Creative.platform == platform)
+    if source:
+        q = q.where(Creative.source == source)
+    if slugs:
+        q = q.join(Competitor).where(Competitor.slug.in_(slugs))
+    rows = list(session.scalars(q))
+    for c in rows:
+        session.delete(c)
+    session.flush()
+    alive = select(Creative.id)
+    orphan_cls = session.execute(delete(Classification).where(Classification.creative_id.not_in(alive))).rowcount or 0
+    orphan_sig = session.execute(delete(Sighting).where(Sighting.creative_id.not_in(alive))).rowcount or 0
+    return {"creatives": len(rows), "orphan_classifications": orphan_cls, "orphan_sightings": orphan_sig}
