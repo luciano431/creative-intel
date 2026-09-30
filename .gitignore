@@ -10,3 +10,4 @@ data/assets/
 reports/
 !reports/.gitkeep
 .venv/
+.patches/
