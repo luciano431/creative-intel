@@ -135,3 +135,11 @@ def test_google_clean_lines_drops_chrome_and_advertiser_name():
            "Anuncio", "www.mapfre.com.uy", "Seguro de Auto MAPFRE", "Cotizá online en minutos", "Privacidad", "Blog de Ads",
            "Se quitó debido a un incumplimiento de política", "hide_image"]
     assert clean_lines(raw, "MAPFRE Uruguay") == ["www.mapfre.com.uy", "Seguro de Auto MAPFRE", "Cotizá online en minutos"]
+
+
+def test_google_youtube_id_extraction():
+    from creative_intel.collectors.google_web import YT_ID_RE
+
+    u = "https://www.youtube.com/embed/tksxh4uifec?rel=0&version=3&controls=0"
+    assert YT_ID_RE.search(u).group(1) == "tksxh4uifec"
+    assert YT_ID_RE.search("https://tpc.googlesyndication.com/pagead/gadgets/youtube_player_media/x.html") is None

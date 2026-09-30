@@ -158,7 +158,7 @@ def _download(url: str, fp: str) -> str | None:
 def data_qa_flags(creative: Creative) -> list[str]:
     """Checkpoint humano 1: qué debería mirar una persona antes de analizar."""
     flags: list[str] = []
-    if not creative.text_blob():
+    if not creative.text_blob() and not (creative.raw or {}).get("text_in_image"):
         flags.append("sin_texto")
     if not creative.media_urls and not creative.thumbnail_path:
         flags.append("sin_media")

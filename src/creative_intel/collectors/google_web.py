@@ -98,6 +98,7 @@ UI_STRINGS = {"close", "flag", "chevron_left", "chevron_right", "arrow_forward",
               "Nuestras políticas de anuncios", "Texto", "Imagen", "Video", "Anuncio", "Ad", "Patrocinado", "Sponsored", "Abrir"}
 CHROME_PREFIXES = ("Última vez que se mostró", "Last shown", "Formato:", "Format:", "Se mostraron en", "Shown in", "Denunciar este anuncio",
                    "Ver más anuncios", "See more ads", "La información acerca de este anuncio", "Information about this ad")
+YT_ID_RE = re.compile(r"youtube(?:-nocookie)?\.com/(?:embed/|watch\?v=)([\w-]{11})")
 DATE_LINE_RE = re.compile(r"^\d{1,2}\s+\w{3,10}\.?\s+\d{4}$|^\w{3,10}\.?\s+\d{1,2},?\s+\d{4}$")
 DOMAIN_LINE_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
 
@@ -201,7 +202,7 @@ class GoogleTransparencyWebCollector:
                             body_text=detail["body"],
                             landing_url=detail["landing"],
                             media_urls=detail["media"],
-                            thumbnail_url=detail["media"][0] if detail["media"] and detail["format"] == "imagen" else "",
+                            thumbnail_url=next((u for u in detail["media"] if "youtube.com/watch" not in u), ""),
                             snapshot_url=url,
                             countries=[] if country.upper() == "ALL" else [country],
                             first_seen=detail["first_seen"],
@@ -209,7 +210,7 @@ class GoogleTransparencyWebCollector:
                             is_active=True,
                             raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5],
                                  "variations": detail["variations"], "regions": detail["regions"], "removed": detail["removed"],
-                                 "scoped": detail["scoped"]},
+                                 "scoped": detail["scoped"], "text_in_image": detail["text_in_image"]},
                         )
                     )
             browser.close()
@@ -243,7 +244,9 @@ class GoogleTransparencyWebCollector:
         # "Quitado": el aviso de política aparece justo debajo de "Formato: ..." para el creativo principal;
         # la grilla de otros anuncios (que también puede tener quitados) queda más abajo y no cuenta.
         head = page_text[m_fmt.end(): m_fmt.end() + 300] if m_fmt else page_text[:600]
-        removed = bool(REMOVED_RE.search(head)) or bool(deep["creative"] and REMOVED_RE.search("\n".join(deep["creative"]["texts"])))
+        removed = bool(REMOVED_RE.search(head)) or bool(REMOVED_RE.search("\n".join((deep["creative"] or {}).get("texts", []))))
+        if not removed and deep["details_scoped"]:
+            removed = bool(REMOVED_RE.search("\n".join(deep["details"]["texts"])))
 
         # Iframes propios del creativo (srcdoc / displayads) marcados por el JS
         frame_texts: list[str] = []
@@ -277,8 +280,12 @@ class GoogleTransparencyWebCollector:
             src = im.get("src") or ""
             if src and im["w"] >= 100 and im["h"] >= 60 and "gstatic" not in src and "google.com/images" not in src and "googleusercontent.com/a/" not in src:
                 media.append(src)
-        if fmt == "texto":
-            media = [u for u in media if "youtube" in u]
+        # En el archivo de Google los anuncios de texto se guardan como imagen renderizada (simgad):
+        # no hay texto en el DOM, se conserva la imagen y el texto lo lee la IA al clasificar.
+        yt_ids = list(dict.fromkeys(m.group(1) for u in media for m in [YT_ID_RE.search(u)] if m))
+        media = [u for u in media if "youtube" not in u and "googlesyndication.com/pagead/gadgets" not in u]
+        if yt_ids:
+            media = [f"https://www.youtube.com/watch?v={v}" for v in yt_ids] + [f"https://i.ytimg.com/vi/{v}/hqdefault.jpg" for v in yt_ids] + media
 
         advertiser = competitor.name
         shadow_texts = clean_lines(scope["texts"], advertiser, extra_drop=(regions, fmt_label.capitalize()))
@@ -332,6 +339,7 @@ class GoogleTransparencyWebCollector:
             "regions": regions,
             "removed": removed,
             "scoped": scoped,
+            "text_in_image": bool(not content and not removed and any("youtube.com/watch" not in u for u in media)),
         }
 
 
