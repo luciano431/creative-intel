@@ -250,6 +250,28 @@ def basecamp_projects() -> None:
             rprint(f"    lista '{t['name']}'  BASECAMP_TODOLIST_ID={t['id']}")
 
 
+@app.command("debug-html")
+def debug_html(file: Path = typer.Argument(..., exists=True), top: int = typer.Option(40, help="cantidad de etiquetas a listar")) -> None:
+    """Resume un HTML guardado por el modo diagnóstico: etiquetas más frecuentes, links a creativos, textos visibles."""
+    import re
+    from collections import Counter
+
+    html = file.read_text(encoding="utf-8", errors="ignore")
+    tags = Counter(m.group(1).lower() for m in re.finditer(r"<([a-zA-Z][\w-]*)", html))
+    rprint(f"[bold]{file}[/bold]  {len(html):,} bytes")
+    rprint("Etiquetas más frecuentes:", ", ".join(f"{t}:{n}" for t, n in tags.most_common(top)))
+    custom = [t for t in tags if "-" in t]
+    rprint("Elementos custom:", ", ".join(sorted(custom)[:60]))
+    links = sorted(set(re.findall(r"href=\"([^\"]*creative[^\"]*)\"", html)))
+    rprint(f"Links con 'creative': {len(links)}", links[:5])
+    classes = Counter(c for m in re.finditer(r"class=\"([^\"]+)\"", html) for c in m.group(1).split() if "creativ" in c.lower() or "card" in c.lower() or "grid" in c.lower())
+    rprint("Clases con creativ/card/grid:", classes.most_common(30))
+    texts = [t.strip() for t in re.findall(r">([^<>{}]{25,160})<", html)]
+    rprint("Textos visibles (muestra):")
+    for t in texts[:25]:
+        rprint("  ·", t)
+
+
 @app.command("run-cycle")
 def run_cycle(
     period: Optional[str] = PeriodOpt,

@@ -7,6 +7,7 @@ Requiere: pip install playwright && playwright install chromium
 from __future__ import annotations
 
 import datetime as dt
+import os
 import re
 from pathlib import Path
 
@@ -64,7 +65,7 @@ class MetaAdLibraryWebCollector:
         assets = settings.assets_dir / "screenshots"
         assets.mkdir(parents=True, exist_ok=True)
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=self.headless)
+            browser = p.chromium.launch(headless=self.headless, executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_PATH") or None)
             page = browser.new_page(viewport={"width": 1400, "height": 1000}, locale="es-UY")
             for country in competitor.ad_countries:
                 page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)

@@ -1,14 +1,31 @@
 """Google Ads Transparency Center vía navegador (Playwright). Best-effort, sin costo.
 
-Recorre https://adstransparency.google.com/advertiser/{id}?region={XX}, hace scroll y
-captura las tarjetas de creativos (texto e imagen; los videos quedan como link a YouTube).
+Dos modos:
+- por anunciante: https://adstransparency.google.com/advertiser/{AR...}?region={XX}
+- por dominio (cuando no hay ID): https://adstransparency.google.com/?region={XX}&domain={sitio}
+  El dominio sale de `google_domain` o, si no está, del `website` del competidor.
+Hace scroll y captura las tarjetas de creativos (texto, imagen y video).
 """
 from __future__ import annotations
 
+import os
 import re
+from urllib.parse import urlparse
 
 from ..config import CompetitorConfig, settings
 from .base import RawCreative
+
+
+def domain_of(competitor: CompetitorConfig) -> str:
+    raw = getattr(competitor, "google_domain", "") or competitor.website or ""
+    if not raw:
+        return ""
+    host = urlparse(raw if "://" in raw else "https://" + raw).netloc or raw
+    return host.lower().removeprefix("www.")
+
+
+def region_param(country: str) -> str:
+    return "anywhere" if country.upper() == "ALL" else country.upper()
 
 
 class GoogleTransparencyWebCollector:
@@ -20,7 +37,13 @@ class GoogleTransparencyWebCollector:
         self.max_cards = max_cards
 
     def supports(self, competitor: CompetitorConfig) -> bool:
-        return bool(competitor.google_advertiser_id)
+        return bool(competitor.google_advertiser_id or domain_of(competitor))
+
+    def url_for(self, competitor: CompetitorConfig, country: str) -> str:
+        region = region_param(country)
+        if competitor.google_advertiser_id:
+            return f"https://adstransparency.google.com/advertiser/{competitor.google_advertiser_id}?region={region}"
+        return f"https://adstransparency.google.com/?region={region}&domain={domain_of(competitor)}"
 
     def collect(self, competitor: CompetitorConfig) -> list[RawCreative]:
         try:
@@ -32,18 +55,21 @@ class GoogleTransparencyWebCollector:
         shots = settings.assets_dir / "screenshots"
         shots.mkdir(parents=True, exist_ok=True)
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=self.headless)
-            page = browser.new_page(viewport={"width": 1400, "height": 1000})
+            browser = p.chromium.launch(headless=self.headless, executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_PATH") or None)
+            page = browser.new_page(viewport={"width": 1400, "height": 1000}, locale="es-UY")
             for country in competitor.ad_countries:
-                page.goto(
-                    f"https://adstransparency.google.com/advertiser/{competitor.google_advertiser_id}?region={country}",
-                    wait_until="networkidle",
-                    timeout=90_000,
-                )
+                page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
+                page.wait_for_timeout(5000)
                 for _ in range(8):
                     page.mouse.wheel(0, 4000)
                     page.wait_for_timeout(1500)
                 cards = page.locator("creative-preview, [class*='creative-preview'], a[href*='/creative/']")
+                if cards.count() == 0:
+                    dbg = settings.assets_dir / "debug"
+                    dbg.mkdir(parents=True, exist_ok=True)
+                    page.screenshot(path=str(dbg / f"google_{competitor.slug}_{country}.png"), full_page=True)
+                    (dbg / f"google_{competitor.slug}_{country}.html").write_text(page.content(), encoding="utf-8")
+                    print(f"[google_web] 0 tarjetas para {competitor.slug} ({country}); diagnóstico guardado en {dbg}")
                 for i in range(min(cards.count(), self.max_cards)):
                     card = cards.nth(i)
                     try:

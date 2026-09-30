@@ -51,6 +51,7 @@ class CompetitorConfig:
     website: str = ""
     meta_page_id: str = ""
     google_advertiser_id: str = ""
+    google_domain: str = ""
     ad_countries: list[str] = field(default_factory=list)
     products: list[str] = field(default_factory=list)
     active: bool = True
@@ -85,6 +86,7 @@ def _to_competitor(item: dict[str, Any], country: str, tier: str) -> CompetitorC
         website=item.get("website", "") or "",
         meta_page_id=str(item.get("meta_page_id", "") or ""),
         google_advertiser_id=str(item.get("google_advertiser_id", "") or ""),
+        google_domain=str(item.get("google_domain", "") or ""),
         ad_countries=list(item.get("ad_countries") or [country]),
         products=list(item.get("products") or []),
         active=bool(item.get("active", True)),
