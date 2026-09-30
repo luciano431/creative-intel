@@ -47,11 +47,45 @@ DEEP_DUMP_JS = """() => {
     walk(root);
     return out;
   };
+  const findAll = (root, sel, acc) => {
+    acc.push(...root.querySelectorAll(sel));
+    if (root.shadowRoot) findAll(root.shadowRoot, sel, acc);
+    for (const el of root.querySelectorAll('*')) { if (el.shadowRoot) findAll(el.shadowRoot, sel, acc); }
+    return acc;
+  };
   const details = find(document, 'creative-details');
-  const preview = details ? (find(details, 'creative-preview') || find(details, 'html-renderer')) : null;
+  // Candidatos a contener el creativo principal; se elige el primero con contenido real
+  const cands = details ? findAll(details, 'creative-preview, html-renderer, fletch-renderer, video-renderer, youtube-renderer', []) : [];
+  const summary = cands.map((el) => {
+    const d = dump(el, 'cand');
+    const score = d.images.filter(i => i.w > 0).length * 2 + d.iframes * 3 + (d.texts.join('').length > 0 ? 1 : 0);
+    return {tag: el.tagName.toLowerCase(), score, texts: d.texts.length, images: d.images.length, iframes: d.iframes};
+  });
+  let idx = summary.findIndex(s => s.score > 0); if (idx < 0 && cands.length) idx = 0;
+  const preview = idx >= 0 ? cands[idx] : null;
   const d = dump(details || document, 'details');
   const c = preview ? dump(preview, 'creative') : null;
-  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c};
+  const html = preview ? ((preview.shadowRoot ? '<!-- shadow -->' + preview.shadowRoot.innerHTML : '') + preview.innerHTML).slice(0, 6000) : '';
+  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c, candidates: summary, html};
+}"""
+READY_JS = """() => {
+  const find = (root, sel, acc) => {
+    acc.push(...root.querySelectorAll(sel));
+    if (root.shadowRoot) find(root.shadowRoot, sel, acc);
+    for (const el of root.querySelectorAll('*')) { if (el.shadowRoot) find(el.shadowRoot, sel, acc); }
+    return acc;
+  };
+  const body = document.body ? document.body.innerText : '';
+  if (/no podemos mostrar este anuncio|Se quit[oó] debido|can't show this ad/i.test(body)) return true;
+  for (const r of find(document, 'creative-preview, html-renderer, fletch-renderer, video-renderer, youtube-renderer', [])) {
+    const roots = [r]; if (r.shadowRoot) roots.push(r.shadowRoot);
+    for (const root of roots) {
+      if (root.querySelector('iframe')) return true;
+      if (Array.from(root.querySelectorAll('img')).some(i => i.naturalWidth > 50)) return true;
+      if ((root.textContent || '').trim().length > 20) return true;
+    }
+  }
+  return false;
 }"""
 FRAME_DUMP_JS = """() => ({
   text: document.body ? document.body.innerText : '',
@@ -184,12 +218,16 @@ class GoogleTransparencyWebCollector:
     def _detail(self, page, url: str, ext_id: str, shots, debug: bool, dbg, competitor: CompetitorConfig) -> dict:
         """Abre la página de detalle de un creativo y extrae contenido, fechas y captura."""
         page.goto(url, wait_until="domcontentloaded", timeout=90_000)
-        # El creativo se renderiza después del primer paint (iframe propio o shadow DOM)
-        for _ in range(10):
+        # El creativo se renderiza después del primer paint: esperar hasta que haya contenido
+        # (imagen cargada, iframe, texto) o el aviso de anuncio quitado, con tope de 15 s
+        for _ in range(15):
             page.wait_for_timeout(1000)
-            if page.locator("creative-preview, html-renderer, iframe").count():
-                break
-        page.wait_for_timeout(2500)
+            try:
+                if page.evaluate(READY_JS):
+                    break
+            except Exception:
+                pass
+        page.wait_for_timeout(2000)
         page_text = page.inner_text("body")
         m_fmt = re.search(r"Formato:\s*(\w+)|Format:\s*(\w+)", page_text, re.I)
         fmt_label = ((m_fmt.group(1) or m_fmt.group(2)) if m_fmt else "").lower()
@@ -276,6 +314,8 @@ class GoogleTransparencyWebCollector:
                 + "\n\n===== TEXTOS EN IFRAMES =====\n" + "\n---\n".join(frame_texts)
                 + "\n\n===== IMAGENES (src w x h alt) =====\n" + "\n".join(f"{i['src'][:140]} {i['w']}x{i['h']} {i['alt'][:40]}" for i in scope["images"] + frame_images)
                 + "\n\n===== ELEMENTOS CUSTOM (details) =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(deep["details"]["tags"].items()))
+                + "\n\n===== CANDIDATOS (tag score textos imgs iframes) =====\n" + "\n".join(f"{c['tag']} {c['score']} {c['texts']} {c['images']} {c['iframes']}" for c in deep.get("candidates", []))
+                + "\n\n===== HTML DEL CREATIVO ELEGIDO (recortado) =====\n" + deep.get("html", "")
                 + "\n\n===== RESULTADO =====\n" + f"titular: {headline!r}\nlanding: {landing!r}\nbody: {body[:300]!r}\nmedia: {media}\n", encoding="utf-8")
         return {
             "format": fmt,
