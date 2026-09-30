@@ -66,7 +66,17 @@ DEEP_DUMP_JS = """() => {
   const d = dump(details || document, 'details');
   const c = preview ? dump(preview, 'creative') : null;
   const html = preview ? ((preview.shadowRoot ? '<!-- shadow -->' + preview.shadowRoot.innerHTML : '') + preview.innerHTML).slice(0, 6000) : '';
-  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c, candidates: summary, html};
+  // Aviso de "anuncio quitado" solo si está VISIBLE (el explorador de políticas trae el mismo texto oculto)
+  const removedRe = /no podemos mostrar este anuncio|Se quit[oó] debido|can't show this ad/i;
+  const visible = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+  let removedVisible = false;
+  if (details) {
+    for (const el of findAll(details, '*', [])) {
+      if (el.children.length === 0 && removedRe.test(el.textContent || '') && visible(el)) { removedVisible = true; break; }
+    }
+  }
+  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c, candidates: summary, html, removed_visible: removedVisible};
 }"""
 READY_JS = """() => {
   const find = (root, sel, acc) => {
@@ -75,9 +85,16 @@ READY_JS = """() => {
     for (const el of root.querySelectorAll('*')) { if (el.shadowRoot) find(el.shadowRoot, sel, acc); }
     return acc;
   };
-  const body = document.body ? document.body.innerText : '';
-  if (/no podemos mostrar este anuncio|Se quit[oó] debido|can't show this ad/i.test(body)) return true;
-  for (const r of find(document, 'creative-preview, html-renderer, fletch-renderer, video-renderer, youtube-renderer', [])) {
+  const first = (root, sel) => { const a = find(root, sel, []); return a.length ? a[0] : null; };
+  const details = first(document, 'creative-details');
+  if (!details) return false;
+  const removedRe = /no podemos mostrar este anuncio|Se quit[oó] debido|can't show this ad/i;
+  for (const el of find(details, '*', [])) {
+    if (el.children.length === 0 && removedRe.test(el.textContent || '')) {
+      const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) return true;
+    }
+  }
+  for (const r of find(details, 'creative-preview, html-renderer, fletch-renderer, video-renderer, youtube-renderer', [])) {
     const roots = [r]; if (r.shadowRoot) roots.push(r.shadowRoot);
     for (const root of roots) {
       if (root.querySelector('iframe')) return true;
@@ -244,9 +261,7 @@ class GoogleTransparencyWebCollector:
         # "Quitado": el aviso de política aparece justo debajo de "Formato: ..." para el creativo principal;
         # la grilla de otros anuncios (que también puede tener quitados) queda más abajo y no cuenta.
         head = page_text[m_fmt.end(): m_fmt.end() + 300] if m_fmt else page_text[:600]
-        removed = bool(REMOVED_RE.search(head)) or bool(REMOVED_RE.search("\n".join((deep["creative"] or {}).get("texts", []))))
-        if not removed and deep["details_scoped"]:
-            removed = bool(REMOVED_RE.search("\n".join(deep["details"]["texts"])))
+        removed = bool(deep.get("removed_visible")) or bool(REMOVED_RE.search(head))
 
         # Iframes propios del creativo (srcdoc / displayads) marcados por el JS
         frame_texts: list[str] = []
