@@ -16,8 +16,9 @@ from ..config import CompetitorConfig, settings
 from .base import RawCreative
 
 
-DEEP_DUMP_JS = """() => {
-  const out = {texts: [], images: [], iframes: [], tags: {}};
+DEEP_DUMP_JS = """(rootSelector) => {
+  const out = {texts: [], images: [], iframes: [], tags: {}, scoped: false};
+  const skip = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE']);
   const walk = (root) => {
     for (const el of root.querySelectorAll('*')) {
       const t = el.tagName.toLowerCase();
@@ -27,11 +28,23 @@ DEEP_DUMP_JS = """() => {
       if (el.shadowRoot) walk(el.shadowRoot);
     }
     const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let n; while ((n = tw.nextNode())) { const s = n.textContent.trim(); if (s) out.texts.push(s); }
+    let n; while ((n = tw.nextNode())) {
+      if (n.parentElement && skip.has(n.parentElement.tagName)) continue;
+      const s = n.textContent.trim(); if (s) out.texts.push(s);
+    }
   };
-  walk(document);
+  // Buscar el contenedor del creativo atravesando shadow roots
+  const find = (root, sel) => {
+    const hit = root.querySelector(sel); if (hit) return hit;
+    for (const el of root.querySelectorAll('*')) { if (el.shadowRoot) { const h = find(el.shadowRoot, sel); if (h) return h; } }
+    return null;
+  };
+  const scope = rootSelector ? find(document, rootSelector) : null;
+  out.scoped = !!scope;
+  walk(scope || document);
   return out;
 }"""
+REMOVED_RE = re.compile(r"no podemos mostrar este anuncio|Se quit[oó] debido|can't show this ad|removed (due to|for) (a )?polic", re.I)
 UI_STRINGS = {"close", "flag", "chevron_left", "chevron_right", "arrow_forward", "keyboard_arrow_right", "Acceder", "Detalles del anuncio",
               "Denunciar este anuncio", "Preguntas frecuentes", "Página principal", "Centro de transparencia de anuncios"}
 
@@ -124,7 +137,7 @@ class GoogleTransparencyWebCollector:
                             first_seen=detail["first_seen"],
                             last_seen=detail["last_seen"],
                             is_active=True,
-                            raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5], "variations": detail["variations"], "regions": detail["regions"]},
+                            raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5], "variations": detail["variations"], "regions": detail["regions"], "removed": detail["removed"]},
                         )
                     )
             browser.close()
@@ -148,9 +161,12 @@ class GoogleTransparencyWebCollector:
         m_reg = re.search(r"Se mostraron en\s+([^\n]+)|Shown in\s+([^\n]+)", page_text)
         regions = (m_reg.group(1) or m_reg.group(2)).strip() if m_reg else ""
         # El creativo vive en shadow DOM (no en iframes): recorrer piercing shadow roots
-        deep = page.evaluate(DEEP_DUMP_JS)
-        light_lines = {l.strip() for l in page_text.splitlines() if l.strip()}
-        shadow_texts = [t for t in deep["texts"] if t not in light_lines and t not in UI_STRINGS]
+        deep = page.evaluate(DEEP_DUMP_JS, "creative-details")
+        removed = bool(REMOVED_RE.search(page_text) or REMOVED_RE.search("\n".join(deep["texts"])))
+        chrome = {"Última vez que se mostró:", "Formato:", "Se mostraron en", "Denunciar este anuncio", "Ver más anuncios de este anunciante"}
+        shadow_texts = [t for t in deep["texts"] if t not in UI_STRINGS and not any(t.startswith(c) for c in chrome)
+                        and not re.match(r"^\d+ de \d+ variaci", t) and not REMOVED_RE.search(t) and t != "Nuestras políticas de anuncios"
+                        and t not in (regions, fmt_label.capitalize(), "Texto", "Imagen", "Video", "hide_image")]
         frame_texts: list[str] = []
         frame_urls: list[str] = []
         media: list[str] = []
@@ -183,8 +199,12 @@ class GoogleTransparencyWebCollector:
             fmt = "video" if any("youtube" in u for u in media) else "imagen" if media else "texto" if shadow_texts else "desconocido"
         frame_texts = shadow_texts + frame_texts
         text_lines = [l.strip() for t in frame_texts for l in t.splitlines() if l.strip()]
+        if removed:
+            text_lines = []
         headline = text_lines[0] if text_lines else ""
         body = "\n".join(text_lines[1:])[:4000] if len(text_lines) > 1 else ""
+        if removed:
+            body = "(Anuncio quitado por Google por incumplimiento de política: contenido no disponible)"
         landing = ""
         for l in text_lines:
             if re.match(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", l, re.I) and " " not in l:
@@ -201,6 +221,7 @@ class GoogleTransparencyWebCollector:
                 page_text + "\n\n===== TEXTOS SOLO EN SHADOW DOM =====\n" + "\n".join(shadow_texts)
                 + "\n\n===== IMAGENES (src w x h alt) =====\n" + "\n".join(f"{i['src'][:140]} {i['w']}x{i['h']} {i['alt'][:40]}" for i in deep["images"])
                 + "\n\n===== IFRAMES =====\n" + "\n".join(deep.get("iframes", []))
+                + "\n\n===== SCOPED A creative-details: " + str(deep.get("scoped")) + " | REMOVED: " + str(removed) + " =====\n"
                 + "\n\n===== ELEMENTOS CUSTOM =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(deep["tags"].items()))
                 + "\n\n===== MEDIA ELEGIDA =====\n" + "\n".join(media), encoding="utf-8")
         return {
@@ -216,6 +237,7 @@ class GoogleTransparencyWebCollector:
             "screenshot": str(shot) if shot else "",
             "variations": variations,
             "regions": regions,
+            "removed": removed,
         }
 
 

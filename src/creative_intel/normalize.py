@@ -168,6 +168,8 @@ def data_qa_flags(creative: Creative) -> list[str]:
         flags.append("longevidad_sospechosa")
     if creative.source in ("meta_web", "google_web"):
         flags.append("scraping_best_effort")
+    if (creative.raw or {}).get("removed"):
+        flags.append("contenido_no_disponible")
     return flags
 
 
