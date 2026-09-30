@@ -104,7 +104,7 @@ class GoogleTransparencyWebCollector:
                             first_seen=detail["first_seen"],
                             last_seen=detail["last_seen"],
                             is_active=True,
-                            raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5]},
+                            raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5], "variations": detail["variations"], "regions": detail["regions"]},
                         )
                     )
             browser.close()
@@ -113,43 +113,50 @@ class GoogleTransparencyWebCollector:
     def _detail(self, page, url: str, ext_id: str, shots, debug: bool, dbg, slug: str) -> dict:
         """Abre la página de detalle de un creativo y extrae contenido, fechas y captura."""
         page.goto(url, wait_until="domcontentloaded", timeout=90_000)
-        page.wait_for_timeout(4000)
+        # El anuncio se renderiza en un iframe que llega después del primer paint
+        for _ in range(10):
+            page.wait_for_timeout(1000)
+            if page.locator("iframe").count() and len(page.frames) > 1:
+                break
+        page.wait_for_timeout(2500)
         page_text = page.inner_text("body")
-        # Anuncios de texto/imagen se renderizan dentro de iframes
+        m_fmt = re.search(r"Formato:\s*(\w+)|Format:\s*(\w+)", page_text, re.I)
+        fmt_label = ((m_fmt.group(1) or m_fmt.group(2)) if m_fmt else "").lower()
+        fmt = {"texto": "texto", "text": "texto", "imagen": "imagen", "image": "imagen", "video": "video", "vídeo": "video"}.get(fmt_label, "desconocido")
+        m_var = re.search(r"de\s+(\d+)\s+variaci|of\s+(\d+)\s+variation", page_text, re.I)
+        variations = int(m_var.group(1) or m_var.group(2)) if m_var else 1
+        m_reg = re.search(r"Se mostraron en\s+([^\n]+)|Shown in\s+([^\n]+)", page_text)
+        regions = (m_reg.group(1) or m_reg.group(2)).strip() if m_reg else ""
+        # Contenido dentro de los frames (incluye anidados)
         frame_texts: list[str] = []
+        frame_urls: list[str] = []
         media: list[str] = []
-        is_video = False
         for fr in page.frames:
             if fr == page.main_frame:
                 continue
             furl = fr.url or ""
+            frame_urls.append(furl)
             if "youtube" in furl:
-                is_video = True
                 media.append(furl)
                 continue
             try:
-                t = fr.inner_text("body", timeout=3000).strip()
+                t = fr.evaluate("() => document.body ? document.body.innerText : ''").strip()
                 if t:
                     frame_texts.append(t)
                 for im in fr.evaluate("() => Array.from(document.images).map(i => ({src: i.src, w: i.naturalWidth, h: i.naturalHeight}))"):
                     if im["src"] and im["w"] >= 100 and im["h"] >= 100:
                         media.append(im["src"])
-            except Exception:
+            except Exception as exc:
+                frame_urls.append(f"  (sin acceso: {type(exc).__name__})")
                 continue
-        for im in page.evaluate("() => Array.from(document.images).map(i => ({src: i.src, w: i.naturalWidth, h: i.naturalHeight}))"):
-            if im["src"] and im["w"] >= 200 and im["h"] >= 100 and "gstatic" not in im["src"]:
-                media.append(im["src"])
-        if page.locator("video").count():
-            is_video = True
-        low = page_text.lower()
-        if is_video or re.search(r"\bv[ií]deo\b", low):
-            fmt = "video"
-        elif re.search(r"\btexto\b|\btext\b", low) and not media:
-            fmt = "texto"
-        elif media or re.search(r"\bimagen\b|\bimage\b", low):
-            fmt = "imagen"
-        else:
-            fmt = "texto" if frame_texts else "desconocido"
+        if fmt == "imagen" and not media:
+            for im in page.evaluate("() => Array.from(document.images).map(i => ({src: i.src, w: i.naturalWidth, h: i.naturalHeight}))"):
+                if im["src"] and im["w"] >= 200 and im["h"] >= 100 and "gstatic" not in im["src"] and "google.com/images" not in im["src"]:
+                    media.append(im["src"])
+        if fmt == "texto":
+            media = []
+        if fmt == "desconocido":
+            fmt = "video" if any("youtube" in u for u in media) else "imagen" if media else "texto" if frame_texts else "desconocido"
         text_lines = [l.strip() for t in frame_texts for l in t.splitlines() if l.strip()]
         headline = text_lines[0] if text_lines else ""
         body = "\n".join(text_lines[1:])[:4000] if len(text_lines) > 1 else ""
@@ -165,7 +172,10 @@ class GoogleTransparencyWebCollector:
             shot = None
         if debug:
             dbg.mkdir(parents=True, exist_ok=True)
-            (dbg / f"google_detail_{slug}_{ext_id}.txt").write_text(page_text + "\n\n===== FRAMES =====\n" + "\n-----\n".join(frame_texts), encoding="utf-8")
+            iframes = page.locator("iframe").evaluate_all("els => els.map(e => (e.getAttribute('src') || '') + ' ' + e.offsetWidth + 'x' + e.offsetHeight)")
+            (dbg / f"google_detail_{slug}_{ext_id}.txt").write_text(
+                page_text + "\n\n===== IFRAMES EN DOM =====\n" + "\n".join(iframes) + "\n\n===== FRAME URLS =====\n" + "\n".join(frame_urls)
+                + "\n\n===== FRAME TEXTS =====\n" + "\n-----\n".join(frame_texts) + "\n\n===== MEDIA =====\n" + "\n".join(media), encoding="utf-8")
         return {
             "format": fmt,
             "headline": headline,
@@ -177,6 +187,8 @@ class GoogleTransparencyWebCollector:
             "page_text": page_text,
             "frame_texts": frame_texts,
             "screenshot": str(shot) if shot else "",
+            "variations": variations,
+            "regions": regions,
         }
 
 
