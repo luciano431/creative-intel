@@ -96,3 +96,12 @@ def test_parse_meta_card_text_real_sample_without_domain():
     assert "Publicidad" not in p["body"] and "Activo" not in p["body"]
     assert p["headline"] == "Tu Seguro de Auto, con más beneficios"
     assert p["cta"] == "Get Quote" and p["multiple_versions"] is True
+
+
+def test_parse_meta_card_text_skips_page_name_after_details_marker():
+    from creative_intel.collectors.meta_web import parse_card_text
+
+    card = "Activo\nIdentificador de la biblioteca: 1\nVer detalles del anuncio\nBSE\nPublicidad\nTu yo del futuro te lo va a agradecer\nPortal Comercial\nLearn More"
+    p = parse_card_text(card, "Banco de Seguros del Estado (BSE)")
+    assert p["body"] == "Tu yo del futuro te lo va a agradecer"
+    assert p["headline"] == "Portal Comercial" and p["cta"] == "Learn More"

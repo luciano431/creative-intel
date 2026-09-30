@@ -150,18 +150,25 @@ def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
     Orden típico de la tarjeta: metadatos → nombre de página → texto principal → [imagen] →
     dominio de la landing → titular → descripción → botón CTA.
     """
-    name = (advertiser_name or "").lower()
+    names = {n.lower() for n in [advertiser_name or ""] + re.findall(r"\(([^)]+)\)", advertiser_name or "") if n}
     lines: list[str] = []
     multiple = False
+    skip_next = False  # la línea que sigue a "Ver detalles del anuncio" es el nombre de la página
     for raw in card_text.splitlines():
         l = raw.strip()
         if not l or not re.search(r"[\wáéíóúñ]", l, re.I):
             continue
         if re.search(r"varias versiones|multiple versions", l, re.I):
             multiple = True
+        if re.match(r"(Ver detalles|See ad details)", l, re.I):
+            skip_next = True
+            continue
         if UI_NOISE.search(l):
             continue
-        if name and name in l.lower() and len(l) <= len(name) + 15:
+        if skip_next:
+            skip_next = False
+            continue
+        if any(n in l.lower() and len(l) <= len(n) + 15 for n in names):
             continue  # nombre de la página
         lines.append(l)
     cta = ""
