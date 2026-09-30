@@ -19,8 +19,10 @@ from .review import approve_all_pending, data_qa_queue, latest_synthesis, review
 app = typer.Typer(help="Competitive Creative Intelligence para aseguradoras (Meta + Google).", no_args_is_help=True)
 competitors_app = typer.Typer(help="Universo de competidores")
 review_app = typer.Typer(help="Checkpoints humanos (Data QA y Strategic QA)")
+basecamp_app = typer.Typer(help="Configuración de Basecamp (login OAuth e IDs)")
 app.add_typer(competitors_app, name="competitors")
 app.add_typer(review_app, name="review")
+app.add_typer(basecamp_app, name="basecamp")
 console = Console()
 
 PeriodOpt = typer.Option(None, "--period", "-p", help="Mes analizado YYYY-MM (default: mes actual)")
@@ -218,6 +220,34 @@ def publish(period: Optional[str] = PeriodOpt, force: bool = typer.Option(False,
     with session_scope() as s:
         result = pipeline.publish(s, _period(period), force=force)
     rprint(result)
+
+
+@basecamp_app.command("login")
+def basecamp_login() -> None:
+    """Login OAuth con Basecamp: imprime los valores para pegar en .env."""
+    from .publish.basecamp_auth import login
+
+    result = login()
+    rprint("\n[green]Autorizado.[/green] Pegá esto en tu .env:\n")
+    rprint(f"BASECAMP_ACCESS_TOKEN={result['access_token']}")
+    rprint(f"BASECAMP_REFRESH_TOKEN={result['refresh_token']}")
+    if len(result["accounts"]) == 1:
+        rprint(f"BASECAMP_ACCOUNT_ID={result['accounts'][0]['id']}")
+    else:
+        rprint("\nCuentas disponibles (elegí una para BASECAMP_ACCOUNT_ID):")
+        for a in result["accounts"]:
+            rprint(f"  {a['id']}  {a['name']}")
+
+
+@basecamp_app.command("projects")
+def basecamp_projects() -> None:
+    """Lista proyectos con sus IDs de Docs & Files (vault) y listas de tareas."""
+    from .publish.basecamp_auth import list_projects
+
+    for p in list_projects():
+        rprint(f"[bold]{p['name']}[/bold]  BASECAMP_PROJECT_ID={p['project_id']}  BASECAMP_VAULT_ID={p['vault_id']}")
+        for t in p["todolists"]:
+            rprint(f"    lista '{t['name']}'  BASECAMP_TODOLIST_ID={t['id']}")
 
 
 @app.command("run-cycle")

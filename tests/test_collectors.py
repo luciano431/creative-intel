@@ -42,3 +42,10 @@ def test_parse_human_dates_en_and_es():
     assert parse_human_date("12 de septiembre de 2026") == dt.date(2026, 9, 12)
     assert parse_human_date("1 ago 2026") == dt.date(2026, 8, 1)
     assert parse_human_date("sin fecha") is None
+
+
+def test_basecamp_next_link_parsing():
+    from creative_intel.publish.basecamp_auth import _next_link
+
+    assert _next_link('<https://3.basecampapi.com/1/projects.json?page=2>; rel="next"') == "https://3.basecampapi.com/1/projects.json?page=2"
+    assert _next_link("") is None
