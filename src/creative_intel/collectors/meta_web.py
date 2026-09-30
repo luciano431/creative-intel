@@ -175,6 +175,9 @@ def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
             description = " ".join(lines[i + 2 :])
             lines = lines[:i]
             break
+    if not headline and cta and len(lines) >= 2 and len(lines[-1]) <= 100:
+        # Sin dominio visible: el titular del enlace es la línea corta que precede al botón CTA
+        headline = lines.pop()
     body = "\n".join(lines)[:4000]
     return {"body": body, "landing": landing, "headline": headline, "description": description[:1000], "cta": cta, "multiple_versions": multiple}
 

@@ -80,3 +80,19 @@ Más información
     assert p["multiple_versions"] is True
     # Una línea de copy que contiene "activo" no se descarta
     assert "activo" in parse_card_text("Seguros SURA Uruguay\nMantené tu auto activo todo el año", "SURA Uruguay")["body"]
+
+
+def test_parse_meta_card_text_real_sample_without_domain():
+    from creative_intel.collectors.meta_web import parse_card_text
+
+    card = ("\u200b\nActivo\nIdentificador de la biblioteca: 1864281568316131\nEn circulación desde el 31 ago 2026\nPlataformas\n"
+            "\u200b\n\u200b\nEste anuncio tiene varias versiones\n\u200b\nAbrir menú desplegable\n\u200b\nVer detalles del anuncio\n"
+            "Seguros SURA Uruguay\nPublicidad\n¿Qué más podés pedir?\nPedí SURA y contratá tu Seguro de Auto 🚗. \n\n"
+            "Disfrutá de una protección integral en hasta 10 cuotas sin recargo.\n\n👉 Cotizá tu cobertura.\n"
+            "Tu Seguro de Auto, con más beneficios\nGet Quote")
+    p = parse_card_text(card, "SURA Uruguay")
+    assert p["body"].startswith("¿Qué más podés pedir?")
+    assert p["body"].endswith("👉 Cotizá tu cobertura.")
+    assert "Publicidad" not in p["body"] and "Activo" not in p["body"]
+    assert p["headline"] == "Tu Seguro de Auto, con más beneficios"
+    assert p["cta"] == "Get Quote" and p["multiple_versions"] is True
