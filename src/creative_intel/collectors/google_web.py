@@ -16,6 +16,26 @@ from ..config import CompetitorConfig, settings
 from .base import RawCreative
 
 
+DEEP_DUMP_JS = """() => {
+  const out = {texts: [], images: [], iframes: [], tags: {}};
+  const walk = (root) => {
+    for (const el of root.querySelectorAll('*')) {
+      const t = el.tagName.toLowerCase();
+      if (t.includes('-')) out.tags[t] = (out.tags[t] || 0) + 1;
+      if (t === 'img') out.images.push({src: el.currentSrc || el.src, w: el.naturalWidth, h: el.naturalHeight, alt: el.alt || ''});
+      if (t === 'iframe') out.iframes.push(el.src || '');
+      if (el.shadowRoot) walk(el.shadowRoot);
+    }
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n; while ((n = tw.nextNode())) { const s = n.textContent.trim(); if (s) out.texts.push(s); }
+  };
+  walk(document);
+  return out;
+}"""
+UI_STRINGS = {"close", "flag", "chevron_left", "chevron_right", "arrow_forward", "keyboard_arrow_right", "Acceder", "Detalles del anuncio",
+              "Denunciar este anuncio", "Preguntas frecuentes", "Página principal", "Centro de transparencia de anuncios"}
+
+
 def domain_of(competitor: CompetitorConfig) -> str:
     raw = getattr(competitor, "google_domain", "") or competitor.website or ""
     if not raw:
@@ -127,7 +147,10 @@ class GoogleTransparencyWebCollector:
         variations = int(m_var.group(1) or m_var.group(2)) if m_var else 1
         m_reg = re.search(r"Se mostraron en\s+([^\n]+)|Shown in\s+([^\n]+)", page_text)
         regions = (m_reg.group(1) or m_reg.group(2)).strip() if m_reg else ""
-        # Contenido dentro de los frames (incluye anidados)
+        # El creativo vive en shadow DOM (no en iframes): recorrer piercing shadow roots
+        deep = page.evaluate(DEEP_DUMP_JS)
+        light_lines = {l.strip() for l in page_text.splitlines() if l.strip()}
+        shadow_texts = [t for t in deep["texts"] if t not in light_lines and t not in UI_STRINGS]
         frame_texts: list[str] = []
         frame_urls: list[str] = []
         media: list[str] = []
@@ -139,24 +162,26 @@ class GoogleTransparencyWebCollector:
             if "youtube" in furl:
                 media.append(furl)
                 continue
+            if "feedback" in furl or "clients6.google.com" in furl:
+                continue
             try:
                 t = fr.evaluate("() => document.body ? document.body.innerText : ''").strip()
                 if t:
                     frame_texts.append(t)
-                for im in fr.evaluate("() => Array.from(document.images).map(i => ({src: i.src, w: i.naturalWidth, h: i.naturalHeight}))"):
-                    if im["src"] and im["w"] >= 100 and im["h"] >= 100:
-                        media.append(im["src"])
-            except Exception as exc:
-                frame_urls.append(f"  (sin acceso: {type(exc).__name__})")
+            except Exception:
                 continue
-        if fmt == "imagen" and not media:
-            for im in page.evaluate("() => Array.from(document.images).map(i => ({src: i.src, w: i.naturalWidth, h: i.naturalHeight}))"):
-                if im["src"] and im["w"] >= 200 and im["h"] >= 100 and "gstatic" not in im["src"] and "google.com/images" not in im["src"]:
-                    media.append(im["src"])
+        for im in deep["images"]:
+            src = im.get("src") or ""
+            if src and im["w"] >= 100 and im["h"] >= 60 and "gstatic" not in src and "google.com/images" not in src and "googleusercontent.com/a/" not in src:
+                media.append(src)
+        for u in deep.get("iframes", []):
+            if u and "youtube" in u:
+                media.append(u)
         if fmt == "texto":
-            media = []
+            media = [u for u in media if "youtube" in u]
         if fmt == "desconocido":
-            fmt = "video" if any("youtube" in u for u in media) else "imagen" if media else "texto" if frame_texts else "desconocido"
+            fmt = "video" if any("youtube" in u for u in media) else "imagen" if media else "texto" if shadow_texts else "desconocido"
+        frame_texts = shadow_texts + frame_texts
         text_lines = [l.strip() for t in frame_texts for l in t.splitlines() if l.strip()]
         headline = text_lines[0] if text_lines else ""
         body = "\n".join(text_lines[1:])[:4000] if len(text_lines) > 1 else ""
@@ -172,10 +197,12 @@ class GoogleTransparencyWebCollector:
             shot = None
         if debug:
             dbg.mkdir(parents=True, exist_ok=True)
-            iframes = page.locator("iframe").evaluate_all("els => els.map(e => (e.getAttribute('src') || '') + ' ' + e.offsetWidth + 'x' + e.offsetHeight)")
             (dbg / f"google_detail_{slug}_{ext_id}.txt").write_text(
-                page_text + "\n\n===== IFRAMES EN DOM =====\n" + "\n".join(iframes) + "\n\n===== FRAME URLS =====\n" + "\n".join(frame_urls)
-                + "\n\n===== FRAME TEXTS =====\n" + "\n-----\n".join(frame_texts) + "\n\n===== MEDIA =====\n" + "\n".join(media), encoding="utf-8")
+                page_text + "\n\n===== TEXTOS SOLO EN SHADOW DOM =====\n" + "\n".join(shadow_texts)
+                + "\n\n===== IMAGENES (src w x h alt) =====\n" + "\n".join(f"{i['src'][:140]} {i['w']}x{i['h']} {i['alt'][:40]}" for i in deep["images"])
+                + "\n\n===== IFRAMES =====\n" + "\n".join(deep.get("iframes", []))
+                + "\n\n===== ELEMENTOS CUSTOM =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(deep["tags"].items()))
+                + "\n\n===== MEDIA ELEGIDA =====\n" + "\n".join(media), encoding="utf-8")
         return {
             "format": fmt,
             "headline": headline,
