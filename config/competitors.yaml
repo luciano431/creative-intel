@@ -65,6 +65,7 @@ countries:
           website: https://www.axa.com
           meta_page_id: "1570002513271112"
           google_advertiser_id: ""
+          google_domain: axa.es    # dominio a buscar en Google Ads Transparency
           ad_countries: [ALL]     # sin anuncios activos en ES al 30/09; observar en todos los países
           products: [auto, hogar, vida, viaje, salud]
           active: true
@@ -73,6 +74,7 @@ countries:
           website: https://www.allianz.com
           meta_page_id: "450326391674911"
           google_advertiser_id: ""
+          google_domain: allianz.com.ar    # dominio a buscar en Google Ads Transparency
           ad_countries: [ALL]     # sin anuncios activos en ES al 30/09; observar en todos los países
           products: [auto, hogar, vida, viaje]
           active: true
@@ -81,6 +83,7 @@ countries:
           website: https://www.zurich.com
           meta_page_id: "2274929532746010"
           google_advertiser_id: ""
+          google_domain: zurich.com.ar    # dominio a buscar en Google Ads Transparency
           ad_countries: [AR]      # país donde observar sus anuncios en la Ad Library
           products: [auto, hogar, vida]
           active: true
@@ -89,6 +92,7 @@ countries:
           website: https://www.generali.com
           meta_page_id: ""
           google_advertiser_id: ""
+          google_domain: {ES: generali.es, IT: generali.it}   # un dominio por país
           ad_countries: [ES, IT]
           products: [auto, hogar, vida, salud]
           active: true
@@ -97,6 +101,7 @@ countries:
           website: https://www.mapfre.com
           meta_page_id: "120104454689359"
           google_advertiser_id: ""
+          google_domain: mapfre.es    # dominio a buscar en Google Ads Transparency
           ad_countries: [ES]      # país donde observar sus anuncios en la Ad Library
           products: [auto, hogar, vida, viaje, salud]
           active: true

@@ -120,8 +120,12 @@ DATE_LINE_RE = re.compile(r"^\d{1,2}\s+\w{3,10}\.?\s+\d{4}$|^\w{3,10}\.?\s+\d{1,
 DOMAIN_LINE_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
 
 
-def domain_of(competitor: CompetitorConfig) -> str:
-    raw = getattr(competitor, "google_domain", "") or competitor.website or ""
+def domain_of(competitor: CompetitorConfig, country: str = "") -> str:
+    """Dominio a buscar: el de ese país (google_domain como mapa), el google_domain único o el website."""
+    per_country = getattr(competitor, "google_domains", {}) or {}
+    raw = per_country.get(country.upper()) or getattr(competitor, "google_domain", "") or competitor.website or ""
+    if not raw and per_country:
+        raw = next(iter(per_country.values()))
     if not raw:
         return ""
     host = urlparse(raw if "://" in raw else "https://" + raw).netloc or raw
@@ -164,7 +168,7 @@ class GoogleTransparencyWebCollector:
         region = region_param(country)
         if competitor.google_advertiser_id:
             return f"https://adstransparency.google.com/advertiser/{competitor.google_advertiser_id}?region={region}"
-        return f"https://adstransparency.google.com/?region={region}&domain={domain_of(competitor)}"
+        return f"https://adstransparency.google.com/?region={region}&domain={domain_of(competitor, country)}"
 
     def collect(self, competitor: CompetitorConfig) -> list[RawCreative]:
         try:

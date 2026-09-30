@@ -159,3 +159,14 @@ def test_google_ids_from_rpc():
 
     body = '{"1":[{"1":"AR05336417929390456833","2":"CR10149519646189944833","3":{}},{"1":"AR05336417929390456833","2":"CR01758643388061581313"}]}'
     assert ids_from_rpc(body) == [("AR05336417929390456833", "CR10149519646189944833"), ("AR05336417929390456833", "CR01758643388061581313")]
+
+
+def test_google_domain_per_country():
+    from creative_intel.collectors.google_web import domain_of
+    from creative_intel.config import load_competitors
+
+    comps = {c.slug: c for c in load_competitors()}
+    g = comps["generali"]
+    assert domain_of(g, "ES") == "generali.es" and domain_of(g, "IT") == "generali.it"
+    assert domain_of(comps["mapfre-global"], "ES") == "mapfre.es"
+    assert domain_of(comps["bse"], "UY") == "bse.com.uy"
