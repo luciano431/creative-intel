@@ -32,12 +32,17 @@ config/competitors.yaml ──► COLECTORES ──► BASE DE CREATIVOS ──�
 
 ## Quickstart (5 minutos, sin claves)
 
+Requiere Python 3.11 o superior (`python3 --version`; en macOS: `brew install python@3.12` y usar `python3.12` abajo).
+
 ```bash
-pip install -e ".[dev]"
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m pip install -e ".[dev]"
 creative-intel demo            # dos meses de datos ficticios, IA en modo heurístico
 open reports/demo/report.html  # reporte completo con mes vs mes y mercado vs miSeguro
 pytest                         # 24 tests
 ```
+
+En cada terminal nueva, activar el entorno de nuevo con `source .venv/bin/activate`.
 
 El comando `demo` recorre exactamente el mismo pipeline que producción; solo cambia la fuente (`data/samples/demo_creatives.json`, textos ficticios) y el clasificador (`--mock-ai`).
 
