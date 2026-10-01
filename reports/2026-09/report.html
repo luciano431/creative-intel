@@ -1,0 +1,2520 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan creativo para miSeguroOk · Octubre 2026</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Figtree:wght@400;500;600;700;800&display=swap"><style>
+  :root {
+    --primary: #1D1C22; --primary2: #13131B; --accent: #FD6D30; --accent2: #22C0E8; --warn: #F28A82;
+    --teal: #00D4B0; --yellow: #FBE9A8; --sky: #ACEFFF; --slate: #415560;
+    --ink: #1D1C22; --muted: #6B6A75; --line: #E8E7EC; --soft: #F6F5F2; --bg: #FFFFFF;
+    --radius: 14px; --hfont: "Unbounded", "Figtree", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font: 15px/1.6 "Figtree", -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+
+  /* Portada */
+  .cover { background: var(--primary); color: #fff; padding: 26px 0 52px; position: relative; overflow: hidden; }
+  .cover::after { content: ""; position: absolute; right: 9%; top: 46%; width: 54px; height: 54px; border-radius: 50%; background: var(--sky); }
+  .brandbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+  .logo { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; }
+  .logo svg { height: 44px; width: auto; }
+  .logo img { height: 40px; }
+  .logo .word { font-weight: 800; font-size: 26px; letter-spacing: -.01em; }
+  .logo .app { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; display: block; margin-top: -2px; }
+  .brandbar .meta { opacity: .75; }
+  .cover .kicker { margin: 64px 0 0; font-weight: 700; font-size: 15px; }
+  .cover h1 { font-family: var(--hfont); font-size: 52px; line-height: 1.08; margin: 12px 0 14px; letter-spacing: -.01em; font-weight: 600; max-width: 900px; }
+  .cover h1 span { color: var(--accent); font-weight: 700; }
+  .cover .lead { font-size: 17px; opacity: .8; margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+  .chip.warn { background: var(--yellow); border-color: var(--yellow); color: var(--primary); font-weight: 600; }
+
+  /* Navegación */
+  nav.toc { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 4px; overflow-x: auto; padding-top: 8px; padding-bottom: 8px; }
+  nav.toc a { white-space: nowrap; text-decoration: none; color: var(--muted); font-size: 13px; padding: 6px 10px; border-radius: 8px; }
+  nav.toc a:hover { background: var(--soft); color: var(--ink); }
+
+  section { padding: 56px 0 8px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+  .sec-num { font-family: var(--hfont); font-size: 13px; font-weight: 600; color: #fff; background: var(--accent); border-radius: 8px; padding: 4px 9px; }
+  h2 { font-family: var(--hfont); font-size: 27px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .sec-intro { color: var(--muted); margin: 6px 0 24px; max-width: 760px; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+
+  .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  /* KPIs */
+  .kpi { background: var(--soft); border-radius: var(--radius); padding: 16px 18px; }
+  .kpi b { display: block; font-family: var(--hfont); font-size: 28px; line-height: 1.15; font-weight: 600; color: var(--primary); }
+  .kpi span { font-size: 13px; color: var(--muted); }
+
+  /* Resumen ejecutivo */
+  .sum { border-top: 4px solid var(--accent); }
+  .sum .n { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .sum h3 { font-size: 20px; line-height: 1.3; margin: 6px 0 10px; }
+  .sum .do { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 14px; }
+  .sum .do b { color: var(--accent); }
+
+  /* Hallazgos */
+  .ins { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; padding: 0; overflow: hidden; }
+  .ins > div { padding: 18px 20px; border-right: 1px solid var(--line); }
+  .ins > div:last-child { border-right: 0; background: var(--soft); }
+  .ins .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 6px; }
+  .ins-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 26px 0 10px; }
+  .ins-head h3 { margin: 0; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .lvl-alta { background: var(--accent); color: #fff; }
+  .lvl-media { background: color-mix(in srgb, var(--accent) 16%, white); color: color-mix(in srgb, var(--accent) 75%, black); }
+  .lvl-baja { background: var(--soft); color: var(--muted); }
+  .risk .lvl-alta { background: var(--warn); color: var(--primary); }
+  .risk .lvl-media { background: color-mix(in srgb, var(--warn) 30%, white); color: color-mix(in srgb, var(--warn) 45%, black); }
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+
+  /* Panorama */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  .tbl table tr:last-child td { border-bottom: 0; }
+  .tier { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 6px; }
+  .tier.local { background: color-mix(in srgb, var(--teal) 18%, white); color: color-mix(in srgb, var(--teal) 55%, black); }
+  .tier.global { background: color-mix(in srgb, var(--accent2) 16%, white); color: color-mix(in srgb, var(--accent2) 55%, black); }
+  .heat td.h { text-align: center; font-weight: 600; font-size: 13px; min-width: 64px; }
+  .plat { font-size: 12px; color: var(--muted); }
+
+  /* Pestañas */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tab { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+  .tab:hover { border-color: var(--accent); }
+  .tab.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .tab .tier { margin-left: 6px; }
+  .tab.on .tier { background: rgba(255,255,255,.2); color: #fff; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 4px 0 18px; }
+  .stats .kpi b { font-size: 24px; }
+  .kpi b.txt { font-size: 19px; line-height: 1.25; margin-bottom: 4px; }
+  .cmp-legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+  .dot.a { background: var(--accent); } .dot.b { background: var(--accent2); }
+  .pb { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: center; margin: 8px 0; }
+  .pb-label { font-size: 13px; }
+  .pb-row { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+  .pb-row span { width: 40px; font-size: 12px; color: var(--muted); text-align: right; }
+  .pb-track { flex: 1; height: 9px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+  .pb-fill { height: 100%; border-radius: 99px; }
+  .pb-fill.a { background: var(--accent); } .pb-fill.b { background: var(--accent2); }
+  .lon { display: flex; height: 26px; border-radius: 8px; overflow: hidden; margin: 8px 0 6px; }
+  .lon div { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; min-width: 2px; }
+  .lon .l0 { background: color-mix(in srgb, var(--accent) 35%, white); color: var(--ink); }
+  .lon .l1 { background: color-mix(in srgb, var(--accent) 60%, white); }
+  .lon .l2 { background: var(--accent); }
+  .lon .l3 { background: var(--primary); }
+
+  /* Creativos */
+  .pv { position: relative; background: var(--soft); border-radius: 12px; overflow: hidden; aspect-ratio: 4/5; border: 1px solid var(--line); }
+  .pv img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .pv-empty { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 13px; padding: 12px; }
+  .pv-tag { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.65); color: #fff; padding: 2px 8px; border-radius: 6px; }
+  .cr { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+  .cr .pv { border: 0; border-radius: 0; }
+  .cr-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .cr-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .rank { font-family: var(--hfont); font-weight: 600; color: var(--accent); font-size: 15px; }
+  .days { font-size: 12px; font-weight: 700; background: var(--primary); color: #fff; border-radius: 999px; padding: 2px 9px; }
+  .cr h4 { margin: 0; font-size: 15px; }
+  .cr .hl { font-size: 14px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 11px; background: var(--soft); color: var(--muted); border-radius: 6px; padding: 2px 7px; }
+  .adapt { font-size: 13px; background: color-mix(in srgb, var(--yellow) 55%, white); border-radius: 8px; padding: 8px 10px; margin-top: auto; }
+  .seg { display: inline-flex; background: var(--soft); border-radius: 999px; padding: 4px; margin-bottom: 18px; }
+  .seg .tab { border: 0; background: transparent; }
+  .seg .tab.on { background: var(--primary); }
+
+  /* Oportunidades, riesgos, plan */
+  .op { margin: 18px 0; padding: 0; overflow: hidden; }
+  .op-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 22px 0; }
+  .op-head h3 { font-size: 20px; margin: 0; }
+  .op { border-top: 4px solid var(--accent); }
+  .op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 12px 22px 18px; }
+  .op-grid > div { padding-right: 18px; }
+  .op .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 8px 0 4px; }
+  .ideas { background: var(--soft); padding: 16px 22px 20px; }
+  .idea { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .idea .tags { margin-bottom: 6px; }
+  .copy { font-style: italic; }
+  .measure { border-top: 1px solid var(--line); padding: 12px 22px; font-size: 14px; }
+  .measure b { color: var(--accent); }
+  .risk { border-left: 5px solid var(--warn); }
+  .sum { border-top-color: var(--accent); }
+  .risk .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 10px; }
+  .risk .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+  .sat { display: grid; grid-template-columns: 200px 1fr 70px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
+  .sat-track { display: flex; gap: 3px; }
+  .sat-track i { flex: 1; height: 14px; border-radius: 3px; background: var(--soft); }
+  .sat-track i.on { background: var(--warn); }
+  .plan td:first-child { width: 90px; }
+  .plan .when { font-weight: 700; white-space: nowrap; }
+  .empty { border: 2px dashed var(--line); border-radius: var(--radius); padding: 22px; color: var(--muted); }
+  details.method { margin: 48px 0 0; color: var(--muted); font-size: 14px; }
+  details.method summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .foot { background: var(--primary); color: rgba(255,255,255,.75); margin-top: 64px; }
+  footer { padding: 28px 0 36px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  footer .logo svg { height: 30px; } footer .logo .word { font-size: 18px; }
+  footer a { color: var(--accent); }
+
+  @media (max-width: 760px) {
+    .cover h1 { font-size: 32px; }
+    .ins, .op-grid, .risk .cols { grid-template-columns: 1fr; }
+    .ins > div { border-right: 0; border-bottom: 1px solid var(--line); }
+    .pb { grid-template-columns: 110px 1fr; }
+    .sat { grid-template-columns: 120px 1fr 50px; }
+  }
+  @media print {
+    nav.toc, .tabs, .seg { display: none; }
+    .panel { display: block !important; page-break-inside: avoid; margin-bottom: 24px; }
+    section { page-break-inside: auto; }
+    .card, .cr, .op { page-break-inside: avoid; }
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="wrap">
+    <div class="brandbar">
+      <a class="logo" href="https://rankerstudio.com"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 88" role="img" aria-label="Ranker">
+  <!-- Isotipo de Ranker (recreación provisoria a partir del sitio; reemplazar por el SVG oficial) -->
+  <path fill="#FD6D30" d="M40 2a38 38 0 1 1-9.6 74.8L26 86l-4.2-12.6A38 38 0 0 1 40 2z"/>
+  <path fill="#FFFFFF" d="M25 39h30a15 15 0 0 1-30 0z"/>
+</svg>
+<span><span class="word">Ranker</span><span class="app">Radar creativo</span></span></a>
+      <div class="meta">Seguros · Uruguay</div>
+    </div>
+    <p class="kicker">Radar creativo de Ranker</p>
+    <h1>Plan creativo para <span>miSeguroOk</span></h1>
+    <p class="lead">Octubre 2026 · basado en los anuncios de la competencia activos en septiembre 2026</p>
+    <div class="chips">
+      <span class="chip">9 competidores</span>
+      <span class="chip">342 anuncios analizados</span>
+      <span class="chip">Meta + Google</span>
+<span class="chip warn">Borrador · pendiente de validación</span>    </div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#resumen">Resumen ejecutivo</a><a href="#hallazgos">Hallazgos</a><a href="#panorama">Panorama</a><a href="#competidores">Competidor por competidor</a><a href="#referencias">Creativos de referencia</a><a href="#oportunidades">Oportunidades</a><a href="#riesgos">Riesgos</a><a href="#cliente">miSeguroOk vs. mercado</a><a href="#plan">Plan de acción</a>
+</div></nav>
+
+<main class="wrap">
+
+<section id="resumen">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Resumen ejecutivo</h2></div>
+  <p class="sec-intro">Lo más importante del mes en tres puntos, y qué hacemos con cada uno.</p>
+  <div class="grid g4" style="margin-bottom:18px">
+    <div class="kpi"><b>342</b><span>anuncios de la competencia analizados</span></div>
+    <div class="kpi"><b>9</b><span>competidores (5 locales, 4 globales)</span></div>
+    <div class="kpi"><b>15 días</b><span>dura al aire un anuncio típico</span></div>
+    <div class="kpi"><b>30</b><span>anuncios llevan más de 3 meses activos</span></div>
+  </div>
+  <div class="grid g3">
+    <div class="card sum">
+      <div class="n">1</div>
+      <h3>El mensaje que más se repite en el mercado: Emocional</h3>
+<p class="muted" style="margin:0">En promedio, 6 de cada 10 anuncios de cada competidor usan ese mensaje, y lo usan 8 de los 9 competidores.</p><div class="do"><b>Qué hacemos:</b> Si miSeguro va por ese territorio, necesita un giro propio; si no, hay espacio en los mensajes que casi nadie usa.</div>    </div>
+    <div class="card sum">
+      <div class="n">2</div>
+      <h3>El formato que más se repite es imagen</h3>
+<p class="muted" style="margin:0">Representa 6 de cada 10 anuncios por competidor en Meta y Google.</p><div class="do"><b>Qué hacemos:</b> Probar al menos una pieza en un formato distinto al dominante para diferenciarnos en el feed.</div>    </div>
+    <div class="card sum">
+      <div class="n">3</div>
+      <h3>Zurich tiene el anuncio que más dura: 547 días al aire</h3>
+<p class="muted" style="margin:0">Un anuncio que sigue activo durante semanas es una señal (no una prueba) de que al anunciante le sirve.</p><div class="do"><b>Qué hacemos:</b> Revisar los creativos de referencia y adaptar la idea, no copiarla.</div>    </div>
+  </div>
+</section>
+
+<section id="hallazgos">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Hallazgos clave</h2></div>
+  <p class="sec-intro">Para cada hallazgo separamos lo que vimos en los anuncios (un dato) de lo que creemos que significa (una lectura nuestra).</p>
+  <div class="legend">
+    <span><b>Certeza alta:</b> el patrón se repite en muchos competidores y anuncios.</span>
+    <span><b>Media:</b> patrón claro pero con menos casos.</span>
+    <span><b>Baja:</b> señal temprana, hay que confirmarla.</span>
+  </div>
+  <div class="ins-head"><h3>1. Emocional: el territorio más concurrido</h3><span class="pill lvl-media">Certeza media</span></div>
+  <div class="card ins">
+    <div><div class="k">Lo que vimos</div>8 de los 9 competidores usan mensajes de emocional (203 anuncios).<div class="small muted" style="margin-top:8px">203 anuncios de 8 competidores</div></div>
+    <div><div class="k">Lo que creemos que significa</div>Podría indicar que es el argumento que la categoría considera seguro; también que está saturado y cuesta destacarse ahí.</div>
+    <div><div class="k">Qué hacemos</div>No ser uno más con el mismo mensaje: si lo usamos, con una prueba concreta o un tono distinto.</div>
+  </div>
+  <div class="ins-head"><h3>2. Locales y globales coinciden</h3><span class="pill lvl-media">Certeza media</span></div>
+  <div class="card ins">
+    <div><div class="k">Lo que vimos</div>Los locales se apoyan más en emocional; los referentes globales, en emocional.<div class="small muted" style="margin-top:8px">Local: Emocional · Global: Emocional</div></div>
+    <div><div class="k">Lo que creemos que significa</div>Lo que hacen los globales puede anticipar hacia dónde va la categoría en el mercado local.</div>
+    <div><div class="k">Qué hacemos</div>Tomar de los globales lo que todavía nadie hace localmente.</div>
+  </div>
+  <div class="ins-head"><h3>3. Mensajes que casi nadie usa</h3><span class="pill lvl-baja">Certeza baja</span></div>
+  <div class="card ins">
+    <div><div class="k">Lo que vimos</div>Casi nadie habla de estilo de vida, promociones, protección.<div class="small muted" style="margin-top:8px">Estilo de vida: 1% de los anuncios · Promociones: 1% de los anuncios · Protección: 2% de los anuncios</div></div>
+    <div><div class="k">Lo que creemos que significa</div>Son territorios libres: pueden diferenciar, o pueden ser poco relevantes para la categoría; hay que probarlos.</div>
+    <div><div class="k">Qué hacemos</div>Probar una pieza en el territorio libre más afín a la marca.</div>
+  </div>
+</section>
+
+<section id="panorama">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Panorama competitivo</h2></div>
+  <p class="sec-intro">Quién está pautando, cuánto y con qué. El detalle de cada uno está en la sección siguiente.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Competidor</th><th>Anuncios</th><th>Mensaje principal</th><th>Cómo engancha</th><th>Formato principal</th><th>Duración típica</th></tr></thead>
+    <tbody>
+    <tr>
+      <td><b>MAPFRE Uruguay</b> <span class="tier local">Local</span></td>
+      <td>62<div class="plat">Meta 12 · Google 50</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>0 días</td>
+    </tr>
+    <tr>
+      <td><b>Porto Seguro Uruguay</b> <span class="tier local">Local</span></td>
+      <td>18<div class="plat">Meta 3 · Google 15</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Video</td>
+      <td>0 días</td>
+    </tr>
+    <tr>
+      <td><b>SURA Uruguay</b> <span class="tier local">Local</span></td>
+      <td>18<div class="plat">Meta 18</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>30 días</td>
+    </tr>
+    <tr>
+      <td><b>Banco de Seguros del Estado (BSE)</b> <span class="tier local">Local</span></td>
+      <td>13<div class="plat">Meta 8 · Google 5</div></td>
+      <td>Ahorro y precio</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>8 días</td>
+    </tr>
+    <tr>
+      <td><b>Sancor Seguros Uruguay</b> <span class="tier local">Local</span></td>
+      <td>10<div class="plat">Meta 10</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>13 días</td>
+    </tr>
+    <tr>
+      <td><b>MAPFRE (global)</b> <span class="tier global">Global</span></td>
+      <td>100<div class="plat">Meta 100</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Video</td>
+      <td>18 días</td>
+    </tr>
+    <tr>
+      <td><b>AXA</b> <span class="tier global">Global</span></td>
+      <td>83<div class="plat">Meta 83</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>35 días</td>
+    </tr>
+    <tr>
+      <td><b>Zurich</b> <span class="tier global">Global</span></td>
+      <td>37<div class="plat">Meta 37</div></td>
+      <td>Emocional</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>49 días</td>
+    </tr>
+    <tr>
+      <td><b>Allianz</b> <span class="tier global">Global</span></td>
+      <td>1<div class="plat">Meta 1</div></td>
+      <td>Comodidad y facilidad</td>
+      <td>Marca (institucional)</td>
+      <td>Imagen</td>
+      <td>2 días</td>
+    </tr>
+    </tbody>
+  </table></div>
+
+  <h3 style="margin-top:32px">Qué mensaje usa cada uno</h3>
+  <p class="muted small" style="margin-top:0">Porcentaje de los anuncios de cada competidor que usa cada tipo de mensaje. Cuanto más oscuro, más lo usa.</p>
+  <div class="tbl heat"><table>
+    <thead><tr><th>Competidor</th><th style="text-align:center">Protección</th><th style="text-align:center">Ahorro y precio</th><th style="text-align:center">Emocional</th><th style="text-align:center">Comodidad y facilidad</th><th style="text-align:center">Estilo de vida</th><th style="text-align:center">Prueba social</th><th style="text-align:center">Promociones</th></tr></thead>
+    <tbody>
+    <tr><td><b>MAPFRE Uruguay</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 4%, white); color: var(--ink)">5%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 70%, white); color: #fff">82%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 7%, white); color: var(--ink)">8%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 4%, white); color: var(--ink)">5%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    <tr><td><b>Porto Seguro Uruguay</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 85%, white); color: #fff">100%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    <tr><td><b>SURA Uruguay</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 28%, white); color: var(--ink)">33%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 48%, white); color: #fff">56%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 9%, white); color: var(--ink)">11%</td>
+    </tr>
+    <tr><td><b>Banco de Seguros del Estado (BSE)</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 7%, white); color: var(--ink)">8%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 32%, white); color: var(--ink)">38%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 32%, white); color: var(--ink)">38%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 7%, white); color: var(--ink)">8%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 7%, white); color: var(--ink)">8%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    <tr><td><b>Sancor Seguros Uruguay</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 8%, white); color: var(--ink)">10%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 51%, white); color: #fff">60%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 26%, white); color: var(--ink)">30%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    <tr><td><b>MAPFRE (global)</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 3%, white); color: var(--ink)">4%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 29%, white); color: var(--ink)">34%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 35%, white); color: var(--ink)">41%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 13%, white); color: var(--ink)">15%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 3%, white); color: var(--ink)">3%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 2%, white); color: var(--ink)">2%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 1%, white); color: var(--ink)">1%</td>
+    </tr>
+    <tr><td><b>AXA</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 48%, white); color: #fff">57%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 37%, white); color: var(--ink)">43%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    <tr><td><b>Zurich</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 4%, white); color: var(--ink)">5%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 4%, white); color: var(--ink)">5%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 58%, white); color: #fff">68%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 7%, white); color: var(--ink)">8%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 12%, white); color: var(--ink)">14%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    <tr><td><b>Allianz</b></td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 85%, white); color: #fff">100%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+      <td class="h" style="background: color-mix(in srgb, var(--accent) 0%, white); color: var(--ink)">0%</td>
+    </tr>
+    </tbody>
+  </table></div>
+<p style="margin-top:16px"><b>Locales vs. globales:</b> Los competidores locales se apoyan en emocional y los globales en emocional.</p>
+  <h3 style="margin-top:32px">Qué cambió respecto al mes anterior</h3>
+  <div class="empty">Es el primer mes con datos: la comparación con el mes anterior aparece a partir del próximo informe.</div>
+</section>
+
+<section id="competidores">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Competidor por competidor</h2></div>
+  <p class="sec-intro">Elegí un competidor para ver qué comunica, cómo y cuánto le duran los anuncios, comparado con el promedio del mercado.</p>
+<p class="small muted" style="margin-top:-12px">Cuando carguemos los anuncios de miSeguroOk, esta comparación se hace directamente contra miSeguroOk.</p>  <div class="tabs" data-group="comp">
+<button class="tab on" data-target="c0">MAPFRE Uruguay<span class="tier local">Local</span></button><button class="tab" data-target="c1">Porto Seguro Uruguay<span class="tier local">Local</span></button><button class="tab" data-target="c2">SURA Uruguay<span class="tier local">Local</span></button><button class="tab" data-target="c3">Banco de Seguros del Estado (BSE)<span class="tier local">Local</span></button><button class="tab" data-target="c4">Sancor Seguros Uruguay<span class="tier local">Local</span></button><button class="tab" data-target="c5">MAPFRE (global)<span class="tier global">Global</span></button><button class="tab" data-target="c6">AXA<span class="tier global">Global</span></button><button class="tab" data-target="c7">Zurich<span class="tier global">Global</span></button><button class="tab" data-target="c8">Allianz<span class="tier global">Global</span></button>  </div>
+  <div class="panel on" id="c0" data-group="comp">
+    <h3>MAPFRE Uruguay <span class="tier local">Local</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>62</b><span>anuncios activos<br>Meta: 12<br>Google: 50</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (8 de cada 10)</span></div>
+      <div class="kpi"><b>0 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>251 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>MAPFRE Uruguay</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:82%"></div></div><span>82%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:98%"></div></div><span>98%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>2%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:48%"></div></div><span>48%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:37%"></div></div><span>37%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:14%"></div></div><span>14%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:87%"></div></div><span>87%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>2%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:82%"></div></div><span>82%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:10%"></div></div><span>10%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Empresa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:3%"></div></div><span>3%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:80.64516129032258%" title="Menos de 1 semana: 50">50</div><div class="l2" style="width:8.064516129032258%" title="1 a 3 meses: 5">5</div><div class="l3" style="width:11.290322580645162%" title="Más de 3 meses: 7">7</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_1651590339340137.png" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">251 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1651590339340137" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_1581219962927457.png" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">251 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1581219962927457" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_1370845045055484.png" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">251 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1370845045055484" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/a05b6b7c6c57f1bea4acf1dbbbe53b3f.jpg" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">245 días</span></div><div class="hl">“Con Ahorro Seguro MAPFRE protegés tu futuro.”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1375522843787447" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c1" data-group="comp">
+    <h3>Porto Seguro Uruguay <span class="tier local">Local</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>18</b><span>anuncios activos<br>Meta: 3<br>Google: 15</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (10 de cada 10)</span></div>
+      <div class="kpi"><b>0 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>7 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>Porto Seguro Uruguay</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:61%"></div></div><span>61%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:33%"></div></div><span>33%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:6%"></div></div><span>6%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:94%"></div></div><span>94%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:6%"></div></div><span>6%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:89%"></div></div><span>89%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Salud</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:88.88888888888889%" title="Menos de 1 semana: 16">16</div><div class="l1" style="width:11.11111111111111%" title="1 a 4 semanas: 2">2</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_1614879886744746.png" alt="Anuncio de Porto Seguro Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">7 días</span></div><div class="hl">“Ir al perfil de Instagram”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1614879886744746" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/a9008c166a0578e72faf21ed65230627.jpg" alt="Anuncio de Porto Seguro Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">7 días</span></div><div class="hl">“#PortoSeguro #CampoUruguayo #ArrendamientosRurales #RuralDelPrado”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1307535302447192" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_1110954091617997.png" alt="Anuncio de Porto Seguro Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">6 días</span></div><div class="hl">“0:00 / 0:26”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1110954091617997" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/01c60ba6eef394a01ea510594996c364.png" alt="Anuncio de Porto Seguro Uruguay"><span class="pv-tag google">Google</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Texto (búsqueda)</span><span class="days">0 días</span></div><a class="small" href="https://adstransparency.google.com/advertiser/AR00182191396004823041/creative/CR08275582138854670337?region=UY" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c2" data-group="comp">
+    <h3>SURA Uruguay <span class="tier local">Local</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>18</b><span>anuncios activos<br>Meta: 18</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (6 de cada 10)</span></div>
+      <div class="kpi"><b>30 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>30 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>SURA Uruguay</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:56%"></div></div><span>56%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:33%"></div></div><span>33%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:44%"></div></div><span>44%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:44%"></div></div><span>44%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:89%"></div></div><span>89%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:33%"></div></div><span>33%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:22%"></div></div><span>22%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Salud</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:22%"></div></div><span>22%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:22.22222222222222%" title="Menos de 1 semana: 4">4</div><div class="l1" style="width:77.77777777777777%" title="1 a 4 semanas: 14">14</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/1a270af7c6ae7500a5dddc4357ccd2c2.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">30 días</span></div><div class="hl">“Tu Seguro de Auto, con más beneficios”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1864281568316131" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/689543604782b3f65bb1433e300e9a22.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">30 días</span></div><div class="hl">“Seguro de Vida”</div><a class="small" href="https://www.facebook.com/ads/library/?id=3281932131992358" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/1d56ae27696f16d816c2f7ee303e14b6.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">30 días</span></div><div class="hl">“Contratá tu Seguro de Auto.”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1804225364050924" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/27b3b163b688cdb8035ff607efa4fecc.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">30 días</span></div><div class="hl">“Tu Seguro de Auto, con más beneficios”</div><a class="small" href="https://www.facebook.com/ads/library/?id=2115024522558528" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c3" data-group="comp">
+    <h3>Banco de Seguros del Estado (BSE) <span class="tier local">Local</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>13</b><span>anuncios activos<br>Meta: 8<br>Google: 5</span></div>
+      <div class="kpi"><b class="txt">Ahorro y precio</b><span>mensaje principal (4 de cada 10)</span></div>
+      <div class="kpi"><b>8 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>34 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>Banco de Seguros del Estado (BSE)</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:38%"></div></div><span>38%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:38%"></div></div><span>38%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:62%"></div></div><span>62%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:31%"></div></div><span>31%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:62%"></div></div><span>62%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:31%"></div></div><span>31%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:38%"></div></div><span>38%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:31%"></div></div><span>31%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:31%"></div></div><span>31%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:54%"></div></div><span>54%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:38%"></div></div><span>38%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Salud</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:46.15384615384615%" title="Menos de 1 semana: 6">6</div><div class="l1" style="width:23.076923076923077%" title="1 a 4 semanas: 3">3</div><div class="l2" style="width:30.76923076923077%" title="1 a 3 meses: 4">4</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/a2c04b14ce9eece9b352371986da9f26.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">34 días</span></div><div class="hl">“Construí tu futuro con Vida BSE”</div><a class="small" href="https://www.facebook.com/ads/library/?id=2128532191431990" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/9c87b2b24a500ce02d670c967a71ceeb.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">34 días</span></div><div class="hl">“Tu Bienestar: prioridad de Vida BSE”</div><a class="small" href="https://www.facebook.com/ads/library/?id=2093599328032204" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/91e569614e966c09871da505d2c1817a.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">34 días</span></div><div class="hl">“Construí tu futuro con Vida BSE”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1718881376043658" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/bdc922c419601714137d9d972f7bbaa8.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">34 días</span></div><div class="hl">“Futuro brillante con Vida BSE”</div><a class="small" href="https://www.facebook.com/ads/library/?id=3681653271987759" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c4" data-group="comp">
+    <h3>Sancor Seguros Uruguay <span class="tier local">Local</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>10</b><span>anuncios activos<br>Meta: 10</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (6 de cada 10)</span></div>
+      <div class="kpi"><b>13 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>15 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>Sancor Seguros Uruguay</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:60%"></div></div><span>60%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:30%"></div></div><span>30%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:10%"></div></div><span>10%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:40%"></div></div><span>40%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:30%"></div></div><span>30%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:30%"></div></div><span>30%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:70%"></div></div><span>70%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:30%"></div></div><span>30%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:70%"></div></div><span>70%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:30%"></div></div><span>30%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:60%"></div></div><span>60%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:20%"></div></div><span>20%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Mascotas</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:20%"></div></div><span>20%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>2%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:20.0%" title="Menos de 1 semana: 2">2</div><div class="l1" style="width:80.0%" title="1 a 4 semanas: 8">8</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/cf5e2bab87f526382b9d4a64a5c63157.jpg" alt="Anuncio de Sancor Seguros Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">15 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1785030325836597" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/302b6a5a272c1f4ac44957082a325bdc.jpg" alt="Anuncio de Sancor Seguros Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">15 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1826242065231172" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/3c0ec600554636e3ab74d550b97e895a.jpg" alt="Anuncio de Sancor Seguros Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">15 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=2329891694438005" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/158e1df4229444203d64d6cdffdf5cb8.jpg" alt="Anuncio de Sancor Seguros Uruguay"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">15 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=2302726173890290" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c5" data-group="comp">
+    <h3>MAPFRE (global) <span class="tier global">Global</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>100</b><span>anuncios activos<br>Meta: 100</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (4 de cada 10)</span></div>
+      <div class="kpi"><b>18 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>177 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>MAPFRE (global)</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:41%"></div></div><span>41%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:34%"></div></div><span>34%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:15%"></div></div><span>15%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:4%"></div></div><span>4%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Estilo de vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:3%"></div></div><span>3%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>2%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:85%"></div></div><span>85%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>2%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:63%"></div></div><span>63%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:37%"></div></div><span>37%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:35%"></div></div><span>35%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:33%"></div></div><span>33%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:32%"></div></div><span>32%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:54%"></div></div><span>54%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:12%"></div></div><span>12%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:12%"></div></div><span>12%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:9%"></div></div><span>9%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Salud</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>2%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:13.0%" title="Menos de 1 semana: 13">13</div><div class="l1" style="width:57.0%" title="1 a 4 semanas: 57">57</div><div class="l2" style="width:24.0%" title="1 a 3 meses: 24">24</div><div class="l3" style="width:6.0%" title="Más de 3 meses: 6">6</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/019f1b8c29b148c8b09c0dd545b888b9.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">177 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1300800158642231" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/8d0e18cc7e9cc23ca058020778598612.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">145 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1002884698753485" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/ae85c09c50a90a9f9c1fcd666deb25ae.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">133 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1617429246019773" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/882f2e6c207b74c371ff2433db889cba.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">100 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1394535455843690" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c6" data-group="comp">
+    <h3>AXA <span class="tier global">Global</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>83</b><span>anuncios activos<br>Meta: 83</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (6 de cada 10)</span></div>
+      <div class="kpi"><b>35 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>65 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>AXA</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:57%"></div></div><span>57%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:43%"></div></div><span>43%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:95%"></div></div><span>95%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:4%"></div></div><span>4%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>1%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:71%"></div></div><span>71%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:29%"></div></div><span>29%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:48%"></div></div><span>48%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:40%"></div></div><span>40%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:12%"></div></div><span>12%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Salud</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:9.63855421686747%" title="Menos de 1 semana: 8">8</div><div class="l1" style="width:33.734939759036145%" title="1 a 4 semanas: 28">28</div><div class="l2" style="width:56.626506024096386%" title="1 a 3 meses: 47">47</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/3643a6cab5d95cb35250afe336496a87.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">65 días</span></div><div class="hl">“Zahnzusatzversicherung von AXA”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1555079239602692" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/f4ea659ad63554e10524eb4a9c5017db.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">65 días</span></div><div class="hl">“Zahnzusatzversicherung von AXA”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1012565341617987" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/e03ce6385e641d26ee7b3e8a3dbfebae.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">58 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=2596984724087500" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/7d8445859f6cd92a903ca68a4315f96c.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">58 días</span></div><a class="small" href="https://www.facebook.com/ads/library/?id=1359680272257926" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c7" data-group="comp">
+    <h3>Zurich <span class="tier global">Global</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>37</b><span>anuncios activos<br>Meta: 37</span></div>
+      <div class="kpi"><b class="txt">Emocional</b><span>mensaje principal (7 de cada 10)</span></div>
+      <div class="kpi"><b>49 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>547 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>Zurich</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:68%"></div></div><span>68%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:14%"></div></div><span>14%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:8%"></div></div><span>8%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:78%"></div></div><span>78%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:19%"></div></div><span>19%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:3%"></div></div><span>3%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:60%"></div></div><span>60%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:40%"></div></div><span>40%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:57%"></div></div><span>57%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:32%"></div></div><span>32%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:65%"></div></div><span>65%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:16%"></div></div><span>16%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:11%"></div></div><span>11%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:5%"></div></div><span>5%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Celular</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:3%"></div></div><span>3%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l1" style="width:37.83783783783784%" title="1 a 4 semanas: 14">14</div><div class="l2" style="width:16.216216216216218%" title="1 a 3 meses: 6">6</div><div class="l3" style="width:45.945945945945944%" title="Más de 3 meses: 17">17</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_1327307025057874.png" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">547 días</span></div><div class="hl">“Seguro a tu medida”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1327307025057874" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/cd5e72e915382f38bdf2852fd1f767cc.jpg" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">490 días</span></div><div class="hl">“Protegé lo que más importa 💙”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1434941441020940" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/meta_719687357882769.png" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Video</span><span class="days">283 días</span></div><div class="hl">“Seguro a tu medida”</div><a class="small" href="https://www.facebook.com/ads/library/?id=719687357882769" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/b12a28600404d60005be1b4a4c092420.jpg" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">283 días</span></div><div class="hl">“Protegé 100% online”</div><a class="small" href="https://www.facebook.com/ads/library/?id=1166410905631816" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+  <div class="panel" id="c8" data-group="comp">
+    <h3>Allianz <span class="tier global">Global</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>1</b><span>anuncios activos<br>Meta: 1</span></div>
+      <div class="kpi"><b class="txt">Comodidad y facilidad</b><span>mensaje principal (10 de cada 10)</span></div>
+      <div class="kpi"><b>2 días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>2 días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>Allianz</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+    <div class="grid g2">
+      <div class="card"><h3>Qué mensaje usa</h3><p class="small muted" style="margin:-4px 0 8px">La idea principal con la que vende.</p><div class="pb">
+    <div class="pb-label">Comodidad y facilidad</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Emocional</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:56%"></div></div><span>56%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Ahorro y precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:13%"></div></div><span>13%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Prueba social</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Protección</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Cómo engancha</h3><p class="small muted" style="margin:-4px 0 8px">El recurso de los primeros segundos o la primera línea.</p><div class="pb">
+    <div class="pb-label">Marca (institucional)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:78%"></div></div><span>78%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Respuesta directa</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:15%"></div></div><span>15%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Pregunta</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Historia</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Precio</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>1%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Promociones</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:2%"></div></div><span>0%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué formato</h3><p class="small muted" style="margin:-4px 0 8px">Video, imagen, carrusel o texto de búsqueda.</p><div class="pb">
+    <div class="pb-label">Imagen</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:61%"></div></div><span>61%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Video</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:27%"></div></div><span>27%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Texto (búsqueda)</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>En qué etapa del cliente</h3><p class="small muted" style="margin:-4px 0 8px">Descubrimiento, consideración o conversión.</p><div class="pb">
+    <div class="pb-label">Consideración</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:24%"></div></div><span>24%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Descubrimiento</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:45%"></div></div><span>45%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Conversión</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:32%"></div></div><span>32%</span></div>
+    </div>
+  </div></div>
+      <div class="card"><h3>Qué producto empuja</h3><div class="pb">
+    <div class="pb-label">Varios productos</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:100%"></div></div><span>100%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:62%"></div></div><span>62%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Vida</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:11%"></div></div><span>11%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Viaje</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:10%"></div></div><span>10%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Auto</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:6%"></div></div><span>6%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Hogar</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:5%"></div></div><span>5%</span></div>
+    </div>
+  </div><div class="pb">
+    <div class="pb-label">Salud</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>0%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:3%"></div></div><span>3%</span></div>
+    </div>
+  </div></div>
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        <div class="lon">
+<div class="l0" style="width:100.0%" title="Menos de 1 semana: 1">1</div>        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      <div class="cr"><div class="pv"><img loading="lazy" src="assets/a63c8dd7bfc5e510c11560010c8745bb.jpg" alt="Anuncio de Allianz"><span class="pv-tag meta">Meta</span>
+  </div><div class="cr-body"><div class="cr-top"><span class="tag">Imagen</span><span class="days">2 días</span></div><div class="hl">“Future Minds: Deine Chance!”</div><a class="small" href="https://www.facebook.com/ads/library/?id=2719481601891599" target="_blank" rel="noopener">Ver anuncio original</a></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="referencias">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Creativos de referencia</h2></div>
+  <p class="sec-intro">Los 10 anuncios locales y los 10 globales que más tiempo llevan al aire (máximo 3 por competidor). Son para inspirarnos y adaptar la idea, nunca para copiarlos.</p>
+  <div class="seg tabs" data-group="refs">
+    <button class="tab on" data-target="ref-local">Top 10 locales</button>
+    <button class="tab" data-target="ref-global">Top 10 globales</button>
+  </div>
+  <div class="panel on" id="ref-local" data-group="refs">
+    <div class="grid g3">
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/meta_1651590339340137.png" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#1</span><span class="days">251 días al aire</span></div>
+          <h4>MAPFRE Uruguay</h4>
+          <div class="tags">
+            <span class="tag">Video</span>
+<span class="tag">Prueba social</span><span class="tag">Marca (institucional)</span><span class="tag">Empresa</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1651590339340137" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/meta_1581219962927457.png" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#2</span><span class="days">251 días al aire</span></div>
+          <h4>MAPFRE Uruguay</h4>
+          <div class="tags">
+            <span class="tag">Video</span>
+<span class="tag">Prueba social</span><span class="tag">Marca (institucional)</span><span class="tag">Empresa</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1581219962927457" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/meta_1370845045055484.png" alt="Anuncio de MAPFRE Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#3</span><span class="days">251 días al aire</span></div>
+          <h4>MAPFRE Uruguay</h4>
+          <div class="tags">
+            <span class="tag">Video</span>
+<span class="tag">Prueba social</span><span class="tag">Marca (institucional)</span><span class="tag">Empresa</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1370845045055484" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/a2c04b14ce9eece9b352371986da9f26.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#4</span><span class="days">34 días al aire</span></div>
+          <h4>Banco de Seguros del Estado (BSE)</h4>
+<div class="hl">“Construí tu futuro con Vida BSE”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Ahorro y precio</span><span class="tag">Marca (institucional)</span><span class="tag">Vida</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=2128532191431990" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/9c87b2b24a500ce02d670c967a71ceeb.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#5</span><span class="days">34 días al aire</span></div>
+          <h4>Banco de Seguros del Estado (BSE)</h4>
+<div class="hl">“Tu Bienestar: prioridad de Vida BSE”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Ahorro y precio</span><span class="tag">Marca (institucional)</span><span class="tag">Vida</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=2093599328032204" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/91e569614e966c09871da505d2c1817a.jpg" alt="Anuncio de Banco de Seguros del Estado (BSE)"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#6</span><span class="days">34 días al aire</span></div>
+          <h4>Banco de Seguros del Estado (BSE)</h4>
+<div class="hl">“Construí tu futuro con Vida BSE”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Ahorro y precio</span><span class="tag">Marca (institucional)</span><span class="tag">Vida</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1718881376043658" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/1a270af7c6ae7500a5dddc4357ccd2c2.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#7</span><span class="days">30 días al aire</span></div>
+          <h4>SURA Uruguay</h4>
+<div class="hl">“Tu Seguro de Auto, con más beneficios”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Ahorro y precio</span><span class="tag">Respuesta directa</span><span class="tag">Auto</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1864281568316131" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/689543604782b3f65bb1433e300e9a22.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#8</span><span class="days">30 días al aire</span></div>
+          <h4>SURA Uruguay</h4>
+<div class="hl">“Seguro de Vida”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Emocional</span><span class="tag">Marca (institucional)</span><span class="tag">Vida</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=3281932131992358" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/1d56ae27696f16d816c2f7ee303e14b6.jpg" alt="Anuncio de SURA Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#9</span><span class="days">30 días al aire</span></div>
+          <h4>SURA Uruguay</h4>
+<div class="hl">“Contratá tu Seguro de Auto.”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Ahorro y precio</span><span class="tag">Respuesta directa</span><span class="tag">Auto</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1804225364050924" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/cf5e2bab87f526382b9d4a64a5c63157.jpg" alt="Anuncio de Sancor Seguros Uruguay"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#10</span><span class="days">15 días al aire</span></div>
+          <h4>Sancor Seguros Uruguay</h4>
+          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Emocional</span><span class="tag">Pregunta</span><span class="tag">Viaje</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1785030325836597" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel" id="ref-global" data-group="refs">
+    <div class="grid g3">
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/meta_1327307025057874.png" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#1</span><span class="days">547 días al aire</span></div>
+          <h4>Zurich</h4>
+<div class="hl">“Seguro a tu medida”</div>          <div class="tags">
+            <span class="tag">Video</span>
+<span class="tag">Emocional</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+          <div class="adapt"><b>Por qué nos interesa:</b> Lleva 547 días al aire: podría indicar que al anunciante le sirve.<br><b>Cómo adaptarlo:</b> La misma tensión, contada con un caso real de un cliente · Versión corta de 15 segundos para Reels/Stories</div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1327307025057874" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/cd5e72e915382f38bdf2852fd1f767cc.jpg" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#2</span><span class="days">490 días al aire</span></div>
+          <h4>Zurich</h4>
+<div class="hl">“Protegé lo que más importa 💙”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Emocional</span><span class="tag">Marca (institucional)</span><span class="tag">Hogar</span>          </div>
+          <div class="adapt"><b>Por qué nos interesa:</b> Lleva 490 días al aire: podría indicar que al anunciante le sirve.<br><b>Cómo adaptarlo:</b> La misma tensión, contada con un caso real de un cliente · Versión corta de 15 segundos para Reels/Stories</div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1434941441020940" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/meta_719687357882769.png" alt="Anuncio de Zurich"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#3</span><span class="days">283 días al aire</span></div>
+          <h4>Zurich</h4>
+<div class="hl">“Seguro a tu medida”</div>          <div class="tags">
+            <span class="tag">Video</span>
+<span class="tag">Emocional</span><span class="tag">Respuesta directa</span><span class="tag">Celular</span>          </div>
+          <div class="adapt"><b>Por qué nos interesa:</b> Lleva 283 días al aire: podría indicar que al anunciante le sirve.<br><b>Cómo adaptarlo:</b> La misma tensión, contada con un caso real de un cliente · Versión corta de 15 segundos para Reels/Stories</div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=719687357882769" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/019f1b8c29b148c8b09c0dd545b888b9.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#4</span><span class="days">177 días al aire</span></div>
+          <h4>MAPFRE (global)</h4>
+          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Emocional</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1300800158642231" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/8d0e18cc7e9cc23ca058020778598612.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#5</span><span class="days">145 días al aire</span></div>
+          <h4>MAPFRE (global)</h4>
+          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Emocional</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1002884698753485" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/ae85c09c50a90a9f9c1fcd666deb25ae.jpg" alt="Anuncio de MAPFRE (global)"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#6</span><span class="days">133 días al aire</span></div>
+          <h4>MAPFRE (global)</h4>
+          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Emocional</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1617429246019773" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/3643a6cab5d95cb35250afe336496a87.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#7</span><span class="days">65 días al aire</span></div>
+          <h4>AXA</h4>
+<div class="hl">“Zahnzusatzversicherung von AXA”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Comodidad y facilidad</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1555079239602692" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/f4ea659ad63554e10524eb4a9c5017db.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#8</span><span class="days">65 días al aire</span></div>
+          <h4>AXA</h4>
+<div class="hl">“Zahnzusatzversicherung von AXA”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Comodidad y facilidad</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=1012565341617987" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/e03ce6385e641d26ee7b3e8a3dbfebae.jpg" alt="Anuncio de AXA"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#9</span><span class="days">58 días al aire</span></div>
+          <h4>AXA</h4>
+          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Comodidad y facilidad</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=2596984724087500" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+      <div class="cr">
+        <div class="pv pv-big"><img loading="lazy" src="assets/a63c8dd7bfc5e510c11560010c8745bb.jpg" alt="Anuncio de Allianz"><span class="pv-tag meta">Meta</span>
+  </div>
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#10</span><span class="days">2 días al aire</span></div>
+          <h4>Allianz</h4>
+<div class="hl">“Future Minds: Deine Chance!”</div>          <div class="tags">
+            <span class="tag">Imagen</span>
+<span class="tag">Comodidad y facilidad</span><span class="tag">Marca (institucional)</span><span class="tag">Varios productos</span>          </div>
+<a class="small" href="https://www.facebook.com/ads/library/?id=2719481601891599" target="_blank" rel="noopener">Ver anuncio original</a>        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="oportunidades">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Oportunidades creativas</h2></div>
+  <p class="sec-intro">Territorios que la competencia deja libres o donde miSeguroOk puede diferenciarse, con ideas listas para producir y cómo vamos a medirlas.</p>
+  <div class="card" style="margin-bottom:8px">
+    <h3>Mensajes que casi nadie usa</h3>
+    <p class="small muted" style="margin:-4px 0 10px">Porcentaje de los anuncios del mercado que usan cada mensaje.</p>
+<div class="pb"><div class="pb-label">Estilo de vida</div><div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>1%</span></div></div><div class="pb"><div class="pb-label">Promociones</div><div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>1%</span></div></div><div class="pb"><div class="pb-label">Protección</div><div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:2%"></div></div><span>2%</span></div></div><div class="pb"><div class="pb-label">Prueba social</div><div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:3%"></div></div><span>3%</span></div></div>  </div>
+  <div class="card op">
+    <div class="op-head"><h3>1. Ocupar el territorio de estilo de vida</h3><span class="pill lvl-alta">Prioridad alta</span></div>
+    <div class="op-grid">
+      <div><div class="k">Por qué</div>Ningún anuncio del mercado usa este mensaje: hay espacio para que miSeguro lo haga propio.</div>
+      <div><div class="k">Quién lo hace hoy</div>Lo usan 1 de 9 competidores (MAPFRE (global))</div>
+    </div>
+    <div class="ideas">
+      <div class="k" style="margin:0">Ideas para producir</div>
+      <div class="idea">
+        <div class="tags"><span class="tag">Video</span><span class="tag">Gancho: Problema</span><span class="tag">Mensaje: Estilo de vida</span></div>
+        <div class="copy">[Borrador a desarrollar por el equipo creativo]</div>
+<div class="small muted" style="margin-top:6px"><b>Cómo se ve:</b> Plano corto, persona real, el problema en los primeros 3 segundos.</div>      </div>
+    </div>
+<div class="measure"><b>Cómo lo medimos:</b> Comparar tasa de clics y costo por cotización contra el anuncio actual más usado, durante 14 días.</div>  </div>
+  <div class="card op">
+    <div class="op-head"><h3>2. Ocupar el territorio de promociones</h3><span class="pill lvl-alta">Prioridad alta</span></div>
+    <div class="op-grid">
+      <div><div class="k">Por qué</div>Ningún anuncio del mercado usa este mensaje: hay espacio para que miSeguro lo haga propio.</div>
+      <div><div class="k">Quién lo hace hoy</div>Lo usan 2 de 9 competidores (MAPFRE (global), SURA Uruguay)</div>
+    </div>
+    <div class="ideas">
+      <div class="k" style="margin:0">Ideas para producir</div>
+      <div class="idea">
+        <div class="tags"><span class="tag">Video</span><span class="tag">Gancho: Problema</span><span class="tag">Mensaje: Promociones</span></div>
+        <div class="copy">[Borrador a desarrollar por el equipo creativo]</div>
+<div class="small muted" style="margin-top:6px"><b>Cómo se ve:</b> Plano corto, persona real, el problema en los primeros 3 segundos.</div>      </div>
+    </div>
+<div class="measure"><b>Cómo lo medimos:</b> Comparar tasa de clics y costo por cotización contra el anuncio actual más usado, durante 14 días.</div>  </div>
+  <div class="card op">
+    <div class="op-head"><h3>3. Ocupar el territorio de protección</h3><span class="pill lvl-media">Prioridad media</span></div>
+    <div class="op-grid">
+      <div><div class="k">Por qué</div>Solo 2% de los anuncios del mercado usan este mensaje: hay espacio para que miSeguro lo haga propio.</div>
+      <div><div class="k">Quién lo hace hoy</div>Lo usan 4 de 9 competidores (Banco de Seguros del Estado (BSE), MAPFRE (global), Sancor Seguros Uruguay)</div>
+    </div>
+    <div class="ideas">
+      <div class="k" style="margin:0">Ideas para producir</div>
+      <div class="idea">
+        <div class="tags"><span class="tag">Video</span><span class="tag">Gancho: Problema</span><span class="tag">Mensaje: Protección</span></div>
+        <div class="copy">[Borrador a desarrollar por el equipo creativo]</div>
+<div class="small muted" style="margin-top:6px"><b>Cómo se ve:</b> Plano corto, persona real, el problema en los primeros 3 segundos.</div>      </div>
+    </div>
+<div class="measure"><b>Cómo lo medimos:</b> Comparar tasa de clics y costo por cotización contra el anuncio actual más usado, durante 14 días.</div>  </div>
+</section>
+
+<section id="riesgos">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Riesgos y saturación</h2></div>
+  <p class="sec-intro">Dónde todos dicen lo mismo. Si 8 de cada 10 competidores usan un mensaje, sumarse sin un giro propio nos hace invisibles.</p>
+  <div class="card" style="margin-bottom:16px">
+    <h3>Los mensajes más repetidos</h3>
+    <p class="small muted" style="margin:-4px 0 10px">Cada cuadrado es un competidor; en color, los que usan ese mensaje.</p>
+    <div class="sat"><div>Seguridad</div><div class="sat-track"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i></div><div class="small muted">7 de 9</div></div>
+    <div class="sat"><div>Contratación online</div><div class="sat-track"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i></div><div class="small muted">6 de 9</div></div>
+    <div class="sat"><div>Tranquilidad</div><div class="sat-track"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="small muted">5 de 9</div></div>
+    <div class="sat"><div>Ahorro</div><div class="sat-track"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="small muted">4 de 9</div></div>
+    <div class="sat"><div>Familia</div><div class="sat-track"><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="small muted">3 de 9</div></div>
+    <div class="sat"><div>Digital</div><div class="sat-track"><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="small muted">2 de 9</div></div>
+  </div>
+  <div class="card risk" style="margin-bottom:14px">
+    <div class="op-head" style="padding:0"><h3>Ser uno más hablando de seguridad</h3><span class="pill lvl-alta">Riesgo alto</span></div>
+    <div class="cols">
+      <div><div class="k">Qué está pasando</div>7 de los 9 competidores usan este mismo mensaje (173 anuncios).</div>
+      <div><div class="k">Por qué importa</div>Con tantos anuncios diciendo lo mismo, el nuestro se confunde con el resto y cuesta más que lo recuerden.</div>
+      <div><div class="k">Cómo lo evitamos</div>Si lo usamos, cuantificarlo (cifras, casos reales) o contarlo con un formato que nadie usa.</div>
+    </div>
+  </div>
+  <div class="card risk" style="margin-bottom:14px">
+    <div class="op-head" style="padding:0"><h3>Ser uno más hablando de contratación online</h3><span class="pill lvl-alta">Riesgo alto</span></div>
+    <div class="cols">
+      <div><div class="k">Qué está pasando</div>6 de los 9 competidores usan este mismo mensaje (54 anuncios).</div>
+      <div><div class="k">Por qué importa</div>Con tantos anuncios diciendo lo mismo, el nuestro se confunde con el resto y cuesta más que lo recuerden.</div>
+      <div><div class="k">Cómo lo evitamos</div>Si lo usamos, cuantificarlo (cifras, casos reales) o contarlo con un formato que nadie usa.</div>
+    </div>
+  </div>
+  <div class="card risk" style="margin-bottom:14px">
+    <div class="op-head" style="padding:0"><h3>Ser uno más hablando de tranquilidad</h3><span class="pill lvl-media">Riesgo medio</span></div>
+    <div class="cols">
+      <div><div class="k">Qué está pasando</div>5 de los 9 competidores usan este mismo mensaje (24 anuncios).</div>
+      <div><div class="k">Por qué importa</div>Con tantos anuncios diciendo lo mismo, el nuestro se confunde con el resto y cuesta más que lo recuerden.</div>
+      <div><div class="k">Cómo lo evitamos</div>Si lo usamos, cuantificarlo (cifras, casos reales) o contarlo con un formato que nadie usa.</div>
+    </div>
+  </div>
+</section>
+
+<section id="cliente">
+  <div class="sec-head"><span class="sec-num">08</span><h2>miSeguroOk vs. mercado</h2></div>
+  <div class="empty">
+    <b>Todavía no estamos midiendo los anuncios de miSeguroOk.</b><br>
+    Para comparar lo que comunica miSeguroOk contra el mercado, cargá el ID de su página de Facebook (<code>meta_page_id</code>) y su dominio en la configuración del cliente. A partir del próximo ciclo esta sección muestra las diferencias y las pestañas de competidores se comparan directamente contra miSeguroOk.
+  </div>
+</section>
+
+<section id="plan">
+  <div class="sec-head"><span class="sec-num">09</span><h2>Plan de acción</h2></div>
+  <p class="sec-intro">Qué hacemos, quién, para cuándo y cómo sabemos si salió bien. Ordenado por prioridad.</p>
+  <div class="tbl plan"><table>
+    <thead><tr><th>Prioridad</th><th>Acción</th><th>Responsable</th><th>Entregable</th><th>Cómo medimos</th><th>Fecha</th></tr></thead>
+    <tbody>
+    <tr>
+      <td><span class="pill lvl-alta">Alta</span></td>
+      <td><b>Validar el plan con el cliente</b><div class="small muted">Revisar hallazgos, oportunidades y riesgos; aprobar o ajustar.</div></td>
+      <td>Director/a de cuenta</td>
+      <td>Plan aprobado en Basecamp</td>
+      <td>Aprobación antes del día 3</td>
+      <td class="when">03/10<div class="small muted">en 2 días</div></td>
+    </tr>
+    <tr>
+      <td><span class="pill lvl-alta">Alta</span></td>
+      <td><b>Producir las piezas de la oportunidad principal</b><div class="small muted">Una imagen, un video corto UGC y un carrusel.</div></td>
+      <td>Líder creativo</td>
+      <td>3 piezas listas para pautar</td>
+      <td>Piezas al aire en 7 días</td>
+      <td class="when">08/10<div class="small muted">en 7 días</div></td>
+    </tr>
+    <tr>
+      <td><span class="pill lvl-media">Media</span></td>
+      <td><b>Lanzar prueba A/B contra el anuncio actual</b><div class="small muted">Mismo presupuesto y audiencia, 14 días.</div></td>
+      <td>Media buyer</td>
+      <td>Campaña de prueba activa</td>
+      <td>Costo por cotización vs. control</td>
+      <td class="when">11/10<div class="small muted">en 10 días</div></td>
+    </tr>
+    <tr>
+      <td><span class="pill lvl-media">Media</span></td>
+      <td><b>Revisar resultados y decidir</b><div class="small muted">Escalar la ganadora, cortar la perdedora.</div></td>
+      <td>Director/a de cuenta</td>
+      <td>Informe de resultados</td>
+      <td>Decisión documentada</td>
+      <td class="when">25/10<div class="small muted">en 24 días</div></td>
+    </tr>
+    </tbody>
+  </table></div>
+
+  <details class="method">
+    <summary>Cómo se armó este informe</summary>
+    <p>Relevamos los anuncios activos de cada competidor en la Biblioteca de anuncios de Meta y en el Centro de transparencia de anuncios de Google. Cada anuncio se clasifica con inteligencia artificial dentro de categorías fijas (mensaje, gancho, formato, etapa del cliente, producto) para poder comparar mes a mes, y una persona del equipo valida el análisis antes de publicarlo.</p>
+    <p>La duración de un anuncio es la diferencia entre la primera y la última vez que lo vimos activo. No tenemos acceso a resultados de los competidores (clics, ventas, inversión): cuando decimos que un anuncio "dura", es una señal, no una prueba de que funcione.</p>
+  </details>
+</section>
+
+</main>
+<div class="foot"><div class="wrap"><footer>
+  <a class="logo" href="https://rankerstudio.com"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 88" role="img" aria-label="Ranker">
+  <!-- Isotipo de Ranker (recreación provisoria a partir del sitio; reemplazar por el SVG oficial) -->
+  <path fill="#FD6D30" d="M40 2a38 38 0 1 1-9.6 74.8L26 86l-4.2-12.6A38 38 0 0 1 40 2z"/>
+  <path fill="#FFFFFF" d="M25 39h30a15 15 0 0 1-30 0z"/>
+</svg>
+<span class="word">Ranker</span></a>
+  <span>Radar creativo de Ranker · Generado el 01/10/2026 09:45</span>
+</footer></div></div>
+
+<script>
+  document.querySelectorAll('.tabs').forEach(function (bar) {
+    var group = bar.getAttribute('data-group');
+    bar.querySelectorAll('.tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        bar.querySelectorAll('.tab').forEach(function (b) { b.classList.remove('on'); });
+        document.querySelectorAll('.panel[data-group="' + group + '"]').forEach(function (p) { p.classList.remove('on'); });
+        btn.classList.add('on');
+        document.getElementById(btn.getAttribute('data-target')).classList.add('on');
+      });
+    });
+  });
+</script>
+</body>
+</html>
