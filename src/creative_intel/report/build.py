@@ -38,6 +38,7 @@ def _env() -> Environment:
     env.filters["dots"] = dots
     env.filters["bar"] = lambda pct: max(2, min(100, int(round(float(pct or 0)))))
     env.filters["of10"] = lambda pct: max(1, round(float(pct or 0) / 10)) if pct else 0
+    env.filters["dias"] = lambda d: "—" if d is None else f"{int(round(float(d)))} días"
     env.filters["n"] = lambda v: f"{int(v):,}".replace(",", ".") if isinstance(v, (int, float)) else v
     return env
 

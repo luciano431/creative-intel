@@ -25,7 +25,7 @@
 | Competidor | Tipo | Anuncios | Mensaje principal | Formato principal | Duración típica |
 |---|---|---|---|---|---|
 {% for p in profiles %}
-| {{ p.name }} | {{ lbl(p.tier) }} | {{ p.creatives }} | {{ lbl(p.top_family.value) if p.top_family else '—' }} | {{ lbl(p.top_format.value) if p.top_format else '—' }} | {{ p.longevity.median_days | round | int }} días |
+| {{ p.name }} | {{ lbl(p.tier) }} | {{ p.creatives }} | {{ lbl(p.top_family.value) if p.top_family else '—' }} | {{ lbl(p.top_format.value) if p.top_format else '—' }} | {{ p.longevity.median_days | dias }} |
 {% endfor %}
 
 {% if synthesis.local_vs_global %}**Locales vs. globales:** {{ synthesis.local_vs_global }}{% endif %}{{ '' }}

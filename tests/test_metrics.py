@@ -66,3 +66,18 @@ def test_weighted_distribution_gives_each_competitor_equal_weight():
     assert raw["oferta"] == 90.9
     assert weighted["oferta"]["pct"] == 50.0 and weighted["proteccion"]["pct"] == 50.0
     assert weighted["oferta"]["count"] == 1  # un competidor lo usa
+
+
+def test_clean_headline_and_google_duration_excluded():
+    from creative_intel.analysis.metrics import clean_headline, longevity
+
+    assert clean_headline("0:00 / 0:26") == "" and clean_headline("Ir al perfil de Instagram") == ""
+    assert clean_headline("Seguro a tu medida") == "Seguro a tu medida"
+    items = [
+        {"id": 1, "platform": "meta", "days_active": 40, "raw": {}},
+        {"id": 2, "platform": "google", "days_active": 0, "raw": {}},
+        {"id": 3, "platform": "google", "days_active": 10, "raw": {"first_seen_known": True}},
+    ]
+    lon = longevity(items)
+    assert lon["dated"] == 2 and lon["median_days"] == 25
+    assert longevity([items[1]])["median_days"] is None

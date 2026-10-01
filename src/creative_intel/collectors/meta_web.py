@@ -133,7 +133,8 @@ UI_NOISE = re.compile(
     r"^(Library ID|Identificador de la biblioteca|ID de la biblioteca|Started running|Comenzó a publicarse|En circulación"
     r"|Activo$|Active$|Inactivo$|Inactive$|Plataformas|Platforms|Ver detalles|See ad details|Ver resumen|See summary"
     r"|Patrocinado$|Publicidad$|Sponsored$|Abrir menú|Open Drop|Este anuncio tiene varias versiones|This ad has multiple versions"
-    r"|Detalles del anuncio|Ad details|Categor[ií]a|Category|Transparencia de la UE|EU transparency)",
+    r"|Detalles del anuncio|Ad details|Categor[ií]a|Category|Transparencia de la UE|EU transparency"
+    r"|Ir al perfil de|Go to .* profile|Ver perfil|View profile|Seguir$|Follow$)",
     re.I,
 )
 CTA_LABELS = {
@@ -143,7 +144,7 @@ CTA_LABELS = {
     "whatsapp", "enviar mensaje de whatsapp", "llamar ahora", "call now", "suscribirte", "subscribe",
 }
 DOMAIN_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
-TIMESTAMP_RE = re.compile(r"^\d{1,2}:\d{2}(\s*/\s*\d{1,2}:\d{2})?$")
+TIMESTAMP_RE = re.compile(r"^\s*\d{1,2}:\d{2}(\s*/\s*\d{1,2}:\d{2})?\s*$")
 
 
 def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:

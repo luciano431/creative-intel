@@ -233,7 +233,7 @@ def mock_synthesis(
     insights = [
         Insight(
             title=f"{label(top_fam['value'])}: el territorio más concurrido",
-            observation=f"{fam_users['competitors']} de los {n_comp} competidores usan mensajes de {label(top_fam['value']).lower()} ({fam_users['ads']} anuncios).",
+            observation=f"{fam_users['competitors']} de los {n_comp} competidores usan el mensaje «{label(top_fam['value'])}» ({fam_users['ads']} anuncios).",
             interpretation="Podría indicar que es el argumento que la categoría considera seguro; también que está saturado y cuesta destacarse ahí.",
             evidence=[f"{fam_users['ads']} anuncios de {fam_users['competitors']} competidores"],
             implication_for_us="No ser uno más con el mismo mensaje: si lo usamos, con una prueba concreta o un tono distinto.",
@@ -243,8 +243,9 @@ def mock_synthesis(
     if loc_top and glo_top:
         insights.append(
             Insight(
-                title="Locales y globales no hablan igual" if loc_top != glo_top else "Locales y globales coinciden",
-                observation=f"Los locales se apoyan más en {label(loc_top).lower()}; los referentes globales, en {label(glo_top).lower()}.",
+                title="Locales y globales no hablan igual" if loc_top != glo_top else "Locales y globales dicen lo mismo",
+                observation=(f"Los locales se apoyan más en «{label(loc_top)}»; los referentes globales, en «{label(glo_top)}»." if loc_top != glo_top
+                             else f"Tanto los competidores locales como los globales se apoyan sobre todo en «{label(loc_top)}»."),
                 interpretation="Lo que hacen los globales puede anticipar hacia dónde va la categoría en el mercado local.",
                 evidence=[f"Local: {label(loc_top)} · Global: {label(glo_top)}"],
                 implication_for_us="Tomar de los globales lo que todavía nadie hace localmente.",
@@ -271,9 +272,9 @@ def mock_synthesis(
             Opportunity(
                 title=f"Ocupar el territorio de {label(w['value']).lower()}",
                 priority="alta" if w["pct"] < 2 else "media",
-                rationale=(f"Solo {round(w['pct'])}% de los anuncios del mercado usan este mensaje" if w["pct"] >= 1 else "Ningún anuncio del mercado usa este mensaje") + f": hay espacio para que {client} lo haga propio.",
+                rationale=(f"Solo {users['ads']} de los {n_cls} anuncios del mercado usan este mensaje" if users else "Ningún anuncio del mercado usa este mensaje") + f": hay espacio para que {client} lo haga propio.",
                 who_does_it=(f"Lo usan {users['competitors']} de {n_comp} competidores ({', '.join(users['names'][:3])})" if users else "Ningún competidor lo usa hoy"),
-                evidence=[f"{round(w['pct'])}% de {n_cls} anuncios clasificados"],
+                evidence=[f"{users['ads'] if users else 0} de {n_cls} anuncios clasificados"],
                 concepts=[
                     ConceptIdea(
                         format="video",
@@ -323,7 +324,11 @@ def mock_synthesis(
         period_label=period,
         executive_summary=summary,
         top_insights=insights[:3],
-        local_vs_global=(f"Los competidores locales se apoyan en {label(loc_top).lower()} y los globales en {label(glo_top).lower()}." if loc_top and glo_top else "Sin datos suficientes para comparar locales y globales."),
+        local_vs_global=(
+            (f"Los competidores locales se apoyan en «{label(loc_top)}» y los globales en «{label(glo_top)}»." if loc_top != glo_top
+             else f"Locales y globales coinciden: el mensaje principal de ambos es «{label(loc_top)}».")
+            if loc_top and glo_top else "Sin datos suficientes para comparar locales y globales."
+        ),
         reference_creatives=refs,
         unexploited_angles=[label(w["value"]) for w in ws],
         white_space=opportunities,

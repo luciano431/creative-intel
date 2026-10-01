@@ -18,6 +18,24 @@ from typing import Any, Callable, Iterable
 from ..config import Taxonomy
 
 
+def clean_headline(text: str | None) -> str:
+    """Descarta titulares que en realidad son ruido de la interfaz de las bibliotecas."""
+    from ..collectors.meta_web import TIMESTAMP_RE, UI_NOISE
+
+    t = (text or "").strip()
+    if not t or TIMESTAMP_RE.match(t) or UI_NOISE.search(t):
+        return ""
+    return t
+
+
+def start_known(it: dict[str, Any]) -> bool:
+    """Google no informa cuándo empezó un anuncio: sin esa fecha la duración no es medible."""
+    raw = it.get("raw") or {}
+    if it.get("platform") == "google":
+        return bool(raw.get("first_seen_known"))
+    return True
+
+
 def creative_to_item(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
     cls = creative.latest_classification
     data = dict(cls.data) if cls else {}
@@ -39,10 +57,10 @@ def creative_to_item(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
         "last_seen": creative.last_seen.isoformat(),
         "engagement": dict(creative.engagement or {}),
         "thumbnail_path": creative.thumbnail_path,
-        "raw": {k: (creative.raw or {}).get(k) for k in ("screenshot", "variations", "text_in_image", "regions")},
+        "raw": {k: (creative.raw or {}).get(k) for k in ("screenshot", "variations", "text_in_image", "regions", "first_seen_known")},
         "snapshot_url": creative.snapshot_url,
         "landing_url": creative.landing_url,
-        "headline": creative.headline,
+        "headline": clean_headline(creative.headline),
         "body_text": creative.body_text,
         "qa_status": creative.qa_status,
         "confidence": cls.confidence if cls else "low",
@@ -107,6 +125,8 @@ def angle_matrix(items: Iterable[dict[str, Any]], families: list[str]) -> dict[s
 
 
 def longevity(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Duración al aire. Solo cuenta anuncios con fecha de inicio conocida (no los de Google)."""
+    items = [it for it in items if start_known(it)]
     days = [it["days_active"] for it in items]
     buckets = {"0-6": 0, "7-30": 0, "31-90": 0, "91+": 0}
     for d in days:
@@ -121,8 +141,9 @@ def longevity(items: list[dict[str, Any]]) -> dict[str, Any]:
     top = sorted(items, key=lambda it: -it["days_active"])[:10]
     return {
         "buckets": buckets,
-        "median_days": statistics.median(days) if days else 0,
-        "mean_days": round(statistics.mean(days), 1) if days else 0,
+        "median_days": statistics.median(days) if days else None,
+        "mean_days": round(statistics.mean(days), 1) if days else None,
+        "dated": len(days),
         "top_ids": [it["id"] for it in top],
     }
 
@@ -166,7 +187,7 @@ def ours_vs_market(market: list[dict[str, Any]], ours: list[dict[str, Any]], key
 def profile(items: list[dict[str, Any]], name: str = "", tier: str = "") -> dict[str, Any]:
     """Ficha de un anunciante (o del mercado entero): qué dice, cómo lo dice y cuánto dura."""
     classified = [it for it in items if it.get("cls")]
-    days = [it["days_active"] for it in items]
+    days = [it["days_active"] for it in items if start_known(it)]
 
     def top(dist: list[dict[str, Any]]) -> dict[str, Any] | None:
         return dist[0] if dist else None

@@ -20,7 +20,7 @@
 {% endfor %}
 
 <h1>{{ num() }} — Panorama competitivo</h1>
-<ul>{% for p in profiles %}<li><strong>{{ p.name }}</strong> ({{ lbl(p.tier) | lower }}): {{ p.creatives }} anuncios · mensaje principal: {{ lbl(p.top_family.value) if p.top_family else '—' }} · formato: {{ lbl(p.top_format.value) if p.top_format else '—' }} · duración típica: {{ p.longevity.median_days | round | int }} días</li>{% endfor %}</ul>
+<ul>{% for p in profiles %}<li><strong>{{ p.name }}</strong> ({{ lbl(p.tier) | lower }}): {{ p.creatives }} anuncios · mensaje principal: {{ lbl(p.top_family.value) if p.top_family else '—' }} · formato: {{ lbl(p.top_format.value) if p.top_format else '—' }} · duración típica: {{ p.longevity.median_days | dias }}</li>{% endfor %}</ul>
 {% if synthesis.local_vs_global %}<div><strong>Locales vs. globales:</strong> {{ synthesis.local_vs_global }}</div>{% endif %}
 
 <h1>{{ num() }} — Creativos de referencia</h1>

@@ -253,7 +253,7 @@
   <div class="grid g4" style="margin-bottom:18px">
     <div class="kpi"><b>{{ metrics.totals.creatives | n }}</b><span>anuncios de la competencia analizados</span></div>
     <div class="kpi"><b>{{ metrics.totals.competitors }}</b><span>competidores ({{ profiles | selectattr('tier','equalto','local') | list | length }} locales, {{ profiles | selectattr('tier','equalto','global') | list | length }} globales)</span></div>
-    <div class="kpi"><b>{{ metrics.longevity.median_days | round | int }} días</b><span>dura al aire un anuncio típico</span></div>
+    <div class="kpi"><b>{{ metrics.longevity.median_days | dias }}</b><span>dura al aire un anuncio típico</span></div>
     <div class="kpi"><b>{{ metrics.longevity.buckets['91+'] | n }}</b><span>anuncios llevan más de 3 meses activos</span></div>
   </div>
   <div class="grid g3">
@@ -299,7 +299,7 @@
       <td>{{ lbl(p.top_family.value) if p.top_family else '—' }}</td>
       <td>{{ lbl(p.top_hook.value) if p.top_hook else '—' }}</td>
       <td>{{ lbl(p.top_format.value) if p.top_format else '—' }}</td>
-      <td>{{ p.longevity.median_days | round | int }} días</td>
+      <td>{{ p.longevity.median_days | dias }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -350,8 +350,8 @@
     <div class="stats">
       <div class="kpi"><b>{{ p.creatives }}</b><span>anuncios activos{% for k, v in p.platforms.items() %}<br>{{ lbl(k) }}: {{ v }}{% endfor %}</span></div>
       <div class="kpi"><b class="txt">{{ lbl(p.top_family.value) if p.top_family else '—' }}</b><span>mensaje principal{% if p.top_family %} ({{ p.top_family.pct | of10 }} de cada 10){% endif %}</span></div>
-      <div class="kpi"><b>{{ p.longevity.median_days | round | int }} días</b><span>duración típica de un anuncio</span></div>
-      <div class="kpi"><b>{{ p.longevity.max_days }} días</b><span>su anuncio más longevo</span></div>
+      <div class="kpi"><b>{{ p.longevity.median_days | dias }}</b><span>duración típica de un anuncio{% if p.platforms.get('google') %}<br><span class="small">sin contar Google, que no informa la fecha de inicio</span>{% endif %}</span></div>
+      <div class="kpi"><b>{{ (p.longevity.max_days ~ ' días') if p.longevity.median_days is not none else '—' }}</b><span>su anuncio más longevo</span></div>
     </div>
     <div class="cmp-legend"><span><i class="dot a"></i>{{ t.name }}</span><span><i class="dot b"></i>{{ baseline_name }}</span></div>
     <div class="grid g2">

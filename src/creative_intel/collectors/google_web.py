@@ -267,7 +267,8 @@ class GoogleTransparencyWebCollector:
                             is_active=True,
                             raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5],
                                  "variations": detail["variations"], "regions": detail["regions"], "removed": detail["removed"],
-                                 "scoped": detail["scoped"], "text_in_image": detail["text_in_image"]},
+                                 "scoped": detail["scoped"], "text_in_image": detail["text_in_image"],
+                                 "first_seen_known": bool(detail["first_seen"])},
                         )
                     )
             browser.close()
