@@ -9,7 +9,7 @@
 {%- endmacro -%}
 {%- macro preview(it, big=False) -%}
   <div class="pv{% if big %} pv-big{% endif %}">
-    {%- if it.thumbnail_rel -%}<img loading="lazy" src="{{ it.thumbnail_rel }}" alt="Anuncio de {{ it.competitor }}">
+    {%- if it.thumbnail_rel -%}<img src="{{ it.thumbnail_rel }}" alt="Anuncio de {{ it.competitor }}">
     {%- else -%}<div class="pv-empty">Sin vista previa{% if it.snapshot_url %}<br><a href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver en la biblioteca</a>{% endif %}</div>{%- endif -%}
     <span class="pv-tag {{ it.platform }}">{{ lbl(it.platform) }}</span>
   </div>
