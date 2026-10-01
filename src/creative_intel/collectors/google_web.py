@@ -115,6 +115,7 @@ UI_STRINGS = {"close", "flag", "chevron_left", "chevron_right", "arrow_forward",
               "Nuestras políticas de anuncios", "Texto", "Imagen", "Video", "Anuncio", "Ad", "Patrocinado", "Sponsored", "Abrir"}
 CHROME_PREFIXES = ("Última vez que se mostró", "Last shown", "Formato:", "Format:", "Se mostraron en", "Shown in", "Denunciar este anuncio",
                    "Ver más anuncios", "See more ads", "La información acerca de este anuncio", "Information about this ad")
+NETWORK_ERR_RE = re.compile(r"ERR_INTERNET_DISCONNECTED|ERR_NETWORK_CHANGED|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION_(RESET|CLOSED|REFUSED|TIMED_OUT)|ERR_TIMED_OUT|Timeout \d+ms exceeded")
 YT_ID_RE = re.compile(r"youtube(?:-nocookie)?\.com/(?:embed/|watch\?v=)([\w-]{11})")
 DATE_LINE_RE = re.compile(r"^\d{1,2}\s+\w{3,10}\.?\s+\d{4}$|^\w{3,10}\.?\s+\d{1,2},?\s+\d{4}$")
 DOMAIN_LINE_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
@@ -177,6 +178,7 @@ class GoogleTransparencyWebCollector:
             raise RuntimeError("Instalar playwright: pip install playwright && playwright install chromium") from exc
 
         out: list[RawCreative] = []
+        failed = 0
         shots = settings.assets_dir / "screenshots"
         shots.mkdir(parents=True, exist_ok=True)
         debug = bool(os.getenv("CREATIVE_INTEL_DEBUG"))
@@ -227,10 +229,21 @@ class GoogleTransparencyWebCollector:
                         continue
                     ext_id = m.group(1)
                     url = ("https://adstransparency.google.com" + href) if href.startswith("/") else href
-                    try:
-                        detail = self._detail(page, url, ext_id, shots, debug, dbg, competitor)
-                    except Exception as exc:
-                        print(f"[google_web] detalle {ext_id} falló: {exc}")
+                    detail = None
+                    for attempt, pause in enumerate((0, 15, 45, 120)):
+                        if pause:
+                            print(f"[google_web] red caída, reintento {attempt}/3 de {ext_id} en {pause}s")
+                            page.wait_for_timeout(pause * 1000)
+                        try:
+                            detail = self._detail(page, url, ext_id, shots, debug, dbg, competitor)
+                            break
+                        except Exception as exc:
+                            msg = str(exc).splitlines()[0]
+                            if not NETWORK_ERR_RE.search(msg):
+                                print(f"[google_web] detalle {ext_id} falló: {msg}")
+                                break
+                    if detail is None:
+                        failed += 1
                         continue
                     out.append(
                         RawCreative(
@@ -256,6 +269,8 @@ class GoogleTransparencyWebCollector:
                         )
                     )
             browser.close()
+        if failed:
+            print(f"[google_web] {competitor.slug}: {failed} creativos no se pudieron abrir (quedan para la próxima corrida)")
         return out
 
     def _grid_debug(self, page, dbg, slug: str, country: str, hrefs: list[str], captured) -> None:
