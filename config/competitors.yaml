@@ -27,9 +27,10 @@ countries:
     own:
       slug: miseguro
       name: miSeguroOk
-      website: https://miseguro.com.uy
-      meta_page_id: ""
+      website: https://misegurook.com
+      meta_page_id: "294955077801735"
       google_advertiser_id: ""
+      google_domain: misegurook.com    # dominio a buscar en Google Ads Transparency (región UY)
       products: [celular, auto, hogar, viaje, vida]
     competitors:
       local:

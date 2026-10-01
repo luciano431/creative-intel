@@ -185,6 +185,11 @@
   .idea { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
   .idea .tags { margin-bottom: 6px; }
   .copy { font-style: italic; }
+  .idea-title { margin: 0 0 6px; font-size: 16px; }
+  .idea-hook { background: color-mix(in srgb, var(--accent) 10%, white); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 6px; font-weight: 600; }
+  .idea-hook .k { display: block; margin: 0 0 2px; }
+  .script { margin: 0; padding-left: 20px; font-size: 14px; }
+  .script li { margin: 3px 0; }
   .measure { border-top: 1px solid var(--line); padding: 12px 22px; font-size: 14px; }
   .measure b { color: var(--accent); }
   .risk { border-left: 5px solid var(--warn); }
@@ -290,7 +295,7 @@
   <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Panorama competitivo</h2></div>
   <p class="sec-intro">Quién está pautando, cuánto y con qué. El detalle de cada uno está en la sección siguiente.</p>
   <div class="tbl"><table>
-    <thead><tr><th>Competidor</th><th>Anuncios</th><th>Mensaje principal</th><th>Cómo engancha</th><th>Formato principal</th><th>Duración típica</th></tr></thead>
+    <thead><tr><th>Competidor</th><th>Anuncios</th><th>Mensaje principal</th><th>Cómo engancha</th><th>Formato principal</th><th>Con promoción</th><th>Duración típica</th></tr></thead>
     <tbody>
     {% for p in profiles %}
     <tr>
@@ -299,6 +304,7 @@
       <td>{{ lbl(p.top_family.value) if p.top_family else '—' }}</td>
       <td>{{ lbl(p.top_hook.value) if p.top_hook else '—' }}</td>
       <td>{{ lbl(p.top_format.value) if p.top_format else '—' }}</td>
+      <td>{% if p.promo %}{{ p.promo.pct | round | int }}%<div class="plat">{{ p.promo.ads }} de {{ p.promo.total }} anuncios</div>{% else %}—{% endif %}</td>
       <td>{{ p.longevity.median_days | dias }}</td>
     </tr>
     {% endfor %}
@@ -306,7 +312,7 @@
   </table></div>
 
   <h3 style="margin-top:32px">Qué mensaje usa cada uno</h3>
-  <p class="muted small" style="margin-top:0">Porcentaje de los anuncios de cada competidor que usa cada tipo de mensaje. Cuanto más oscuro, más lo usa.</p>
+  <p class="muted small" style="margin-top:0">Porcentaje de los anuncios de cada competidor que usa cada tipo de mensaje. Cuanto más oscuro, más lo usa. La columna «{{ lbl('oferta') }}» cuenta los anuncios cuyo mensaje <b>principal</b> es la promo; los que mencionan una promo como argumento secundario están en la columna «Con promoción» de la tabla de arriba.</p>
   <div class="tbl heat"><table>
     <thead><tr><th>Competidor</th>{% for f in families %}<th style="text-align:center">{{ lbl(f) }}</th>{% endfor %}</tr></thead>
     <tbody>
@@ -358,6 +364,16 @@
       {% for d in t.compare %}
       <div class="card"><h3>{{ d.title }}</h3>{% if d.help %}<p class="small muted" style="margin:-4px 0 8px">{{ d.help }}</p>{% endif %}{{ paired(d.rows, t.name, baseline_name) }}</div>
       {% endfor %}
+      {% if p.promo %}{% set mp = metrics.market_profile.promo if metrics.market_profile else none %}
+      <div class="card">
+        <h3>Promociones</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Anuncios que mencionan un descuento, cuotas, meses bonificados u otra promo, aunque no sea su mensaje principal.</p>
+        <div class="pb"><div class="pb-label">{{ t.name }}</div><div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:{{ p.promo.pct | bar }}%"></div></div><span>{{ p.promo.pct | round | int }}%</span></div></div>
+        {% if mp %}<div class="pb"><div class="pb-label">Mercado</div><div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:{{ mp.pct | bar }}%"></div></div><span>{{ mp.pct | round | int }}%</span></div></div>{% endif %}
+        {% if p.promo.examples %}<div class="small" style="margin-top:8px"><b>Lo que ofrece:</b> {% for e in p.promo.examples %}«{{ e }}»{% if not loop.last %} · {% endif %}{% endfor %}</div>
+        {% else %}<div class="small muted" style="margin-top:8px">No vimos promociones en sus anuncios este mes.</div>{% endif %}
+      </div>
+      {% endif %}
       <div class="card">
         <h3>Cuánto le duran los anuncios</h3>
         <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
@@ -447,8 +463,13 @@
       <div class="k" style="margin:0">Ideas para producir</div>
       {% for c in o.concepts %}
       <div class="idea">
+        {% if c.title %}<h4 class="idea-title">{{ c.title }}</h4>{% endif %}
         <div class="tags"><span class="tag">{{ lbl(c.format) }}</span><span class="tag">Gancho: {{ lbl(c.hook_type) }}</span><span class="tag">Mensaje: {{ lbl(c.angle) }}</span></div>
+        {% if c.hook_line %}<div class="idea-hook"><span class="k">Primeros 3 segundos</span>«{{ c.hook_line }}»</div>{% endif %}
+        {% if c.script %}<div class="k" style="margin:10px 0 4px">Guion</div><ol class="script">{% for b in c.script %}<li>{{ b }}</li>{% endfor %}</ol>{% endif %}
+        <div class="k" style="margin:10px 0 4px">Texto del anuncio</div>
         <div class="copy">{{ c.copy_draft }}</div>
+        {% if c.cta %}<div class="small" style="margin-top:6px"><b>Botón / cierre:</b> {{ c.cta }}</div>{% endif %}
         {% if c.visual_direction %}<div class="small muted" style="margin-top:6px"><b>Cómo se ve:</b> {{ c.visual_direction }}</div>{% endif %}
       </div>
       {% endfor %}

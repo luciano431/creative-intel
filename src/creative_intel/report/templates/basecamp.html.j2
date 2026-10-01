@@ -43,7 +43,7 @@
 <ul>
 <li><strong>Por qué:</strong> {{ o.rationale }}</li>
 {% if o.who_does_it %}<li><strong>Quién lo hace hoy:</strong> {{ o.who_does_it }}</li>{% endif %}
-{% for c in o.concepts %}<li><strong>Idea ({{ lbl(c.format) }} · gancho {{ lbl(c.hook_type) | lower }}):</strong> {{ c.copy_draft }}{% if c.visual_direction %} — <em>{{ c.visual_direction }}</em>{% endif %}</li>{% endfor %}
+{% for c in o.concepts %}<li><strong>Idea{% if c.title %} «{{ c.title }}»{% endif %} ({{ lbl(c.format) }} · gancho {{ lbl(c.hook_type) | lower }}):</strong>{% if c.hook_line %} «{{ c.hook_line }}»{% endif %}{% if c.script %}<ol>{% for b in c.script %}<li>{{ b }}</li>{% endfor %}</ol>{% endif %}Texto: {{ c.copy_draft }}{% if c.cta %} · Cierre: {{ c.cta }}{% endif %}{% if c.visual_direction %} — <em>{{ c.visual_direction }}</em>{% endif %}</li>{% endfor %}
 {% if o.how_to_measure %}<li><strong>Cómo lo medimos:</strong> {{ o.how_to_measure }}</li>{% endif %}
 </ul>
 {% endfor %}

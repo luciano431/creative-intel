@@ -24,6 +24,7 @@ Clasificás UN anuncio de un competidor dentro de una taxonomía cerrada. Reglas
 - `hook_type` es el mecanismo de los primeros 2 segundos / primera línea, no el tema.
 - `primary_angle` es el argumento de venta dominante; `secondary_angle` solo si hay uno claro.
 - `pain_point` y `promise` en 2-6 palabras, en español.
+- `offer`: cualquier promoción concreta que comunique el anuncio (descuento, % off, cuotas sin recargo, meses bonificados, regalo, sorteo, precio especial), aunque el mensaje principal sea otro. Copiala tal cual en pocas palabras ("20% off el primer año"). Si no hay promoción, null. "Cotizá gratis" no es una promoción.
 - `key_claims`: afirmaciones concretas y verificables del anuncio (precios, plazos, % , "sin franquicia"), máximo 5.
 - `summary`: una oración neutral que describa el anuncio sin juzgar su rendimiento.
 - Si el texto del anuncio está dentro de la imagen (anuncios de búsqueda archivados como imagen, piezas gráficas), leelo de la imagen y usalo como si fuera el copy.
@@ -131,6 +132,12 @@ _PRODUCT_KEYWORDS = [("celular", "celular"), ("teléfono", "celular"), ("auto", 
                      ("viaje", "viaje"), ("mascota", "mascotas"), ("empresa", "empresa"), ("pyme", "empresa")]
 
 
+def _heuristic_offer(creative: Any) -> str | None:
+    from ..analysis.metrics import promo_of
+
+    return promo_of({"headline": creative.headline, "body_text": " ".join(t for t in (creative.body_text, creative.description) if t)})
+
+
 def heuristic_classify(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
     """Clasificador por reglas: para demo/tests y como fallback si la IA no está disponible."""
     text = " ".join([creative.headline or "", creative.body_text or "", creative.description or "", creative.cta_text or ""]).lower()
@@ -164,7 +171,7 @@ def heuristic_classify(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
         "secondary_angle": None,
         "pain_point": angle.replace("_", " "),
         "promise": "protección" if fam == "proteccion" else "ahorro" if fam == "economico" else "tranquilidad",
-        "offer": next((m.group(0) for m in [re.search(r"\d+\s?%[^.\n]*", text)] if m), None),
+        "offer": _heuristic_offer(creative),
         "funnel_stage": funnel,
         "cta_type": cta,
         "creative_style": "ugc" if "ugc" in text else "produccion" if fmt == "video" else "texto_plano" if fmt == "texto" else "foto_stock",

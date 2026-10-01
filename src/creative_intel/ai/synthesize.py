@@ -6,6 +6,7 @@ Regla del prompt: toda afirmación cita conteos (X anuncios / Y competidores / Z
 from __future__ import annotations
 
 import json
+from collections import Counter
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,10 +43,14 @@ class ReferenceCreative(_Strict):
 
 
 class ConceptIdea(_Strict):
+    title: str = Field(description="Nombre corto de la idea (máx. 6 palabras)")
     format: str
     hook_type: str
     angle: str
-    copy_draft: str = Field(description="Copy o guion breve en el idioma y tono del cliente")
+    hook_line: str = Field(description="Lo que se dice o se ve en los primeros 3 segundos / la primera línea, textual")
+    script: list[str] = Field(description="Guion listo para producir, 4 a 6 pasos con tiempos ('0–3 s · ...'); placa por placa si es carrusel")
+    copy_draft: str = Field(description="Texto del anuncio listo para publicar, en el tono del cliente")
+    cta: str = Field(description="Llamado a la acción, textual")
     visual_direction: str = Field(description="Cómo se ve: escena, casting, recursos visuales")
 
 
@@ -101,7 +106,8 @@ Cómo escribir (lo lee el cliente, no un analista):
 3. Separá lo que vimos (dato: un conteo o una fecha) de lo que creemos que significa (hipótesis: "podría indicar", "sugiere").
 4. Nunca afirmes que un anuncio "funciona" o "es el mejor". Podés decir cuántos días lleva activo, cuántas variantes tiene o cuántos competidores lo usan.
 5. Resumen ejecutivo: exactamente 3 puntos, cada uno con un titular corto, una explicación con una cifra y qué hacemos.
-6. Oportunidades: salen de los mensajes y ganchos que casi nadie usa y de las diferencias entre el mercado y {client}. Cada una trae prioridad, por qué, quién lo hace hoy, 1 a 3 ideas ejecutables (formato, gancho, mensaje, copy y dirección visual) y cómo lo vamos a medir.
+6. Oportunidades: salen de los mensajes y ganchos que casi nadie usa y de las diferencias entre el mercado y {client}. Cada una trae prioridad, por qué, quién lo hace hoy, 1 a 3 ideas y cómo lo vamos a medir.
+6b. Las ideas las escribís vos, completas y listas para producir: título, gancho textual (lo que se dice o se ve en los primeros 3 segundos), guion escena por escena con tiempos (placa por placa si es carrusel), copy listo para publicar, CTA y dirección visual. Apoyate en lo que viste en los datos (qué falta en el mercado, qué promesas y promociones usa la competencia) y en el tono de {client}. Nunca derives al equipo creativo ni dejes textos entre corchetes: el equipo creativo ajusta y produce, no arranca de cero.
 7. Riesgos: saturación (si 8 de 10 competidores dicen lo mismo, no queremos ser el número 11 sin un giro), con severidad, por qué importa y cómo lo evitamos.
 8. Plan de acción: 4 a 8 acciones ordenadas por prioridad, con responsable, plazo en días, entregable concreto y cómo medimos el resultado.
 9. Cada competidor pesa por igual al hablar de "el mercado": un anunciante con 100 anuncios no define el mercado por sí solo. Usá `market_profile_weighted` y `saturation` para eso.
@@ -171,6 +177,77 @@ def synthesize(
         SynthesisOutput, _system_prompt(ci.name, ci.industry, ci.market), content, model=model or settings.synth_model, max_tokens=32000, effort="high", stream=True, client=client
     )
     return result.model_dump()
+
+
+def _most_common(values: list[Any]) -> str | None:
+    vals = [str(v).strip() for v in values if v and str(v).strip()]
+    return Counter(v.lower() for v in vals).most_common(1)[0][0] if vals else None
+
+
+_FAMILY_DEFAULTS = {
+    "proteccion": ("un imprevisto", "protección"),
+    "economico": ("pagar de más", "ahorro"),
+    "oferta": ("pagar de más", "un mejor precio"),
+    "emocional": ("perder algo que querés", "tranquilidad"),
+    "conveniencia": ("trámites eternos", "todo resuelto en minutos"),
+    "lifestyle": ("que algo te frene", "seguir con tu vida"),
+    "social_proof": ("no saber en quién confiar", "respaldo"),
+}
+
+
+def _mock_concepts(family: str, hook: str, items: list[dict[str, Any]], client: str, label: Any) -> list[ConceptIdea]:
+    """Ideas listas para producir sin IA: arma gancho, guion y copy con lo que el mercado dice del territorio."""
+    from ..analysis.metrics import is_heuristic
+
+    ai_items = [it for it in items if it.get("tier") != "own" and it.get("cls") and not is_heuristic(it["cls"])]
+    in_fam = [it for it in ai_items if it["cls"].get("angle_family") == family]
+    pain_d, promise_d = _FAMILY_DEFAULTS.get(family, ("un imprevisto", "tranquilidad"))
+    pain = _most_common([it["cls"].get("pain_point") for it in in_fam]) or pain_d
+    promise = _most_common([it["cls"].get("promise") for it in in_fam]) or promise_d
+    cta = label(_most_common([(it.get("cls") or {}).get("cta_type") for it in items]) or "mas_info")
+    fam = label(family)
+    hook_line = {
+        "pregunta": f"¿Qué hacés si mañana te pasa esto: {pain}?",
+        "problema": f"Esto es lo que pasa cuando aparece esto: {pain}. Y no estás preparado.",
+        "estadistica": f"La mayoría no sabe qué hacer frente a esto: {pain}.",
+        "storytelling": f"«Me pasó: {pain}. Lo resolví desde el celular.»",
+        "testimonial": f"«Me pasó: {pain}. Lo resolví desde el celular.»",
+    }.get(hook, f"¿Qué hacés si mañana te pasa esto: {pain}?")
+    return [
+        ConceptIdea(
+            title=f"{fam} en primera persona",
+            format="video",
+            hook_type=hook,
+            angle=family,
+            hook_line=hook_line,
+            script=[
+                f"0–3 s · Gancho: una persona real a cámara dice «{hook_line}». Texto en pantalla con la misma frase.",
+                f"3–8 s · El problema ({pain}): se ve en su día a día, sin dramatizar.",
+                f"8–15 s · La salida: lo resuelve con {client} desde el celular; mostrar la pantalla real, 2 o 3 toques.",
+                f"15–20 s · El beneficio: «{promise[:1].upper() + promise[1:]}», dicho por la misma persona.",
+                f"20–25 s · Cierre: «{cta}» + logo de {client}.",
+            ],
+            copy_draft=f"{hook_line} Con {client} tenés {promise} sin vueltas: lo resolvés online, en minutos. {cta}.",
+            cta=cta,
+            visual_direction="Formato vertical 9:16, estilo contenido de usuario: luz natural, celular en mano, subtítulos grandes. Nada de banco de imágenes.",
+        ),
+        ConceptIdea(
+            title=f"{fam} en 4 placas",
+            format="carousel",
+            hook_type="pregunta",
+            angle=family,
+            hook_line=f"¿Sabés qué hacer frente a esto: {pain}?",
+            script=[
+                f"Placa 1 · Gancho: «¿Sabés qué hacer frente a esto: {pain}?»",
+                "Placa 2 · El problema: lo que cuesta resolverlo solo, en una frase con una cifra concreta del negocio.",
+                f"Placa 3 · La solución: cómo lo resuelve {client}, en 3 pasos simples.",
+                f"Placa 4 · Cierre: «{promise[:1].upper() + promise[1:]}» + «{cta}» + logo.",
+            ],
+            copy_draft=f"Nadie piensa en esto ({pain}) hasta que pasa. Deslizá y mirá cómo {client} te lo resuelve en 3 pasos. {cta}.",
+            cta=cta,
+            visual_direction=f"Fondo con los colores de {client}, una idea por placa, tipografía grande y un ícono por paso.",
+        ),
+    ]
 
 
 def _of10(pct: float) -> int:
@@ -275,15 +352,7 @@ def mock_synthesis(
                 rationale=(f"Solo {users['ads']} de los {n_cls} anuncios del mercado usan este mensaje" if users else "Ningún anuncio del mercado usa este mensaje") + f": hay espacio para que {client} lo haga propio.",
                 who_does_it=(f"Lo usan {users['competitors']} de {n_comp} competidores ({', '.join(users['names'][:3])})" if users else "Ningún competidor lo usa hoy"),
                 evidence=[f"{users['ads'] if users else 0} de {n_cls} anuncios clasificados"],
-                concepts=[
-                    ConceptIdea(
-                        format="video",
-                        hook_type=hook,
-                        angle=w["value"],
-                        copy_draft="[Borrador a desarrollar por el equipo creativo]",
-                        visual_direction="Plano corto, persona real, el problema en los primeros 3 segundos.",
-                    )
-                ],
+                concepts=_mock_concepts(w["value"], hook, items, client, label),
                 how_to_measure="Comparar tasa de clics y costo por cotización contra el anuncio actual más usado, durante 14 días.",
             )
         )

@@ -60,7 +60,20 @@ Primer mes con datos: la comparación aparece a partir del próximo informe.
 - **Quién lo hace hoy:** {{ o.who_does_it }}
 {% endif %}
 {% for c in o.concepts %}
-- **Idea ({{ lbl(c.format) }}, gancho {{ lbl(c.hook_type) | lower }}):** {{ c.copy_draft }}{% if c.visual_direction %} — *{{ c.visual_direction }}*{% endif %}{{ '' }}
+- **Idea{% if c.title %} «{{ c.title }}»{% endif %} ({{ lbl(c.format) }}, gancho {{ lbl(c.hook_type) | lower }})**
+{% if c.hook_line %}
+  - Primeros 3 segundos: «{{ c.hook_line }}»
+{% endif %}
+{% for b in c.script or [] %}
+  - {{ b }}
+{% endfor %}
+  - Texto del anuncio: {{ c.copy_draft }}
+{% if c.cta %}
+  - Botón / cierre: {{ c.cta }}
+{% endif %}
+{% if c.visual_direction %}
+  - Cómo se ve: *{{ c.visual_direction }}*
+{% endif %}
 {% endfor %}
 {% if o.how_to_measure %}
 - **Cómo lo medimos:** {{ o.how_to_measure }}

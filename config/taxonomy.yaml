@@ -154,3 +154,12 @@ labels:
   high: Alta
   medium: Media
   low: Baja
+  # llamados a la acción
+  cotizar: Cotizá online
+  contratar: Contratá online
+  mas_info: Conocé más
+  descargar_app: Descargá la app
+  contactar: Escribinos
+  comprar: Comprá online
+  registrarse: Registrate
+  sin_cta: Sin llamado a la acción

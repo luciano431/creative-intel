@@ -125,3 +125,17 @@ def test_classify_stops_on_credit_error_and_retries_only_failed(session, sample_
     assert stats["classified"] == total - 1, "reintenta el fallback y los que faltaban; no repite el que salió bien"
     assert stats["skipped"] == 1
     assert not any(pipeline._is_fallback(c.latest_classification) for c in pipeline.run_creatives(session, run))
+
+
+def test_mock_ideas_are_ready_to_produce(session, sample_raws, taxonomy, today):
+    run = get_or_create_run(session, "2026-09")
+    upsert_creatives(session, run, sample_raws, today)
+    classify(session, "2026-09", mock=True)
+    metrics = analyze(session, "2026-09")
+    data = mock_synthesis(metrics, items_for(session, run, taxonomy), metrics["concepts"], "2026-09")
+    ideas = [c for o in data["white_space"] for c in o["concepts"]]
+    assert ideas
+    for c in ideas:
+        assert c["title"] and c["hook_line"] and c["cta"]
+        assert len(c["script"]) >= 4
+        assert "[" not in c["copy_draft"] and "equipo creativo" not in c["copy_draft"].lower()

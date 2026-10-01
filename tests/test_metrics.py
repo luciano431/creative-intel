@@ -81,3 +81,34 @@ def test_clean_headline_and_google_duration_excluded():
     lon = longevity(items)
     assert lon["dated"] == 2 and lon["median_days"] == 25
     assert longevity([items[1]])["median_days"] is None
+
+
+def test_promo_detection_counts_secondary_promos_but_not_free_quotes():
+    from creative_intel.analysis.metrics import promo_of, promo_summary
+
+    ads = [
+        {"cls": {"offer": "20% off el primer año", "angle_family": "emocional"}, "headline": "", "body_text": ""},
+        {"cls": {"offer": None}, "headline": "Protegé tu auto", "body_text": "Pagalo en 6 cuotas sin recargo. Cotizá hoy."},
+        {"cls": {"offer": "null"}, "headline": "Cotizá gratis en 2 minutos", "body_text": "Seguro de hogar."},
+        {"cls": {}, "headline": "1 mes gratis", "body_text": ""},
+    ]
+    assert promo_of(ads[0]) == "20% off el primer año"
+    assert promo_of(ads[1]) == "Pagalo en 6 cuotas sin recargo"
+    assert promo_of(ads[2]) is None, "«cotizá gratis» no es una promo"
+    s = promo_summary(ads)
+    assert (s["ads"], s["total"], s["pct"]) == (3, 4, 75.0)
+    assert len(s["examples"]) == 3
+
+
+def test_hundred_percent_online_is_not_a_promo():
+    from creative_intel.analysis.metrics import promo_of
+
+    assert promo_of({"cls": {}, "headline": "Contratá 100% online", "body_text": ""}) is None
+    assert promo_of({"cls": {}, "headline": "15% de descuento en tu seguro", "body_text": ""}) == "15% de descuento en tu seguro"
+
+
+def test_heuristic_offer_is_rechecked_from_text():
+    from creative_intel.analysis.metrics import promo_of
+
+    old_rule = {"offer": "100% online", "summary": "Anuncio de auto con ángulo x y hook y (clasificación heurística)."}
+    assert promo_of({"cls": old_rule, "headline": "Contratá 100% online", "body_text": ""}) is None

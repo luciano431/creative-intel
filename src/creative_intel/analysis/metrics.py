@@ -11,6 +11,7 @@ interpretaciones viven en la síntesis (Etapa 2) y se marcan como inferencias.
 """
 from __future__ import annotations
 
+import re
 import statistics
 from collections import Counter, defaultdict
 from typing import Any, Callable, Iterable
@@ -26,6 +27,62 @@ def clean_headline(text: str | None) -> str:
     if not t or TIMESTAMP_RE.match(t) or UI_NOISE.search(t):
         return ""
     return t
+
+
+# Señales de promoción en el texto del anuncio. "Cotizá gratis" no es una promo: por eso
+# "gratis" solo cuenta pegado a un período ("1 mes gratis"), y "100% online" tampoco es una promo.
+PROMO_RE = re.compile(
+    r"(?<!\d)\d{1,2}\s?%(?!\s*(?:online|digital|seguro|garantizad))|%\s?off|\bdescuentos?\b|\bdto\b|bonificaci[oó]n|bonificad[oa]s?\b|"
+    r"cuotas?\s+sin\s+(?:recargo|inter[eé]s)|\b\d+\s+(?:mes|meses|cuota|cuotas)\s+(?:gratis|bonificad\w*)|"
+    r"\bmes(?:es)?\s+gratis|\b2\s?x\s?1\b|\b3\s?x\s?2\b|\bpromo(?:ci[oó]n|ciones)?\b|precio\s+especial|"
+    r"cashback|reintegro|\bsorteo|\bregalo\b|beneficio\s+exclusivo",
+    re.I,
+)
+_NO_OFFER = {"", "null", "none", "ninguna", "ninguno", "no", "n/a", "sin oferta", "no aplica"}
+
+
+def is_heuristic(cls: dict[str, Any]) -> bool:
+    """La clasificación salió de la regla simple (sin IA o por un error de la API)."""
+    summary = str(cls.get("summary") or "")
+    return "clasificación heurística" in summary or "[fallback por error" in summary
+
+
+def promo_of(it: dict[str, Any]) -> str | None:
+    """La promoción que comunica el anuncio, aunque su mensaje principal sea otro.
+
+    Fuente 1: el campo `offer` de la clasificación (la IA lee también el texto dentro de la imagen).
+    Fuente 2: el texto del anuncio, por si la clasificación es la heurística o lo pasó por alto.
+    """
+    cls = it.get("cls") or {}
+    offer = str(cls.get("offer") or "").strip()
+    # La oferta guardada por la regla simple no es confiable ("100% online"): se recalcula del texto.
+    if offer.lower() not in _NO_OFFER and not is_heuristic(cls):
+        return offer
+    text = "\n".join(t for t in (it.get("headline"), it.get("body_text")) if t)
+    m = PROMO_RE.search(text)
+    if not m:
+        return None
+    # La oración que contiene la promo: corta en punto, signo de cierre o salto de línea.
+    start = max(text.rfind(ch, 0, m.start()) for ch in ".!?\n") + 1
+    ends = [i for i in (text.find(ch, m.end()) for ch in ".!?\n") if i != -1]
+    return text[start: min(ends) if ends else len(text)].strip()[:120]
+
+
+def promo_summary(items: list[dict[str, Any]]) -> dict[str, Any]:
+    found = [(it, promo_of(it)) for it in items]
+    with_promo = [(it, p) for it, p in found if p]
+    examples: list[str] = []
+    for _, p in with_promo:
+        if p.lower() not in (e.lower() for e in examples):
+            examples.append(p)
+        if len(examples) == 3:
+            break
+    return {
+        "ads": len(with_promo),
+        "total": len(items),
+        "pct": round(100 * len(with_promo) / len(items), 1) if items else 0.0,
+        "examples": examples,
+    }
 
 
 def start_known(it: dict[str, Any]) -> bool:
@@ -213,6 +270,7 @@ def profile(items: list[dict[str, Any]], name: str = "", tier: str = "") -> dict
         "top_family": top(fam),
         "top_hook": top(hook),
         "top_format": top(fmt),
+        "promo": promo_summary(items),
         "longevity": {
             "buckets": lon["buckets"],
             "median_days": lon["median_days"],
