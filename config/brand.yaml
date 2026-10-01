@@ -1,20 +1,29 @@
 # ---------------------------------------------------------------------------
-# Marca del informe. Se aplica a todos los clientes.
-# Reemplazar los colores por los HEX oficiales de Ranker.
+# Marca del informe (Ranker). Se aplica a todos los clientes; un cliente puede
+# tener su propio brand.yaml en config/clients/<slug>/.
+# Colores tomados del sitio rankerstudio.com.
 # ---------------------------------------------------------------------------
 app_name: Radar creativo de Ranker
 agency: Ranker
 agency_url: https://rankerstudio.com
-logo_url: ""            # URL o ruta a un PNG/SVG del logo (opcional)
-font_family: '"Inter", -apple-system, "Segoe UI", Roboto, sans-serif'
-font_url: https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap
-colors:                 # PROVISORIOS: reemplazar por la paleta oficial de Ranker
-  primary: "#14123A"    # fondo de portada, títulos
-  accent: "#6C4CFF"     # barras, destacados, pestaña activa
-  accent_2: "#00C2A8"   # segunda serie (cliente / nosotros)
-  warn: "#FF8A3D"       # riesgos, alertas
-  ink: "#1C1B2E"        # texto
-  muted: "#6B6A80"      # texto secundario
-  line: "#E7E6F0"       # bordes
-  soft: "#F6F5FB"       # fondos de tarjetas
+logo_svg: config/assets/ranker-logo.svg   # isotipo; reemplazar por el SVG oficial
+logo_url: ""                              # alternativa: URL/ruta a un PNG
+# Tipografías: alternativas de Google Fonts a las del sitio (títulos anchos + texto geométrico)
+font_url: https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Figtree:wght@400;500;600;700;800&display=swap
+heading_font: '"Unbounded", "Figtree", sans-serif'
+font_family: '"Figtree", -apple-system, "Segoe UI", Roboto, sans-serif'
+colors:
+  primary: "#1D1C22"    # fondo oscuro del sitio (portada, pie)
+  primary_2: "#13131B"  # fondo más oscuro
+  accent: "#FD6D30"     # naranja Ranker: barras, destacados, pestaña activa
+  accent_2: "#22C0E8"   # celeste: segunda serie (cliente / referencia)
+  teal: "#00D4B0"       # verde agua
+  yellow: "#FBE9A8"     # amarillo pastel
+  sky: "#ACEFFF"        # celeste pastel
+  warn: "#F28A82"       # coral: riesgos
+  slate: "#415560"      # gris pizarra
+  ink: "#1D1C22"        # texto
+  muted: "#6B6A75"      # texto secundario
+  line: "#E8E7EC"       # bordes
+  soft: "#F6F5F2"       # fondos de tarjetas
   bg: "#FFFFFF"

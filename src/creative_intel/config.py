@@ -164,12 +164,15 @@ class Brand:
     logo_url: str = ""
     font_family: str = '-apple-system, "Segoe UI", Roboto, sans-serif'
     font_url: str = ""
+    heading_font: str = ""
+    logo_svg: str = ""  # contenido SVG inline (se lee del archivo indicado en brand.yaml)
     colors: dict[str, str] = field(default_factory=dict)
 
 
 BRAND_DEFAULT_COLORS = {
-    "primary": "#14123A", "accent": "#6C4CFF", "accent_2": "#00C2A8", "warn": "#FF8A3D",
-    "ink": "#1C1B2E", "muted": "#6B6A80", "line": "#E7E6F0", "soft": "#F6F5FB", "bg": "#FFFFFF",
+    "primary": "#1D1C22", "primary_2": "#13131B", "accent": "#FD6D30", "accent_2": "#22C0E8",
+    "teal": "#00D4B0", "yellow": "#FBE9A8", "sky": "#ACEFFF", "warn": "#F28A82", "slate": "#415560",
+    "ink": "#1D1C22", "muted": "#6B6A75", "line": "#E8E7EC", "soft": "#F6F5F2", "bg": "#FFFFFF",
 }
 
 
@@ -182,6 +185,12 @@ def load_brand(path: Path | None = None) -> Brand:
             data = yaml.safe_load(Path(p).read_text(encoding="utf-8")) or {}
             break
     colors = {**BRAND_DEFAULT_COLORS, **{k: str(v) for k, v in (data.get("colors") or {}).items()}}
+    svg = ""
+    if data.get("logo_svg"):
+        p = Path(data["logo_svg"])
+        p = p if p.is_absolute() else ROOT / p
+        if p.is_file():
+            svg = p.read_text(encoding="utf-8")
     return Brand(
         app_name=data.get("app_name", Brand.app_name),
         agency=data.get("agency", Brand.agency),
@@ -189,6 +198,8 @@ def load_brand(path: Path | None = None) -> Brand:
         logo_url=data.get("logo_url", "") or "",
         font_family=data.get("font_family", Brand.font_family),
         font_url=data.get("font_url", "") or "",
+        heading_font=data.get("heading_font", "") or data.get("font_family", Brand.font_family),
+        logo_svg=svg,
         colors=colors,
     )
 

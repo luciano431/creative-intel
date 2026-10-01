@@ -45,3 +45,11 @@ def test_brand_and_labels():
     assert b.app_name == "Radar creativo de Ranker" and b.colors["accent"].startswith("#")
     t = load_taxonomy()
     assert t.label("tofu") == "Descubrimiento" and t.label("social_proof") == "Prueba social" and t.label(None) == "Sin dato"
+
+
+def test_brand_ranker_logo_and_fonts():
+    from creative_intel.config import load_brand
+
+    b = load_brand()
+    assert b.colors["accent"] == "#FD6D30" and b.colors["primary"] == "#1D1C22"
+    assert "<svg" in b.logo_svg and "Unbounded" in b.heading_font
