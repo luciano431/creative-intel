@@ -17,6 +17,25 @@ radar init-db && radar competitors sync
 radar run-cycle --period 2026-10          # informe en reports/banco-x/2026-10/
 ```
 
+### Web interna
+
+```bash
+radar web        # abre http://127.0.0.1:8080
+```
+
+Lista los clientes; en cada uno se genera el informe del mes (con o sin IA), se abren los anteriores, se ven sus competidores con sus IDs, se buscan los que faltan, se proponen competidores nuevos y se edita la configuración. Cada botón corre el mismo comando que en la terminal y muestra su avance. Con `--host 0.0.0.0` la pueden abrir otras compus de la misma red.
+
+### Buscar IDs y competidores
+
+```bash
+radar find-ids "miSeguroOk" --country UY                       # página de Meta + dominio verificado en Google
+radar fill-ids --write                                          # completa los IDs que faltan del cliente actual
+radar discover -k "seguros,seguro de auto" -c UY --top 5 --add local        # quién más pauta en el rubro
+radar discover -k "seguros,seguro de hogar" -c ES -c AR -c MX --top 5 --add global
+```
+
+`discover` propone los anunciantes con más anuncios activos para esas palabras; conviene revisar la lista (pueden aparecer comparadores o medios). Todo lo que se escribe en `competitors.yaml` deja una copia `.bak`.
+
 Sin `RADAR_CLIENT` se usa `config/` (el cliente por defecto). La marca del informe (nombre, logo, paleta) está en `config/brand.yaml`; un cliente puede tener su propio `brand.yaml` en su carpeta. Los nombres en castellano de cada categoría están en la sección `labels` de `taxonomy.yaml`.
 
 ## Arquitectura

@@ -1,0 +1,39 @@
+{% extends "base.html.j2" %}
+{% block title %}Nuevo cliente{% endblock %}
+{% block topactions %}<a class="btn ghost" href="/">Volver</a>{% endblock %}
+{% block main %}
+<h1>Nuevo cliente</h1>
+<p class="muted" style="margin:0 0 20px">Después de crearlo, en su página podés buscar sus IDs y proponer competidores automáticamente.</p>
+<form class="card" id="f" style="max-width:640px">
+  <div class="fields">
+    <div class="field"><label for="name">Nombre</label><input type="text" id="name" required placeholder="Banco X"></div>
+    <div class="field"><label for="slug">Identificador</label><input type="text" id="slug" required placeholder="banco-x" pattern="[a-z0-9][a-z0-9-]{1,39}"></div>
+  </div>
+  <div class="fields">
+    <div class="field"><label for="industry">Industria</label><input type="text" id="industry" placeholder="Banca"></div>
+    <div class="field"><label for="market">Mercado</label><input type="text" id="market" placeholder="Uruguay"></div>
+    <div class="field"><label for="country">País (código)</label><input type="text" id="country" value="UY" maxlength="3"></div>
+  </div>
+  <p class="small muted" style="margin:0 0 14px">El identificador va en minúsculas y sin espacios: es el nombre de su carpeta.</p>
+  <button class="btn" type="submit">Crear cliente</button>
+  <div class="err" id="err"></div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+$('name').addEventListener('input', e => {
+  if ($('slug').dataset.touched) return;
+  $('slug').value = e.target.value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+});
+$('slug').addEventListener('input', () => { $('slug').dataset.touched = 1; });
+$('f').addEventListener('submit', async e => {
+  e.preventDefault(); $('err').textContent = '';
+  try {
+    const r = await api('/api/clientes', {name: $('name').value, slug: $('slug').value, industry: $('industry').value,
+                                          market: $('market').value, country: $('country').value});
+    location.href = r.url;
+  } catch (err) { $('err').textContent = err.message; }
+});
+</script>
+{% endblock %}

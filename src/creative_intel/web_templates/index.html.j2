@@ -1,0 +1,26 @@
+{% extends "base.html.j2" %}
+{% block title %}Clientes{% endblock %}
+{% block main %}
+<h1>Clientes</h1>
+<p class="muted" style="margin:0 0 20px">Elegí un cliente para generar su plan creativo del mes, ver informes anteriores o ajustar sus competidores.</p>
+<div class="grid">
+  {% for c in clients %}{% set periods = c.periods() %}{% set missing = c.missing_ids() %}
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0"><a href="/c/{{ c.key }}" style="text-decoration:none">{{ c.name }}</a></h2>
+      {% if running[c.key] %}<span class="tag run">Generando…</span>{% endif %}
+    </div>
+    <p class="muted small" style="margin:2px 0 12px">{{ c.industry or 'Sin industria' }} · {{ c.market or '—' }}</p>
+    {% set nl, ng = c.local | length, c.global_ | length %}
+    <p class="small" style="margin:0 0 6px">{{ nl }} competidor{{ '' if nl == 1 else 'es' }} local{{ '' if nl == 1 else 'es' }} · {{ ng }} referente{{ '' if ng == 1 else 's' }} global{{ '' if ng == 1 else 'es' }}</p>
+    <p style="margin:0 0 14px">{% if missing %}<span class="tag warn">Faltan IDs de {{ missing | length }}</span>{% else %}<span class="tag ok">IDs completos</span>{% endif %}</p>
+    <div class="row">
+      <a class="btn" href="/c/{{ c.key }}">Abrir</a>
+      {% if periods %}<a class="btn ghost" href="{{ c.report_url(periods[0]) }}" target="_blank" rel="noopener">Último informe ({{ periods[0] }})</a>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="card"><p>Todavía no hay clientes. <a href="/nuevo">Crear el primero</a>.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

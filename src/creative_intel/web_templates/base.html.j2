@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Radar creativo{% endblock %} · {{ brand.agency }}</title>
+{% if brand.font_url %}<link rel="stylesheet" href="{{ brand.font_url }}">{% endif %}
+<style>
+  :root {
+    --primary: {{ C.primary or '#1D1C22' }}; --primary-2: {{ C.primary_2 or '#13131B' }};
+    --accent: {{ C.accent or '#FD6D30' }}; --accent2: {{ C.accent_2 or '#22C0E8' }}; --teal: {{ C.teal or '#00D4B0' }};
+    --warn: {{ C.warn or '#F28A82' }}; --ink: {{ C.ink or '#1D1C22' }}; --muted: {{ C.muted or '#6B6A75' }};
+    --line: {{ C.line or '#E8E7EC' }}; --soft: {{ C.soft or '#F6F5F2' }}; --bg: #FFFFFF;
+    --head: {{ brand.heading_font | safe }}; --body: {{ brand.font_family | safe }};
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--soft); color: var(--ink); font: 15px/1.5 var(--body); }
+  a { color: inherit; }
+  .top { background: var(--primary); color: #fff; }
+  .top .in { max-width: 1120px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo svg { width: 30px; height: 30px; }
+  .logo .w { font-family: var(--head); font-weight: 600; font-size: 17px; }
+  .logo .a { display: block; font-size: 12px; color: #B9B8C2; letter-spacing: .04em; }
+  .top .sp { flex: 1; }
+  main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 64px; }
+  h1, h2, h3 { font-family: var(--head); font-weight: 600; letter-spacing: -.01em; text-wrap: balance; margin: 0 0 8px; }
+  h1 { font-size: 26px; } h2 { font-size: 19px; margin-top: 8px; } h3 { font-size: 16px; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .card { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .stack { display: grid; gap: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn { appearance: none; border: 0; border-radius: 999px; padding: 10px 18px; font: 600 14px var(--body); cursor: pointer;
+         background: var(--accent); color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { filter: brightness(.95); } .btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn.dark { background: var(--primary); }
+  .top .btn.ghost { color: #fff; border-color: #3A3944; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--soft); color: var(--muted); }
+  .tag.ok { background: color-mix(in srgb, var(--teal) 18%, white); color: #0B6B5B; }
+  .tag.warn { background: color-mix(in srgb, var(--warn) 22%, white); color: #9B2F25; }
+  .tag.run { background: color-mix(in srgb, var(--accent2) 18%, white); color: #0B6585; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+  input[type=text], input[type=month], input[type=number], select, textarea {
+    width: 100%; font: 14px var(--body); padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  textarea { font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 420px; }
+  .field { margin-bottom: 12px; } .fields { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl { overflow-x: auto; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  pre.log { background: var(--primary-2); color: #E6E5EC; border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.45;
+            max-height: 320px; overflow: auto; white-space: pre-wrap; margin: 10px 0 0; }
+  .err { color: #9B2F25; font-size: 14px; margin-top: 8px; }
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { border: 0; background: none; font: 600 14px var(--body); padding: 10px 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.on { color: var(--ink); border-bottom-color: var(--accent); }
+  .panel { display: none; } .panel.on { display: block; }
+  @media (max-width: 640px) { main { padding: 20px 16px 48px; } .top .in { padding: 12px 16px; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="logo" href="/">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span><span class="w">{{ brand.agency }}</span><span class="a">Radar creativo</span></span></a>
+  <span class="sp"></span>
+  {% block topactions %}<a class="btn ghost" href="/nuevo">+ Nuevo cliente</a>{% endblock %}
+</div></header>
+<main>{% block main %}{% endblock %}</main>
+<script>
+async function api(url, body) {
+  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || ('Error ' + r.status));
+  return data;
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

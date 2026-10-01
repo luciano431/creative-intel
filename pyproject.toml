@@ -33,7 +33,7 @@ radar = "creative_intel.cli:app"
 where = ["src"]
 
 [tool.setuptools.package-data]
-creative_intel = ["report/templates/*"]
+creative_intel = ["report/templates/*", "web_templates/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

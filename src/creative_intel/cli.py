@@ -295,62 +295,159 @@ def new_client(
     market: str = typer.Option("", "--market", help="Nombre del mercado (ej. Uruguay)"),
 ) -> None:
     """Crea la carpeta de configuración de un cliente nuevo (config/clients/<slug>/)."""
-    import shutil
+    from .clients import scaffold_client
 
-    from .config import CLIENTS_DIR, ROOT
-
-    dest = CLIENTS_DIR / slug
-    if dest.exists():
-        raise typer.BadParameter(f"Ya existe {dest}")
-    dest.mkdir(parents=True)
-    (dest / "competitors.yaml").write_text(f"""# Cliente y universo de competidores de {name}.
-# Completar meta_page_id (Biblioteca de anuncios de Meta) y website / google_domain (Google).
-client:
-  slug: {slug}
-  name: {name}
-  industry: {industry}
-  market: {market or country}
-  description: ""
-
-countries:
-  - code: {country}
-    name: {market or country}
-    languages: [es]
-    own:
-      slug: {slug}
-      name: {name}
-      website: ""
-      meta_page_id: ""          # ID de la página en la Biblioteca de anuncios de Meta
-      google_domain: ""         # dominio para Google Ads Transparency (ej. misegurook.com)
-      google_advertiser_id: ""
-      products: []
-    competitors:
-      local:
-        - slug: competidor-1
-          name: Competidor 1
-          website: ""
-          meta_page_id: ""
-          google_domain: ""
-          google_advertiser_id: ""
-          products: []
-          active: true
-      global:
-        - slug: referente-1
-          name: Referente global 1
-          website: ""
-          meta_page_id: ""
-          google_domain: ""     # o un dominio por país: {{ES: marca.es, IT: marca.it}}
-          google_advertiser_id: ""
-          ad_countries: [ALL]
-          products: []
-          active: true
-""", encoding="utf-8")
-    shutil.copy(ROOT / "config" / "taxonomy.yaml", dest / "taxonomy.yaml")
+    try:
+        dest = scaffold_client(slug, name, industry, country, market)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     console.print(f"[green]Cliente creado en {dest}[/green]")
-    console.print("1. Completá competitors.yaml (IDs de Meta, dominios de Google).")
+    console.print("1. Completá competitors.yaml (IDs de Meta, dominios de Google), o usá [bold]radar fill-ids[/bold] y [bold]radar discover[/bold].")
     console.print("2. Ajustá taxonomy.yaml si la industria no es seguros (productos, mensajes).")
     console.print(f"3. Usalo con: [bold]export RADAR_CLIENT={slug}[/bold], luego [bold]radar init-db[/bold] y [bold]radar competitors sync[/bold]")
     console.print("4. Informe del mes: [bold]radar run-cycle --period AAAA-MM[/bold] (agregá --mock-ai si no hay crédito de API)")
+
+
+def _pages_table(pages, title: str, limit: int = 8) -> Table:
+    t = Table(title=title)
+    for col in ("#", "Página", "ID de Meta", "Anuncios vistos", "Me gusta", "Dominio de sus anuncios", "Parecido"):
+        t.add_column(col)
+    for i, pg in enumerate(pages[:limit], 1):
+        d = pg.as_dict()
+        t.add_row(str(i), d["name"] or "?", d["page_id"], str(d["ads"]), f"{d['likes']:,}".replace(",", ".") if d["likes"] else "—",
+                  ", ".join(d["domains"]) or "—", f"{int(d['score'] * 100)}%" if d["score"] else "—")
+    return t
+
+
+@app.command("find-ids")
+def find_ids(
+    name: str = typer.Argument(..., help="Nombre de la marca, como aparece en Facebook/Instagram"),
+    country: str = typer.Option("UY", "--country", "-c", help="País donde buscar en Meta (ALL = todos)"),
+    domain: str = typer.Option("", "--domain", help="Dominio a verificar en Google (si no, se usa el de sus anuncios)"),
+    region: str = typer.Option("", "--region", help="Región de Google (por defecto, el mismo país)"),
+    no_google: bool = typer.Option(False, "--no-google", help="No verificar en Google"),
+    show: bool = typer.Option(False, "--show", help="Mostrar el navegador"),
+) -> None:
+    """Busca el ID de la página de Meta y verifica el dominio en Google para una marca."""
+    from .discovery import find_meta_pages, google_check, is_confident
+
+    pages = find_meta_pages(name, country, headless=not show)
+    if not pages:
+        rprint(f"[yellow]No encontré anuncios de «{name}» en la Biblioteca de Meta ({country}).[/yellow] Probá con otro nombre o con --country ALL.")
+    else:
+        console.print(_pages_table(pages, f"Meta · «{name}» en {country}"))
+        best = pages[0]
+        rprint(("[green]Coincidencia clara:[/green] " if is_confident(best, name) else "[yellow]Revisar a mano:[/yellow] ")
+               + f"{best.name} → meta_page_id: \"{best.page_id}\"")
+    dom = domain or (pages[0].top_domain if pages else "")
+    if no_google or not dom:
+        if not no_google:
+            rprint("[yellow]Sin dominio para verificar en Google.[/yellow] Pasalo con --domain marca.com")
+        return
+    g = google_check(dom, region or (country if country.upper() != "ALL" else "anywhere"), headless=not show)
+    if g["declared"] or g["creatives_seen"]:
+        rprint(f"[green]Google:[/green] {dom} ({g['region']}) → ~{g['declared'] or g['creatives_seen']} anuncios"
+               + (f" · anunciante {', '.join(g['advertisers'])}" if g["advertisers"] else "") + f"\n  google_domain: {dom}")
+    else:
+        rprint(f"[yellow]Google:[/yellow] {dom} ({g['region']}) no muestra anuncios. Puede que no pauten en Google en esa región o que usen otro dominio.\n  {g['url']}")
+
+
+@app.command()
+def discover(
+    keywords: str = typer.Option(..., "--keywords", "-k", help="Palabras del rubro separadas por coma (ej. \"seguros,seguro de auto\")"),
+    country: list[str] = typer.Option(["UY"], "--country", "-c", help="País (repetible: -c ES -c AR -c MX)"),
+    top: int = typer.Option(5, "--top", help="Cuántos proponer"),
+    add: str = typer.Option("", "--add", help="local | global: agregarlos al competitors.yaml del cliente actual"),
+    show: bool = typer.Option(False, "--show", help="Mostrar el navegador"),
+) -> None:
+    """Propone competidores: los anunciantes que más pautan con esas palabras en Meta."""
+    from .config import CONFIG_DIR
+    from .discovery import add_competitors, discover_advertisers
+
+    words = [k.strip() for k in keywords.split(",") if k.strip()]
+    known = [c.meta_page_id for c in load_competitors() if c.meta_page_id]
+    pages = [p for p in discover_advertisers(words, country, exclude=known, headless=not show) if p.ads]
+    if not pages:
+        rprint("[yellow]No encontré anunciantes con esas palabras.[/yellow] Probá con términos más amplios.")
+        raise typer.Exit(1)
+    console.print(_pages_table(pages, f"Quién más pauta con «{', '.join(words)}» en {', '.join(country)}", limit=max(top * 2, 10)))
+    rprint("[dim]Ojo: pueden aparecer comparadores, medios o bancos que no son competencia directa. Elegí a mano si hace falta.[/dim]")
+    if add:
+        if add not in ("local", "global"):
+            raise typer.BadParameter("--add tiene que ser local o global")
+        added = add_competitors(CONFIG_DIR / "competitors.yaml", pages[:top], add, country[0] if add == "local" else "")
+        rprint(f"[green]Agregados como {add}:[/green] {', '.join(added) or 'ninguno nuevo'}  (copia del archivo anterior en competitors.yaml.bak)")
+
+
+@app.command("fill-ids")
+def fill_ids(
+    write: bool = typer.Option(False, "--write", help="Guardar en competitors.yaml los que coinciden claramente"),
+    check_google: bool = typer.Option(True, "--check-google/--no-check-google", help="Verificar los dominios en Google"),
+    show: bool = typer.Option(False, "--show", help="Mostrar el navegador"),
+) -> None:
+    """Completa los IDs que faltan (Meta y dominio de Google) del cliente actual y sus competidores."""
+    from .config import CONFIG_DIR
+    from .discovery import find_meta_pages, google_check, is_confident, update_ids
+    from .collectors.google_web import domain_of
+
+    t = Table(title="IDs del cliente y sus competidores")
+    for col in ("Marca", "Tipo", "Meta", "Google", "Estado"):
+        t.add_column(col)
+    updates: dict[str, dict[str, str]] = {}
+    for c in load_competitors():
+        country = (c.ad_countries or [c.country])[0]
+        meta_id, meta_note = c.meta_page_id, "ya estaba" if c.meta_page_id else ""
+        dom = domain_of(c, country)
+        status = "ok"
+        if not meta_id:
+            pages = find_meta_pages(c.name, country, headless=not show)
+            if pages and is_confident(pages[0], c.name):
+                meta_id, meta_note = pages[0].page_id, f"{pages[0].name}"
+                updates.setdefault(c.slug, {})["meta_page_id"] = meta_id
+                if not dom and pages[0].top_domain:
+                    dom = pages[0].top_domain
+                    updates[c.slug]["google_domain"] = dom
+            elif pages:
+                meta_note, status = f"¿{pages[0].name} ({pages[0].page_id})?", "revisar"
+            else:
+                meta_note, status = "sin anuncios en Meta", "revisar"
+        g_note = "—"
+        if dom and check_google:
+            g = google_check(dom, country if country.upper() != "ALL" else "anywhere", headless=not show)
+            n = g["declared"] or g["creatives_seen"]
+            g_note = f"{dom} · ~{n} anuncios" if n else f"{dom} · sin anuncios"
+        elif dom:
+            g_note = dom
+        else:
+            status = "revisar" if status == "ok" else status
+            g_note = "sin dominio"
+        t.add_row(c.name, c.tier, f"{meta_id or '—'} {('(' + meta_note + ')') if meta_note else ''}", g_note,
+                  "[green]ok[/green]" if status == "ok" else "[yellow]revisar[/yellow]")
+    console.print(t)
+    if write and updates:
+        n = update_ids(CONFIG_DIR / "competitors.yaml", updates)
+        rprint(f"[green]{n} datos guardados en {CONFIG_DIR / 'competitors.yaml'}[/green] (copia del anterior en competitors.yaml.bak)")
+    elif updates:
+        rprint("Para guardar los que coinciden claramente, volvé a correrlo con [bold]--write[/bold].")
+
+
+@app.command()
+def web(
+    port: int = typer.Option(8080, "--port", help="Puerto"),
+    host: str = typer.Option("127.0.0.1", "--host", help="127.0.0.1 = solo esta compu; 0.0.0.0 = toda la red local"),
+    no_open: bool = typer.Option(False, "--no-open", help="No abrir el navegador"),
+) -> None:
+    """Abre la web del Radar: elegir cliente, generar y ver informes, buscar IDs y competidores."""
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    url = f"http://{'127.0.0.1' if host in ('0.0.0.0', '') else host}:{port}"
+    console.print(f"[green]Radar creativo en {url}[/green]  (Ctrl+C para cerrar)")
+    if not no_open:
+        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    uvicorn.run("creative_intel.web:create_app", factory=True, host=host, port=port, log_level="warning")
 
 
 @app.command("debug-html")

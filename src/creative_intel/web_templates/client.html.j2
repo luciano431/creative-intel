@@ -1,0 +1,152 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ c.name }}{% endblock %}
+{% block topactions %}<a class="btn ghost" href="/">Todos los clientes</a>{% endblock %}
+{% block main %}
+{% set periods = c.periods() %}
+<div class="row" style="justify-content:space-between; margin-bottom:18px">
+  <div><h1 style="margin:0">{{ c.name }}</h1><p class="muted" style="margin:2px 0 0">{{ c.industry or 'Sin industria' }} · {{ c.market or '—' }}{% if c.env %} · <span class="mono">RADAR_CLIENT={{ c.env }}</span>{% endif %}</p></div>
+  {% if periods %}<a class="btn dark" href="{{ c.report_url(periods[0]) }}" target="_blank" rel="noopener">Ver último informe ({{ periods[0] }})</a>{% endif %}
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab on" data-p="p-informe">Informe</button>
+  <button class="tab" data-p="p-comp">Competidores <span class="tag {{ 'warn' if c.missing_ids() else 'ok' }}" style="margin-left:4px">{{ c.competitors | length }}</span></button>
+  <button class="tab" data-p="p-config">Configuración</button>
+</div>
+
+<section class="panel on" id="p-informe">
+  <div class="grid">
+    <div class="card">
+      <h2>Generar el plan creativo</h2>
+      <p class="muted small" style="margin:0 0 14px">Recolecta los anuncios del mes, los clasifica, arma el análisis y deja el informe listo para revisar. Tarda entre 10 y 40 minutos según la cantidad de competidores.</p>
+      <div class="field"><label for="period">Mes</label><input type="month" id="period" value="{{ default_period }}"></div>
+      <label class="check"><input type="checkbox" id="ai" {{ 'checked' if has_api_key }}> Clasificar y escribir con IA (Claude)</label>
+      {% if not has_api_key %}<p class="small muted" style="margin:4px 0 0 26px">No hay clave de API cargada en <code>.env</code>: se usa la versión sin IA.</p>{% endif %}
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="skip"> No volver a recolectar (usar los anuncios ya bajados)</label>
+      <div class="row" style="margin-top:16px"><button class="btn" id="go" {{ 'disabled' if running }}>Generar informe</button></div>
+      <div class="err" id="err-informe"></div>
+    </div>
+    <div class="card">
+      <h2>Informes</h2>
+      {% if periods %}
+      <table><tbody>
+        {% for p in periods %}<tr><td>{{ p }}</td><td style="text-align:right"><a href="{{ c.report_url(p) }}" target="_blank" rel="noopener">Abrir</a></td></tr>{% endfor %}
+      </tbody></table>
+      {% else %}<p class="muted">Todavía no hay informes para este cliente.</p>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="p-comp">
+  <div class="stack">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">Cliente y competidores</h2>
+        <button class="btn" id="ids" {{ 'disabled' if running }}>Buscar los IDs que faltan</button>
+      </div>
+      <p class="muted small" style="margin:6px 0 12px">Busca cada marca por nombre en la Biblioteca de anuncios de Meta y verifica su dominio en Google. Guarda solo las coincidencias claras; las dudosas quedan marcadas para revisar en Configuración.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Marca</th><th>Tipo</th><th>Meta (ID de página)</th><th>Google</th><th></th></tr></thead>
+        <tbody>
+        {% for x in ([c.own] if c.own else []) + c.local + c.global_ %}{% set dom = domain_of(x) %}
+          <tr>
+            <td><b>{{ x.name }}</b></td>
+            <td>{{ {'own': 'Cliente', 'local': 'Local', 'global': 'Global'}[x.tier] }}{% if x.tier == 'global' %} <span class="muted small">({{ x.ad_countries | join(', ') }})</span>{% endif %}</td>
+            <td class="mono">{% if x.meta_page_id %}<a href="https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&view_all_page_id={{ x.meta_page_id }}" target="_blank" rel="noopener">{{ x.meta_page_id }}</a>{% else %}—{% endif %}</td>
+            <td class="mono">{{ x.google_advertiser_id or (x.google_domains | dictsort | map('join', ': ') | join(', ') if x.google_domains else dom) or '—' }}</td>
+            <td>{% if x.meta_page_id and (x.google_advertiser_id or dom) %}<span class="tag ok">Completo</span>{% else %}<span class="tag warn">Falta</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Proponer competidores</h2>
+      <p class="muted small" style="margin:0 0 14px">Busca en Meta quién más pauta con palabras del rubro y agrega a los primeros como competidores, con sus IDs. Conviene revisar la lista después: pueden aparecer comparadores o medios.</p>
+      <div class="fields">
+        <div class="field"><label for="kw">Palabras del rubro</label><input type="text" id="kw" placeholder="seguros, seguro de auto"></div>
+        <div class="field"><label for="ct">Países</label><input type="text" id="ct" value="{{ (c.own.country if c.own else 'UY') }}" placeholder="UY  ·  o ES, AR, MX para globales"></div>
+        <div class="field"><label for="tier">Agregar como</label><select id="tier"><option value="local">Locales</option><option value="global">Referentes globales</option></select></div>
+        <div class="field"><label for="top">Cuántos</label><input type="number" id="top" value="5" min="1" max="10"></div>
+      </div>
+      <button class="btn" id="disc" {{ 'disabled' if running }}>Buscar y agregar</button>
+      <div class="err" id="err-comp"></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="p-config">
+  <div class="card">
+    <h2>Configuración</h2>
+    <p class="muted small" style="margin:0 0 12px">El archivo <span class="mono">competitors.yaml</span> del cliente. Al guardar se valida y se deja una copia del anterior (<span class="mono">.bak</span>).</p>
+    <textarea id="cfg" spellcheck="false">{{ config_text }}</textarea>
+    <div class="row" style="margin-top:12px"><button class="btn" id="save">Guardar</button><span class="small muted" id="saved"></span></div>
+    <div class="err" id="err-cfg"></div>
+  </div>
+</section>
+
+<div class="card" id="jobs" style="margin-top:16px{{ '' if jobs else '; display:none' }}">
+  <h2>Tareas</h2>
+  <div id="job-list">
+  {% for j in jobs %}
+    <div class="job" data-id="{{ j.id }}" data-status="{{ j.status }}" style="margin-top:12px">
+      <div class="row"><b>{{ j.title }}</b> <span class="tag st">{{ j.status }}</span> <span class="small muted el"></span> <a class="small res" href="{{ j.result_url }}" target="_blank" rel="noopener" style="display:none">Abrir informe</a></div>
+      <pre class="log">{{ j.log }}</pre>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const KEY = {{ c.key | tojson }};
+const $ = id => document.getElementById(id);
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === t.dataset.p));
+}));
+
+const TAG = {pendiente: 'run', corriendo: 'run', listo: 'ok', error: 'warn'};
+function paint(el, j) {
+  el.dataset.status = j.status;
+  const st = el.querySelector('.st'); st.textContent = j.status; st.className = 'tag st ' + (TAG[j.status] || '');
+  el.querySelector('.el').textContent = Math.floor(j.elapsed / 60) + ' min ' + (j.elapsed % 60) + ' s';
+  const pre = el.querySelector('pre'); const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 8;
+  pre.textContent = j.log || '…'; if (atEnd) pre.scrollTop = pre.scrollHeight;
+  const res = el.querySelector('.res'); res.style.display = (j.status === 'listo' && j.result_url) ? '' : 'none';
+}
+function addJob(j) {
+  $('jobs').style.display = '';
+  const el = document.createElement('div'); el.className = 'job'; el.dataset.id = j.id; el.style.marginTop = '12px';
+  el.innerHTML = '<div class="row"><b></b> <span class="tag st"></span> <span class="small muted el"></span> <a class="small res" target="_blank" rel="noopener" style="display:none">Abrir informe</a></div><pre class="log"></pre>';
+  el.querySelector('b').textContent = j.title; el.querySelector('.res').href = j.result_url || '#';
+  $('job-list').prepend(el); paint(el, j);
+  document.querySelectorAll('#go, #ids, #disc').forEach(b => b.disabled = true);
+  $('jobs').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+async function poll() {
+  const live = [...document.querySelectorAll('.job')].filter(el => ['pendiente', 'corriendo'].includes(el.dataset.status));
+  for (const el of live) {
+    try {
+      const j = await (await fetch('/api/tareas/' + el.dataset.id)).json(); paint(el, j);
+      if (!['pendiente', 'corriendo'].includes(j.status)) setTimeout(() => location.reload(), 1500);
+    } catch (e) {}
+  }
+}
+setInterval(poll, 3000); poll();
+
+async function start(body, errId) {
+  $(errId).textContent = '';
+  try { addJob(await api('/api/c/' + KEY + '/tareas', body)); } catch (e) { $(errId).textContent = e.message; }
+}
+$('go').addEventListener('click', () => start({kind: 'informe', period: $('period').value, ai: $('ai').checked, skip_collect: $('skip').checked}, 'err-informe'));
+$('ids').addEventListener('click', () => start({kind: 'ids'}, 'err-comp'));
+$('disc').addEventListener('click', () => start({kind: 'competidores', keywords: $('kw').value, countries: $('ct').value, tier: $('tier').value, top: $('top').value}, 'err-comp'));
+$('save').addEventListener('click', async () => {
+  $('err-cfg').textContent = ''; $('saved').textContent = '';
+  try { await api('/api/c/' + KEY + '/config', {text: $('cfg').value}); $('saved').textContent = 'Guardado.'; setTimeout(() => location.reload(), 800); }
+  catch (e) { $('err-cfg').textContent = e.message; }
+});
+</script>
+{% endblock %}
