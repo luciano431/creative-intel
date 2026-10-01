@@ -37,7 +37,7 @@ config/competitors.yaml ──► COLECTORES ──► BASE DE CREATIVOS ──�
 | Colectores | `src/creative_intel/collectors/` | `meta_api` (Graph API oficial), `meta_web` (Playwright), `google_serpapi` (SerpApi), `google_web` (Playwright), `manual` (CSV/JSON). Contrato común `RawCreative`. |
 | Normalización | `normalize.py` | Fingerprint estable, dedupe, upsert, **longevidad** (first_seen / last_seen / días activo), sightings por ciclo, flags de Data QA. |
 | IA etapa 1 | `ai/classify.py` | Un creativo → JSON validado (imagen + copy). Modelo Pydantic **generado desde la taxonomía**. Fallback heurístico sin API. |
-| Motor comparativo | `analysis/metrics.py`, `analysis/concepts.py` | Distribuciones, matriz competidor × ángulo, local vs global, mes vs mes, white space, mercado vs miSeguro, familias creativas. Funciones puras. |
+| Motor comparativo | `analysis/metrics.py`, `analysis/concepts.py` | Distribuciones, matriz competidor × ángulo, local vs global, mes vs mes, white space, mercado vs miSeguroOk, familias creativas. Funciones puras. |
 | IA etapa 2 | `ai/synthesize.py` | Síntesis estratégica estructurada: executive summary con cifras, top 3 insights (dato + inferencia), creativos de referencia con adaptación, oportunidades con conceptos ejecutables, riesgos de saturación, action items. |
 | QA humana | `review.py` | Checkpoint 1 (Data QA, cola de creativos dudosos) y Checkpoint 2 (Strategic QA: approve / edit / reject). `publish` exige aprobación. |
 | Reporte | `report/` | `report.html` (visual, con capturas), `report.md`, `basecamp.html` (subconjunto HTML que acepta Basecamp). |
@@ -52,7 +52,7 @@ Requiere Python 3.11 o superior (`python3 --version`; en macOS: `brew install py
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
 creative-intel demo            # dos meses de datos ficticios, IA en modo heurístico
-open reports/demo/report.html  # reporte completo con mes vs mes y mercado vs miSeguro
+open reports/demo/report.html  # reporte completo con mes vs mes y mercado vs miSeguroOk
 pytest                         # 24 tests
 ```
 
@@ -70,7 +70,7 @@ El comando `demo` recorre exactamente el mismo pipeline que producción; solo ca
    - Basecamp: `BASECAMP_ACCOUNT_ID`, `BASECAMP_PROJECT_ID`, `BASECAMP_VAULT_ID` (Docs & Files), `BASECAMP_TODOLIST_ID` y token OAuth (`BASECAMP_ACCESS_TOKEN` o refresh token + client id/secret).
    - `SLACK_WEBHOOK_URL` y/o `MAKE_WEBHOOK_URL` para las alertas de los checkpoints.
 3. **Scraping (opcional).** `pip install -e ".[scraping]" && playwright install chromium`.
-4. **Nuestros anuncios.** Exportar los creativos activos de miSeguro a `data/inbox/miseguro/*.csv` (formato en `data/samples/manual_import_example.csv`; admite columnas de resultados reales en `engagement`). Habilita la sección *Mercado vs miSeguro*.
+4. **Nuestros anuncios.** Exportar los creativos activos de miSeguroOk a `data/inbox/miseguro/*.csv` (formato en `data/samples/manual_import_example.csv`; admite columnas de resultados reales en `engagement`). Habilita la sección *Mercado vs miSeguroOk*.
 
 ## Flujo mensual
 
@@ -133,4 +133,4 @@ No existe "engagement estimado 8.4/10" ni "este anuncio funciona". Existe "activ
 
 - **Fase 1 (este repo)**: 10 competidores, Meta + Google, base de creativos, clasificación, métricas, síntesis, QA, reporte, Basecamp, cron.
 - **Fase 2**: transcripción de video, detección automática de conceptos con IA, dashboard histórico, alertas intra-mes cuando un competidor lanza una familia nueva.
-- **Fase 3**: generación automática de briefs creativos por oportunidad y carga directa a Basecamp como tareas con adjuntos; comparación con resultados reales de miSeguro por concepto.
+- **Fase 3**: generación automática de briefs creativos por oportunidad y carga directa a Basecamp como tareas con adjuntos; comparación con resultados reales de miSeguroOk por concepto.

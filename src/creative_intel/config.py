@@ -206,7 +206,7 @@ def load_brand(path: Path | None = None) -> Brand:
 
 @dataclass
 class ClientInfo:
-    """El cliente para el que se arma el plan (no necesariamente miSeguro)."""
+    """El cliente para el que se arma el plan (cualquier cliente de Ranker)."""
     slug: str
     name: str
     industry: str = ""

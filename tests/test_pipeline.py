@@ -30,7 +30,9 @@ def test_full_cycle_two_months_with_mock_ai(session, sample_raws, tmp_path):
     html = (tmp_path / "report.html").read_text(encoding="utf-8")
     assert "Plan creativo para" in html and "Resumen ejecutivo" in html and "Qué cambió respecto al mes anterior" in html
     assert "Competidor por competidor" in html and "Top 10 locales" in html and "Top 10 globales" in html
-    assert "miSeguro vs. mercado" in html and "Plan de acción" in html
+    from creative_intel.config import load_client
+
+    assert f"{load_client().name} vs. mercado" in html and "Plan de acción" in html
     for gone in ("Executive summary", "Competitive landscape", "Anexo", "Ponderado por competidor", "INFERENCIA", "confianza medium"):
         assert gone not in html, gone
     assert "SURA Uruguay" in html

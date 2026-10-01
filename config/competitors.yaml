@@ -15,7 +15,7 @@
 # con `creative-intel new-client <slug> --name "..."` y completar.
 client:
   slug: miseguro
-  name: miSeguro
+  name: miSeguroOk
   industry: Seguros
   market: Uruguay
   description: Aseguradora 100% digital
@@ -26,7 +26,7 @@ countries:
     languages: [es]
     own:
       slug: miseguro
-      name: miSeguro
+      name: miSeguroOk
       website: https://miseguro.com.uy
       meta_page_id: ""
       google_advertiser_id: ""
