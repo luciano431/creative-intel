@@ -106,18 +106,37 @@ def run_creatives(session: Session, run: Run) -> list[Creative]:
     return session.query(Creative).filter(Creative.id.in_(ids)).filter(Creative.qa_status != "rejected").all()
 
 
-def classify(session: Session, period: str, mock: bool = False, reclassify: bool = False, taxonomy: Taxonomy | None = None) -> dict[str, Any]:
+FALLBACK_MARK = "[fallback por error"
+FATAL_API_ERRORS = ("credit balance is too low", "could not resolve authentication", "invalid x-api-key", "authentication_error", "permission_error")
+
+
+def _is_fallback(classification: Classification | None) -> bool:
+    return bool(classification) and FALLBACK_MARK in ((classification.data or {}).get("summary") or "")
+
+
+def _is_fatal_api_error(exc: Exception) -> bool:
+    """Errores que se repetirían en cada anuncio (sin crédito, sin clave): conviene frenar, no seguir."""
+    msg = str(exc).lower()
+    return any(k in msg for k in FATAL_API_ERRORS)
+
+
+def classify(session: Session, period: str, mock: bool = False, reclassify: bool = False, taxonomy: Taxonomy | None = None, retry_failed: bool = False) -> dict[str, Any]:
     taxonomy = taxonomy or load_taxonomy()
     run = get_or_create_run(session, period)
     stats: Counter = Counter()
     model_name = "heuristic" if mock else settings.classify_model
     for creative in run_creatives(session, run):
-        if creative.latest_classification and not reclassify:
+        latest = creative.latest_classification
+        if latest and not reclassify and not (retry_failed and _is_fallback(latest)):
             stats["skipped"] += 1
             continue
         try:
             data = heuristic_classify(creative, taxonomy) if mock else classify_creative(creative, taxonomy)
         except Exception as exc:
+            if _is_fatal_api_error(exc):
+                log.error("clasificación detenida: %s", exc)
+                stats["aborted"] = str(exc)[:300]
+                break
             log.warning("clasificación falló para creativo %s: %s; usando heurística", creative.id, exc)
             data = heuristic_classify(creative, taxonomy)
             data["summary"] += f" [fallback por error: {type(exc).__name__}]"

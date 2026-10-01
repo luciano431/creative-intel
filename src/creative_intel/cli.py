@@ -103,11 +103,17 @@ def classify(
     period: Optional[str] = PeriodOpt,
     mock_ai: bool = typer.Option(False, "--mock-ai", help="Clasificador heurístico, sin llamadas a la API"),
     reclassify: bool = typer.Option(False, "--reclassify", help="Volver a clasificar los ya clasificados"),
+    retry_failed: bool = typer.Option(False, "--retry-failed", help="Reintentar solo los que quedaron con la regla simple por un error de la API"),
 ) -> None:
     """Etapa 1: clasifica cada creativo dentro de la taxonomía cerrada."""
     with session_scope() as s:
-        stats = pipeline.classify(s, _period(period), mock=mock_ai, reclassify=reclassify)
+        stats = pipeline.classify(s, _period(period), mock=mock_ai, reclassify=reclassify, retry_failed=retry_failed)
     rprint(stats)
+    if stats.get("aborted"):
+        rprint("[red]Clasificación detenida por un error de la API (crédito o clave).[/red] "
+               "Lo ya clasificado quedó guardado; cuando lo resuelvas corré: "
+               f"creative-intel classify --period {_period(period)} --retry-failed")
+        raise typer.Exit(1)
 
 
 @app.command()

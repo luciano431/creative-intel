@@ -97,3 +97,31 @@ def test_mock_synthesis_validates_against_output_schema(session, sample_raws, ta
     joined = texts(data)
     for jerga in ("white space", "TOFU", "tofu", "hook"):
         assert jerga not in joined, f"jerga en la síntesis: {jerga}"
+
+
+def test_classify_stops_on_credit_error_and_retries_only_failed(session, sample_raws, taxonomy, today, monkeypatch):
+    import creative_intel.pipeline as pipeline
+
+    run = get_or_create_run(session, "2026-09")
+    upsert_creatives(session, run, sample_raws, today)
+    total = len(sample_raws)
+    calls = {"n": 0}
+
+    def flaky(creative, tax):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("Error 500: overloaded")  # error puntual: cae a heurística y sigue
+        if calls["n"] == 3:
+            raise RuntimeError("Your credit balance is too low to access the Anthropic API.")
+        return heuristic_classify(creative, tax)
+
+    monkeypatch.setattr(pipeline, "classify_creative", flaky)
+    stats = classify(session, "2026-09")
+    assert stats["aborted"] and calls["n"] == 3, "frena en el primer error de crédito, no recorre todo"
+    assert stats["classified"] == 2 and stats["fallback"] == 1
+
+    monkeypatch.setattr(pipeline, "classify_creative", lambda c, t: heuristic_classify(c, t))
+    stats = classify(session, "2026-09", retry_failed=True)
+    assert stats["classified"] == total - 1, "reintenta el fallback y los que faltaban; no repite el que salió bien"
+    assert stats["skipped"] == 1
+    assert not any(pipeline._is_fallback(c.latest_classification) for c in pipeline.run_creatives(session, run))
