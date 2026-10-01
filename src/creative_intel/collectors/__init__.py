@@ -18,7 +18,9 @@ REGISTRY: dict[str, type] = {
 
 
 def get_collectors(names: list[str] | None = None) -> list[Collector]:
-    names = names or ["meta_api", "google_serpapi", "manual"]
+    import os
+
+    names = names or [n.strip() for n in os.getenv("COLLECT_SOURCES", "meta_web,google_web,manual").split(",") if n.strip()]
     return [REGISTRY[n]() for n in names]
 
 

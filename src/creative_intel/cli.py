@@ -320,7 +320,8 @@ countries:
       slug: {slug}
       name: {name}
       website: ""
-      meta_page_id: ""
+      meta_page_id: ""          # ID de la página en la Biblioteca de anuncios de Meta
+      google_domain: ""         # dominio para Google Ads Transparency (ej. misegurook.com)
       google_advertiser_id: ""
       products: []
     competitors:
@@ -329,6 +330,7 @@ countries:
           name: Competidor 1
           website: ""
           meta_page_id: ""
+          google_domain: ""
           google_advertiser_id: ""
           products: []
           active: true
@@ -337,6 +339,7 @@ countries:
           name: Referente global 1
           website: ""
           meta_page_id: ""
+          google_domain: ""     # o un dominio por país: {{ES: marca.es, IT: marca.it}}
           google_advertiser_id: ""
           ad_countries: [ALL]
           products: []
@@ -346,7 +349,8 @@ countries:
     console.print(f"[green]Cliente creado en {dest}[/green]")
     console.print("1. Completá competitors.yaml (IDs de Meta, dominios de Google).")
     console.print("2. Ajustá taxonomy.yaml si la industria no es seguros (productos, mensajes).")
-    console.print(f"3. Usalo con: [bold]RADAR_CLIENT={slug} radar init-db && RADAR_CLIENT={slug} radar competitors sync[/bold]")
+    console.print(f"3. Usalo con: [bold]export RADAR_CLIENT={slug}[/bold], luego [bold]radar init-db[/bold] y [bold]radar competitors sync[/bold]")
+    console.print("4. Informe del mes: [bold]radar run-cycle --period AAAA-MM[/bold] (agregá --mock-ai si no hay crédito de API)")
 
 
 @app.command("debug-html")
