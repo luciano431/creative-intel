@@ -32,6 +32,17 @@ def _period(p: Optional[str]) -> str:
     return p or pipeline.current_period()
 
 
+def _print_point(i: int, p) -> None:
+    if isinstance(p, dict):
+        rprint(f"  [bold]{i}. {p.get('headline', '')}[/bold]")
+        if p.get("detail"):
+            rprint(f"     {p['detail']}")
+        if p.get("action"):
+            rprint(f"     [cyan]Qué hacemos:[/cyan] {p['action']}")
+    else:
+        rprint(f"  {i}. {p}")
+
+
 @app.callback()
 def _init() -> None:
     init_db()
@@ -117,8 +128,8 @@ def synthesize(period: Optional[str] = PeriodOpt, mock_ai: bool = typer.Option(F
     with session_scope() as s:
         synth = pipeline.synthesize_run(s, _period(period), mock=mock_ai)
         rprint(f"[green]Síntesis #{synth.id} creada[/green] (modelo {synth.model}, estado {synth.status}).")
-        for i, line in enumerate(synth.data["executive_summary"], 1):
-            rprint(f"  {i}. {line}")
+        for i, p in enumerate(synth.data["executive_summary"], 1):
+            _print_point(i, p)
 
 
 @app.command()
@@ -172,10 +183,10 @@ def review_show(period: Optional[str] = PeriodOpt, export: Optional[Path] = type
             raise typer.Exit(1)
         rprint(f"[bold]Síntesis #{synth.id}[/bold] · modelo {synth.model} · estado [cyan]{synth.status}[/cyan]")
         d = synth.data
-        rprint("\n[bold]Executive summary[/bold]")
-        for i, line in enumerate(d["executive_summary"], 1):
-            rprint(f"  {i}. {line}")
-        rprint("\n[bold]Top insights[/bold]")
+        rprint("\n[bold]Resumen ejecutivo[/bold]")
+        for i, p in enumerate(d["executive_summary"], 1):
+            _print_point(i, p)
+        rprint("\n[bold]Hallazgos clave[/bold]")
         for i in d["top_insights"]:
             rprint(f"  • {i['title']} [{i['confidence']}] — {i['observation']}")
         rprint("\n[bold]Oportunidades[/bold]")
