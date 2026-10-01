@@ -28,10 +28,14 @@ def test_full_cycle_two_months_with_mock_ai(session, sample_raws, tmp_path):
     assert run.metrics["ours_vs_market"]["has_own"] is True
     assert (tmp_path / "report.html").exists() and (tmp_path / "report.md").exists() and (tmp_path / "basecamp.html").exists()
     html = (tmp_path / "report.html").read_text(encoding="utf-8")
-    assert "Executive summary" in html and "Mercado vs miSeguro" in html and "Mes vs mes anterior" in html
+    assert "Plan creativo para" in html and "Resumen ejecutivo" in html and "Qué cambió respecto al mes anterior" in html
+    assert "Competidor por competidor" in html and "Top 10 locales" in html and "Top 10 globales" in html
+    assert "miSeguro vs. mercado" in html and "Plan de acción" in html
+    for gone in ("Executive summary", "Competitive landscape", "Anexo", "Ponderado por competidor", "INFERENCIA", "confianza medium"):
+        assert gone not in html, gone
     assert "SURA Uruguay" in html
     md = (tmp_path / "report.md").read_text(encoding="utf-8")
-    assert "## 08 — Plan de acción" in md
+    assert "— Plan de acción" in md and "Resumen ejecutivo" in md
     json.loads((tmp_path / "metrics.json").read_text(encoding="utf-8"))
 
     # Checkpoint 1: la cola de QA existe y se resuelve

@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# Marca del informe. Se aplica a todos los clientes.
+# Reemplazar los colores por los HEX oficiales de Ranker.
+# ---------------------------------------------------------------------------
+app_name: Radar creativo de Ranker
+agency: Ranker
+agency_url: https://rankerstudio.com
+logo_url: ""            # URL o ruta a un PNG/SVG del logo (opcional)
+font_family: '"Inter", -apple-system, "Segoe UI", Roboto, sans-serif'
+font_url: https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap
+colors:                 # PROVISORIOS: reemplazar por la paleta oficial de Ranker
+  primary: "#14123A"    # fondo de portada, títulos
+  accent: "#6C4CFF"     # barras, destacados, pestaña activa
+  accent_2: "#00C2A8"   # segunda serie (cliente / nosotros)
+  warn: "#FF8A3D"       # riesgos, alertas
+  ink: "#1C1B2E"        # texto
+  muted: "#6B6A80"      # texto secundario
+  line: "#E7E6F0"       # bordes
+  soft: "#F6F5FB"       # fondos de tarjetas
+  bg: "#FFFFFF"

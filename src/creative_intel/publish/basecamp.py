@@ -113,22 +113,29 @@ def publish_to_basecamp(
     if not (project_id and vault_id):
         raise ValueError("Faltan BASECAMP_PROJECT_ID / BASECAMP_VAULT_ID")
 
-    for ref in context.get("reference_creatives", []):
-        it = ref["item"]
-        p = it.get("thumbnail_path")
+    for it in (context.get("local_top") or []) + (context.get("global_top") or []):
+        raw = it.get("raw") if isinstance(it.get("raw"), dict) else {}
+        p = it.get("thumbnail_path") or (raw or {}).get("screenshot")
         if p and Path(p).is_file():
             try:
                 it["attachment_sgid"] = client.upload_attachment(p)
             except httpx.HTTPError:
                 it["attachment_sgid"] = ""
     html = render_basecamp_html(context)
-    title = f"Competitive Creative Intelligence — {context['period_label']} → plan {context['next_period_label']}"
+    client_name = getattr(context.get("client"), "name", "") or "cliente"
+    title = f"Plan creativo para {client_name} — {context['next_period_label']}"
     doc = client.create_document(project_id, vault_id, title, html)
     todo_ids: list[int] = []
     if create_todos and todolist_id:
         today = dt.date.today()
-        for a in context["synthesis"].get("action_items", []):
+        for a in context.get("actions") or context["synthesis"].get("action_items", []):
             due = (today + dt.timedelta(days=int(a.get("due_in_days", 7)))).isoformat()
-            todo = client.create_todo(project_id, todolist_id, f"[{context['period_label']}] {a['title']}", f"{a['description']}\n\nResponsable sugerido: {a['owner_role']}\nReporte: {doc.get('app_url', '')}", due)
+            notes = (
+                f"{a['description']}\n\nResponsable sugerido: {a['owner_role']}"
+                + (f"\nEntregable: {a['deliverable']}" if a.get("deliverable") else "")
+                + (f"\nCómo medimos: {a['success_metric']}" if a.get("success_metric") else "")
+                + f"\nInforme: {doc.get('app_url', '')}"
+            )
+            todo = client.create_todo(project_id, todolist_id, f"[{context['next_period_label']}] {a['title']}", notes, due)
             todo_ids.append(todo["id"])
     return {"document_url": doc.get("app_url", ""), "document_id": doc.get("id"), "todo_ids": todo_ids}

@@ -1,259 +1,539 @@
+{%- set C = brand.colors -%}
+{%- set sec = namespace(n=0) -%}
+{%- macro num() -%}{%- set sec.n = sec.n + 1 -%}{{ '%02d' % sec.n }}{%- endmacro -%}
+{%- macro pill(level, kind='') -%}
+  {%- set l = (level or 'media') | lower -%}
+  {%- set norm = {'high':'alta','medium':'media','low':'baja'}.get(l, l) -%}
+  <span class="pill lvl-{{ norm }}">{{ kind }}{{ norm | capitalize }}</span>
+{%- endmacro -%}
+{%- macro preview(it, big=False) -%}
+  <div class="pv{% if big %} pv-big{% endif %}">
+    {%- if it.thumbnail_rel -%}<img loading="lazy" src="{{ it.thumbnail_rel }}" alt="Anuncio de {{ it.competitor }}">
+    {%- else -%}<div class="pv-empty">Sin vista previa{% if it.snapshot_url %}<br><a href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver en la biblioteca</a>{% endif %}</div>{%- endif -%}
+    <span class="pv-tag {{ it.platform }}">{{ lbl(it.platform) }}</span>
+  </div>
+{%- endmacro -%}
+{%- macro paired(rows, a_name, b_name) -%}
+  {%- for r in rows -%}
+  <div class="pb">
+    <div class="pb-label">{{ lbl(r.value) }}</div>
+    <div class="pb-bars">
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:{{ r.a | bar }}%"></div></div><span>{{ r.a | round | int }}%</span></div>
+      <div class="pb-row"><div class="pb-track"><div class="pb-fill b" style="width:{{ r.b | bar }}%"></div></div><span>{{ r.b | round | int }}%</span></div>
+    </div>
+  </div>
+  {%- else -%}<p class="muted">Sin datos clasificados.</p>
+  {%- endfor -%}
+{%- endmacro -%}
 <!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Competitive Creative Intelligence — {{ period_label }}</title>
+<title>Plan creativo para {{ client.name }} · {{ next_period_label }}</title>
+{% if brand.font_url %}<link rel="stylesheet" href="{{ brand.font_url }}">{% endif %}
 <style>
-  :root { --ink:#1b1f24; --muted:#5f6b7a; --line:#e6e9ee; --accent:#0f62fe; --bg:#ffffff; --soft:#f5f7fa; --warn:#b54708; --ok:#027a48; }
+  :root {
+    --primary: {{ C.primary }}; --accent: {{ C.accent }}; --accent2: {{ C.accent_2 }}; --warn: {{ C.warn }};
+    --ink: {{ C.ink }}; --muted: {{ C.muted }}; --line: {{ C.line }}; --soft: {{ C.soft }}; --bg: {{ C.bg }};
+    --radius: 14px;
+  }
   * { box-sizing: border-box; }
-  body { margin:0; font: 15px/1.55 -apple-system, "Segoe UI", Inter, Roboto, sans-serif; color:var(--ink); background:var(--bg); }
-  main { max-width: 1040px; margin: 0 auto; padding: 32px 20px 80px; }
-  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  h2 { font-size: 21px; margin: 44px 0 12px; padding-top: 18px; border-top: 1px solid var(--line); }
-  h3 { font-size: 16px; margin: 20px 0 8px; }
-  .sub { color: var(--muted); }
-  .kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin: 18px 0; }
-  .kpi { background: var(--soft); border-radius: 10px; padding: 12px 14px; }
-  .kpi b { display:block; font-size: 24px; }
-  .kpi span { color: var(--muted); font-size: 13px; }
-  .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius: 999px; background:var(--soft); color:var(--muted); margin-right:6px; }
-  .badge.dato { background:#e8f1ff; color:#0043ce; }
-  .badge.inferencia { background:#fff4e5; color:var(--warn); }
-  .badge.conf-low { background:#fde8e8; color:#b42318; } .badge.conf-medium { background:#fff4e5; color:var(--warn);} .badge.conf-high { background:#e6f4ea; color:var(--ok);}
-  table { width:100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align:left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-  .bar { display:flex; align-items:center; gap:10px; margin: 4px 0; }
-  .bar .label { width: 190px; flex: 0 0 190px; font-size: 14px; }
-  .bar .track { flex:1; background: var(--soft); border-radius: 6px; height: 14px; overflow:hidden; }
-  .bar .fill { height:100%; background: var(--accent); border-radius: 6px; }
-  .bar .num { width: 110px; flex: 0 0 110px; color: var(--muted); font-size: 13px; text-align:right; }
-  .grid2 { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-  .card { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 14px 0; }
-  .card h3 { margin-top: 0; }
-  .creative { display:grid; grid-template-columns: 220px 1fr; gap: 18px; }
-  .creative img { width: 100%; border-radius: 8px; border: 1px solid var(--line); }
-  .creative .ph { width:100%; aspect-ratio: 4/5; border-radius: 8px; background: var(--soft); display:flex; align-items:center; justify-content:center; color: var(--muted); font-size: 12px; text-align:center; padding: 10px; }
-  .delta-up { color: var(--ok); } .delta-down { color: #b42318; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
-  .note { background: var(--soft); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin: 14px 0; font-size: 14px; }
-  ol li, ul li { margin: 4px 0; }
-  .review { border: 1px dashed var(--line); padding: 10px 14px; border-radius: 8px; color: var(--muted); font-size: 13px; }
-  @media (max-width: 640px) { .creative { grid-template-columns: 1fr; } .bar .label { width: 120px; flex-basis: 120px; } }
-  @media print { h2 { page-break-after: avoid; } .card { page-break-inside: avoid; } }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font: 15px/1.6 {{ brand.font_family }}; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+
+  /* Portada */
+  .cover { background: var(--primary); color: #fff; padding: 28px 0 44px; }
+  .brandbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; opacity: .85; letter-spacing: .02em; }
+  .brandbar img { height: 26px; }
+  .brandbar b { font-weight: 700; }
+  .cover h1 { font-size: 44px; line-height: 1.1; margin: 46px 0 10px; letter-spacing: -.02em; font-weight: 800; }
+  .cover h1 span { color: var(--accent2); }
+  .cover .lead { font-size: 17px; opacity: .85; margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+  .chip.warn { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+  /* Navegación */
+  nav.toc { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 4px; overflow-x: auto; padding-top: 8px; padding-bottom: 8px; }
+  nav.toc a { white-space: nowrap; text-decoration: none; color: var(--muted); font-size: 13px; padding: 6px 10px; border-radius: 8px; }
+  nav.toc a:hover { background: var(--soft); color: var(--ink); }
+
+  section { padding: 56px 0 8px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+  .sec-num { font-size: 13px; font-weight: 700; color: var(--accent); background: var(--soft); border-radius: 8px; padding: 3px 8px; }
+  h2 { font-size: 28px; margin: 0; letter-spacing: -.01em; }
+  .sec-intro { color: var(--muted); margin: 6px 0 24px; max-width: 760px; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+
+  .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  /* KPIs */
+  .kpi { background: var(--soft); border-radius: var(--radius); padding: 16px 18px; }
+  .kpi b { display: block; font-size: 30px; line-height: 1.1; font-weight: 800; color: var(--primary); }
+  .kpi span { font-size: 13px; color: var(--muted); }
+
+  /* Resumen ejecutivo */
+  .sum { border-top: 4px solid var(--accent); }
+  .sum .n { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .sum h3 { font-size: 20px; line-height: 1.3; margin: 6px 0 10px; }
+  .sum .do { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 14px; }
+  .sum .do b { color: var(--accent2); }
+
+  /* Hallazgos */
+  .ins { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; padding: 0; overflow: hidden; }
+  .ins > div { padding: 18px 20px; border-right: 1px solid var(--line); }
+  .ins > div:last-child { border-right: 0; background: var(--soft); }
+  .ins .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 6px; }
+  .ins-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 26px 0 10px; }
+  .ins-head h3 { margin: 0; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .lvl-alta { background: color-mix(in srgb, var(--accent2) 18%, white); color: color-mix(in srgb, var(--accent2) 70%, black); }
+  .lvl-media { background: color-mix(in srgb, var(--accent) 14%, white); color: var(--accent); }
+  .lvl-baja { background: color-mix(in srgb, var(--warn) 18%, white); color: color-mix(in srgb, var(--warn) 70%, black); }
+  .risk .lvl-alta { background: color-mix(in srgb, var(--warn) 22%, white); color: color-mix(in srgb, var(--warn) 65%, black); }
+  .risk .lvl-baja { background: var(--soft); color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+
+  /* Panorama */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  .tbl table tr:last-child td { border-bottom: 0; }
+  .tier { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 6px; }
+  .tier.local { background: color-mix(in srgb, var(--accent2) 16%, white); color: color-mix(in srgb, var(--accent2) 70%, black); }
+  .tier.global { background: color-mix(in srgb, var(--accent) 12%, white); color: var(--accent); }
+  .heat td.h { text-align: center; font-weight: 600; font-size: 13px; min-width: 64px; }
+  .plat { font-size: 12px; color: var(--muted); }
+
+  /* Pestañas */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tab { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); }
+  .tab:hover { border-color: var(--accent); }
+  .tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab .tier { margin-left: 6px; }
+  .tab.on .tier { background: rgba(255,255,255,.2); color: #fff; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 4px 0 18px; }
+  .stats .kpi b { font-size: 24px; }
+  .kpi b.txt { font-size: 19px; line-height: 1.25; margin-bottom: 4px; }
+  .cmp-legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+  .dot.a { background: var(--accent); } .dot.b { background: var(--accent2); }
+  .pb { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: center; margin: 8px 0; }
+  .pb-label { font-size: 13px; }
+  .pb-row { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+  .pb-row span { width: 40px; font-size: 12px; color: var(--muted); text-align: right; }
+  .pb-track { flex: 1; height: 9px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+  .pb-fill { height: 100%; border-radius: 99px; }
+  .pb-fill.a { background: var(--accent); } .pb-fill.b { background: var(--accent2); }
+  .lon { display: flex; height: 26px; border-radius: 8px; overflow: hidden; margin: 8px 0 6px; }
+  .lon div { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; min-width: 2px; }
+  .lon .l0 { background: color-mix(in srgb, var(--accent) 35%, white); color: var(--ink); }
+  .lon .l1 { background: color-mix(in srgb, var(--accent) 60%, white); }
+  .lon .l2 { background: var(--accent); }
+  .lon .l3 { background: var(--primary); }
+
+  /* Creativos */
+  .pv { position: relative; background: var(--soft); border-radius: 12px; overflow: hidden; aspect-ratio: 4/5; border: 1px solid var(--line); }
+  .pv img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .pv-empty { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 13px; padding: 12px; }
+  .pv-tag { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.65); color: #fff; padding: 2px 8px; border-radius: 6px; }
+  .cr { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+  .cr .pv { border: 0; border-radius: 0; }
+  .cr-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .cr-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .rank { font-weight: 800; color: var(--accent); font-size: 14px; }
+  .days { font-size: 12px; font-weight: 700; background: var(--primary); color: #fff; border-radius: 999px; padding: 2px 9px; }
+  .cr h4 { margin: 0; font-size: 15px; }
+  .cr .hl { font-size: 14px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 11px; background: var(--soft); color: var(--muted); border-radius: 6px; padding: 2px 7px; }
+  .adapt { font-size: 13px; background: color-mix(in srgb, var(--accent2) 10%, white); border-radius: 8px; padding: 8px 10px; margin-top: auto; }
+  .seg { display: inline-flex; background: var(--soft); border-radius: 999px; padding: 4px; margin-bottom: 18px; }
+  .seg .tab { border: 0; background: transparent; }
+  .seg .tab.on { background: var(--accent); }
+
+  /* Oportunidades, riesgos, plan */
+  .op { margin: 18px 0; padding: 0; overflow: hidden; }
+  .op-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 22px 0; }
+  .op-head h3 { font-size: 20px; margin: 0; }
+  .op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 12px 22px 18px; }
+  .op-grid > div { padding-right: 18px; }
+  .op .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 8px 0 4px; }
+  .ideas { background: var(--soft); padding: 16px 22px 20px; }
+  .idea { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .idea .tags { margin-bottom: 6px; }
+  .copy { font-style: italic; }
+  .measure { border-top: 1px solid var(--line); padding: 12px 22px; font-size: 14px; }
+  .measure b { color: var(--accent); }
+  .risk { border-left: 5px solid var(--warn); }
+  .risk .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 10px; }
+  .risk .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+  .sat { display: grid; grid-template-columns: 200px 1fr 70px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
+  .sat-track { display: flex; gap: 3px; }
+  .sat-track i { flex: 1; height: 14px; border-radius: 3px; background: var(--soft); }
+  .sat-track i.on { background: var(--warn); }
+  .plan td:first-child { width: 90px; }
+  .plan .when { font-weight: 700; white-space: nowrap; }
+  .empty { border: 2px dashed var(--line); border-radius: var(--radius); padding: 22px; color: var(--muted); }
+  details.method { margin: 48px 0 0; color: var(--muted); font-size: 14px; }
+  details.method summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  footer { margin-top: 56px; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+  @media (max-width: 760px) {
+    .cover h1 { font-size: 32px; }
+    .ins, .op-grid, .risk .cols { grid-template-columns: 1fr; }
+    .ins > div { border-right: 0; border-bottom: 1px solid var(--line); }
+    .pb { grid-template-columns: 110px 1fr; }
+    .sat { grid-template-columns: 120px 1fr 50px; }
+  }
+  @media print {
+    nav.toc, .tabs, .seg { display: none; }
+    .panel { display: block !important; page-break-inside: avoid; margin-bottom: 24px; }
+    section { page-break-inside: auto; }
+    .card, .cr, .op { page-break-inside: avoid; }
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <p class="sub">COMPETITIVE CREATIVE INTELLIGENCE · miSeguro</p>
-  <h1>Plan creativo para {{ next_period_label }}</h1>
-  <p class="sub">Periodo analizado: {{ period_label }} · {{ metrics.totals.competitors }} competidores · Plataformas: {{ metrics.totals.platforms.keys() | join(' + ') }} · Generado {{ generated_at }}</p>
-  {% if review %}
-  <div class="review">Validación estratégica: <b>{{ review.status }}</b>{% if review.reviewer %} por {{ review.reviewer }}{% endif %}{% if review.notes %} — {{ review.notes }}{% endif %}</div>
-  {% endif %}
 
-  <div class="kpis">
-    <div class="kpi"><b>{{ metrics.totals.creatives }}</b><span>creativos observados</span></div>
-    <div class="kpi"><b>{{ metrics.totals.active }}</b><span>activos al cierre</span></div>
-    <div class="kpi"><b>{{ metrics.totals.classified }}</b><span>clasificados</span></div>
-    <div class="kpi"><b>{{ metrics.longevity.median_days }}</b><span>días activo (mediana)</span></div>
-    {% if metrics.mom.has_previous %}<div class="kpi"><b>{{ metrics.mom.previous_creatives }}</b><span>creativos mes anterior</span></div>{% endif %}
-    {% if metrics.ours_vs_market.has_own %}<div class="kpi"><b>{{ metrics.totals.own_creatives }}</b><span>creativos propios</span></div>{% endif %}
+<header class="cover">
+  <div class="wrap">
+    <div class="brandbar">
+      <div>{% if brand.logo_url %}<img src="{{ brand.logo_url }}" alt="{{ brand.agency }}">{% else %}<b>{{ brand.app_name }}</b>{% endif %}</div>
+      <div>{{ client.industry }}{% if client.market %} · {{ client.market }}{% endif %}</div>
+    </div>
+    <h1>Plan creativo para <span>{{ client.name }}</span></h1>
+    <p class="lead">{{ next_period_label }} · basado en los anuncios de la competencia activos en {{ period_label | lower }}</p>
+    <div class="chips">
+      <span class="chip">{{ metrics.totals.competitors }} competidores</span>
+      <span class="chip">{{ metrics.totals.creatives | n }} anuncios analizados</span>
+      <span class="chip">{{ metrics.totals.platforms.keys() | map('capitalize') | join(' + ') }}</span>
+      {% if review.status and review.status != 'approved' %}<span class="chip warn">Borrador · pendiente de validación</span>{% elif review.status == 'approved' %}<span class="chip">Validado{% if review.reviewer %} por {{ review.reviewer }}{% endif %}</span>{% endif %}
+    </div>
   </div>
+</header>
 
-  <div class="note"><span class="badge dato">DATO</span> conteos, fechas y porcentajes observados en Meta Ad Library y Google Ads Transparency Center. <span class="badge inferencia">INFERENCIA</span> hipótesis del análisis, redactadas como tales. El sistema no estima rendimiento real de los competidores.</div>
+<nav class="toc"><div class="wrap">
+  <a href="#resumen">Resumen ejecutivo</a><a href="#hallazgos">Hallazgos</a><a href="#panorama">Panorama</a><a href="#competidores">Competidor por competidor</a><a href="#referencias">Creativos de referencia</a><a href="#oportunidades">Oportunidades</a><a href="#riesgos">Riesgos</a><a href="#cliente">{{ client.name }} vs. mercado</a><a href="#plan">Plan de acción</a>
+</div></nav>
 
-  <h2>01 — Executive summary</h2>
-  <p class="sub">3 cosas que cambiaron este mes</p>
-  <ol>
-  {% for s in synthesis.executive_summary %}<li>{{ s }}</li>{% endfor %}
-  </ol>
+<main class="wrap">
 
-  <h2>02 — Top 3 insights</h2>
+<section id="resumen">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Resumen ejecutivo</h2></div>
+  <p class="sec-intro">Lo más importante del mes en tres puntos, y qué hacemos con cada uno.</p>
+  <div class="grid g4" style="margin-bottom:18px">
+    <div class="kpi"><b>{{ metrics.totals.creatives | n }}</b><span>anuncios de la competencia analizados</span></div>
+    <div class="kpi"><b>{{ metrics.totals.competitors }}</b><span>competidores ({{ profiles | selectattr('tier','equalto','local') | list | length }} locales, {{ profiles | selectattr('tier','equalto','global') | list | length }} globales)</span></div>
+    <div class="kpi"><b>{{ metrics.longevity.median_days | round | int }} días</b><span>dura al aire un anuncio típico</span></div>
+    <div class="kpi"><b>{{ metrics.longevity.buckets['91+'] | n }}</b><span>anuncios llevan más de 3 meses activos</span></div>
+  </div>
+  <div class="grid g3">
+    {% for s in summary_points %}
+    <div class="card sum">
+      <div class="n">{{ loop.index }}</div>
+      <h3>{{ s.headline }}</h3>
+      {% if s.detail %}<p class="muted" style="margin:0">{{ s.detail }}</p>{% endif %}
+      {% if s.action %}<div class="do"><b>Qué hacemos:</b> {{ s.action }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="hallazgos">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Hallazgos clave</h2></div>
+  <p class="sec-intro">Para cada hallazgo separamos lo que vimos en los anuncios (un dato) de lo que creemos que significa (una lectura nuestra).</p>
+  <div class="legend">
+    <span><b>Certeza alta:</b> el patrón se repite en muchos competidores y anuncios.</span>
+    <span><b>Media:</b> patrón claro pero con menos casos.</span>
+    <span><b>Baja:</b> señal temprana, hay que confirmarla.</span>
+  </div>
   {% for i in synthesis.top_insights %}
-  <div class="card">
-    <h3>{{ loop.index }}. {{ i.title }} <span class="badge conf-{{ i.confidence }}">confianza {{ i.confidence }}</span></h3>
-    <p><span class="badge dato">DATO</span> {{ i.observation }}</p>
-    <p><span class="badge inferencia">INFERENCIA</span> {{ i.interpretation }}</p>
-    <p><b>Implicancia para nosotros:</b> {{ i.implication_for_us }}</p>
-    <p class="sub mono">{{ i.evidence | join(' · ') }}</p>
+  <div class="ins-head"><h3>{{ loop.index }}. {{ i.title }}</h3>{{ pill(i.confidence, 'Certeza ') }}</div>
+  <div class="card ins">
+    <div><div class="k">Lo que vimos</div>{{ i.observation }}{% if i.evidence %}<div class="small muted" style="margin-top:8px">{{ i.evidence | join(' · ') }}</div>{% endif %}</div>
+    <div><div class="k">Lo que creemos que significa</div>{{ i.interpretation }}</div>
+    <div><div class="k">Qué hacemos</div>{{ i.implication_for_us }}</div>
   </div>
   {% endfor %}
+</section>
 
-  <h2>03 — Competitive landscape</h2>
-  <p class="sub">Mapa de comunicación por familia de ángulo (cantidad de creativos). No es un ranking.</p>
-  <table>
-    <thead><tr><th>Competidor</th><th>Tier</th>{% for f in families %}<th>{{ f }}</th>{% endfor %}</tr></thead>
+<section id="panorama">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Panorama competitivo</h2></div>
+  <p class="sec-intro">Quién está pautando, cuánto y con qué. El detalle de cada uno está en la sección siguiente.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Competidor</th><th>Anuncios</th><th>Mensaje principal</th><th>Cómo engancha</th><th>Formato principal</th><th>Duración típica</th></tr></thead>
     <tbody>
-    {% for comp, row in matrix.items() %}
-      <tr><td>{{ comp }}</td><td class="sub">{{ tier_of.get(comp, '') }}</td>{% for f in families %}<td title="{{ row[f] }}">{{ row[f] | dots(max_cell) }} <span class="sub">{{ row[f] }}</span></td>{% endfor %}</tr>
+    {% for p in profiles %}
+    <tr>
+      <td><b>{{ p.name }}</b> <span class="tier {{ p.tier }}">{{ lbl(p.tier) }}</span></td>
+      <td>{{ p.creatives }}<div class="plat">{% for k, v in p.platforms.items() %}{{ lbl(k) }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</div></td>
+      <td>{{ lbl(p.top_family.value) if p.top_family else '—' }}</td>
+      <td>{{ lbl(p.top_hook.value) if p.top_hook else '—' }}</td>
+      <td>{{ lbl(p.top_format.value) if p.top_format else '—' }}</td>
+      <td>{{ p.longevity.median_days | round | int }} días</td>
+    </tr>
     {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 
-  <div class="grid2">
-    <div>
-      <h3>Ángulos (familias)</h3>
-      {% for d in metrics.angle_family_dist %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
+  <h3 style="margin-top:32px">Qué mensaje usa cada uno</h3>
+  <p class="muted small" style="margin-top:0">Porcentaje de los anuncios de cada competidor que usa cada tipo de mensaje. Cuanto más oscuro, más lo usa.</p>
+  <div class="tbl heat"><table>
+    <thead><tr><th>Competidor</th>{% for f in families %}<th style="text-align:center">{{ lbl(f) }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for p in profiles %}{% set row = heat.get(p.name, {}) %}
+    <tr><td><b>{{ p.name }}</b></td>
+      {% for f in families %}{% set v = row.get(f, 0) %}
+      <td class="h" style="background: color-mix(in srgb, var(--accent) {{ (v * 0.85) | round | int }}%, white); color: {{ '#fff' if v >= 55 else 'var(--ink)' }}">{{ v }}%</td>
       {% endfor %}
-    </div>
-    <div>
-      <h3>Hooks</h3>
-      {% for d in metrics.hook_dist %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
-      {% endfor %}
-    </div>
-    <div>
-      <h3>Formatos</h3>
-      {% for d in metrics.format_dist %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
-      {% endfor %}
-    </div>
-    <div>
-      <h3>Etapa del funnel</h3>
-      {% for d in metrics.funnel_dist %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} · {{ d.pct }}%</div></div>
-      {% endfor %}
-    </div>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% if synthesis.local_vs_global %}<p style="margin-top:16px"><b>Locales vs. globales:</b> {{ synthesis.local_vs_global }}</p>{% endif %}
+
+  <h3 style="margin-top:32px">Qué cambió respecto al mes anterior</h3>
+  {% if metrics.mom.has_previous %}
+  <div class="tbl"><table>
+    <thead><tr><th>Mensaje</th><th>Este mes</th><th>Mes anterior</th><th>Cambio</th></tr></thead>
+    <tbody>
+    {% for r in metrics.mom.angle_family %}
+    <tr><td>{{ lbl(r.value) }}</td><td>{{ r.pct | round | int }}%</td><td>{{ r.prev_pct | round | int }}%</td>
+      <td style="font-weight:700; color: {{ 'var(--accent2)' if r.delta > 0 else 'var(--warn)' if r.delta < 0 else 'var(--muted)' }}">{{ '%+d' % (r.delta | round | int) }} pts</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="empty">Es el primer mes con datos: la comparación con el mes anterior aparece a partir del próximo informe.</div>
+  {% endif %}
+</section>
+
+<section id="competidores">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Competidor por competidor</h2></div>
+  <p class="sec-intro">Elegí un competidor para ver qué comunica, cómo y cuánto le duran los anuncios, comparado con {{ 'lo que hace ' ~ client.name if has_own else 'el promedio del mercado' }}.</p>
+  {% if not has_own %}<p class="small muted" style="margin-top:-12px">Cuando carguemos los anuncios de {{ client.name }}, esta comparación se hace directamente contra {{ client.name }}.</p>{% endif %}
+  <div class="tabs" data-group="comp">
+    {% for t in tabs %}<button class="tab{% if loop.first %} on{% endif %}" data-target="{{ t.id }}">{{ t.name }}<span class="tier {{ t.tier }}">{{ lbl(t.tier) }}</span></button>{% endfor %}
   </div>
-
-  <h3>Ponderado por competidor</h3>
-  <p class="sub">Cada aseguradora pesa igual, tenga 3 o 100 anuncios activos. El número es la cantidad de competidores que usan ese valor.</p>
-  <div class="grid2">
-    <div>
-      <h3>Ángulos (familias)</h3>
-      {% for d in metrics.angle_family_dist_weighted %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} comp. · {{ d.pct }}%</div></div>
+  {% for t in tabs %}{% set p = t.profile %}
+  <div class="panel{% if loop.first %} on{% endif %}" id="{{ t.id }}" data-group="comp">
+    <h3>{{ t.name }} <span class="tier {{ t.tier }}">{{ lbl(t.tier) }}</span></h3>
+    <div class="stats">
+      <div class="kpi"><b>{{ p.creatives }}</b><span>anuncios activos{% for k, v in p.platforms.items() %}<br>{{ lbl(k) }}: {{ v }}{% endfor %}</span></div>
+      <div class="kpi"><b class="txt">{{ lbl(p.top_family.value) if p.top_family else '—' }}</b><span>mensaje principal{% if p.top_family %} ({{ p.top_family.pct | of10 }} de cada 10){% endif %}</span></div>
+      <div class="kpi"><b>{{ p.longevity.median_days | round | int }} días</b><span>duración típica de un anuncio</span></div>
+      <div class="kpi"><b>{{ p.longevity.max_days }} días</b><span>su anuncio más longevo</span></div>
+    </div>
+    <div class="cmp-legend"><span><i class="dot a"></i>{{ t.name }}</span><span><i class="dot b"></i>{{ baseline_name }}</span></div>
+    <div class="grid g2">
+      {% for d in t.compare %}
+      <div class="card"><h3>{{ d.title }}</h3>{% if d.help %}<p class="small muted" style="margin:-4px 0 8px">{{ d.help }}</p>{% endif %}{{ paired(d.rows, t.name, baseline_name) }}</div>
+      {% endfor %}
+      <div class="card">
+        <h3>Cuánto le duran los anuncios</h3>
+        <p class="small muted" style="margin:-4px 0 8px">Un anuncio que sigue al aire semanas o meses suele ser uno que al anunciante le sirve.</p>
+        {% set b = p.longevity.buckets %}{% set tot = (b['0-6'] + b['7-30'] + b['31-90'] + b['91+']) or 1 %}
+        <div class="lon">
+          {% for key, cls_, name in [('0-6','l0','Menos de 1 semana'), ('7-30','l1','1 a 4 semanas'), ('31-90','l2','1 a 3 meses'), ('91+','l3','Más de 3 meses')] %}
+          {% if b[key] %}<div class="{{ cls_ }}" style="width:{{ 100 * b[key] / tot }}%" title="{{ name }}: {{ b[key] }}">{{ b[key] }}</div>{% endif %}
+          {% endfor %}
+        </div>
+        <div class="small muted">
+          <i class="dot" style="background:color-mix(in srgb, var(--accent) 35%, white)"></i>&lt; 1 semana
+          &nbsp; <i class="dot" style="background:color-mix(in srgb, var(--accent) 60%, white)"></i>1–4 semanas
+          &nbsp; <i class="dot" style="background:var(--accent)"></i>1–3 meses
+          &nbsp; <i class="dot" style="background:var(--primary)"></i>+3 meses
+        </div>
+      </div>
+    </div>
+    {% if t.top %}
+    <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
+    <div class="grid g4">
+      {% for it in t.top %}
+      <div class="cr">{{ preview(it) }}<div class="cr-body"><div class="cr-top"><span class="tag">{{ lbl(it.format) }}</span><span class="days">{{ it.days_active }} días</span></div>{% if it.headline %}<div class="hl">“{{ it.headline[:90] }}{% if it.headline | length > 90 %}…{% endif %}”</div>{% endif %}{% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}</div></div>
       {% endfor %}
     </div>
-    <div>
-      <h3>Hooks</h3>
-      {% for d in metrics.hook_dist_weighted %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.count }} comp. · {{ d.pct }}%</div></div>
-      {% endfor %}
-    </div>
+    {% endif %}
   </div>
+  {% endfor %}
+</section>
 
-  <h3>Local vs global</h3>
-  <p>{{ synthesis.local_vs_global }}</p>
-  <div class="grid2">
-    {% for tier, data in metrics.by_tier.items() %}
-    <div>
-      <h3>{{ tier | capitalize }} · {{ data.creatives }} creativos</h3>
-      {% for d in data.angle_family_dist %}
-      <div class="bar"><div class="label">{{ d.value }}</div><div class="track"><div class="fill" style="width:{{ d.pct | bar }}%"></div></div><div class="num">{{ d.pct }}%</div></div>
+<section id="referencias">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Creativos de referencia</h2></div>
+  <p class="sec-intro">Los 10 anuncios locales y los 10 globales que más tiempo llevan al aire (máximo 3 por competidor). Son para inspirarnos y adaptar la idea, nunca para copiarlos.</p>
+  <div class="seg tabs" data-group="refs">
+    <button class="tab on" data-target="ref-local">Top 10 locales</button>
+    <button class="tab" data-target="ref-global">Top 10 globales</button>
+  </div>
+  {% for key, list_ in [('ref-local', local_top), ('ref-global', global_top)] %}
+  <div class="panel{% if loop.first %} on{% endif %}" id="{{ key }}" data-group="refs">
+    {% if list_ %}
+    <div class="grid g3">
+      {% for it in list_ %}
+      <div class="cr">
+        {{ preview(it, True) }}
+        <div class="cr-body">
+          <div class="cr-top"><span class="rank">#{{ loop.index }}</span><span class="days">{{ it.days_active }} días al aire</span></div>
+          <h4>{{ it.competitor }}</h4>
+          {% if it.headline %}<div class="hl">“{{ it.headline[:120] }}{% if it.headline | length > 120 %}…{% endif %}”</div>{% endif %}
+          <div class="tags">
+            <span class="tag">{{ lbl(it.format) }}</span>
+            {% if it.cls.angle_family %}<span class="tag">{{ lbl(it.cls.angle_family) }}</span>{% endif %}
+            {% if it.cls.hook_type %}<span class="tag">{{ lbl(it.cls.hook_type) }}</span>{% endif %}
+            {% if it.cls.product %}<span class="tag">{{ lbl(it.cls.product) }}</span>{% endif %}
+          </div>
+          {% if it.ref %}
+          <div class="adapt"><b>Por qué nos interesa:</b> {{ it.ref.why_relevant }}{% if it.ref.adaptation_ideas %}<br><b>Cómo adaptarlo:</b> {{ it.ref.adaptation_ideas | join(' · ') }}{% endif %}</div>
+          {% endif %}
+          {% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}
+        </div>
+      </div>
       {% endfor %}
     </div>
+    {% else %}<div class="empty">No hay anuncios {{ 'locales' if key == 'ref-local' else 'globales' }} este mes.</div>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<section id="oportunidades">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Oportunidades creativas</h2></div>
+  <p class="sec-intro">Territorios que la competencia deja libres o donde {{ client.name }} puede diferenciarse, con ideas listas para producir y cómo vamos a medirlas.</p>
+  {% set ws = metrics.white_space.angle_families %}
+  {% if ws %}
+  <div class="card" style="margin-bottom:8px">
+    <h3>Mensajes que casi nadie usa</h3>
+    <p class="small muted" style="margin:-4px 0 10px">Porcentaje de los anuncios del mercado que usan cada mensaje.</p>
+    {% for w in ws %}<div class="pb"><div class="pb-label">{{ lbl(w.value) }}</div><div class="pb-row"><div class="pb-track"><div class="pb-fill a" style="width:{{ w.pct | bar }}%"></div></div><span>{{ w.pct | round | int }}%</span></div></div>{% endfor %}
+  </div>
+  {% endif %}
+  {% for o in opportunities %}
+  <div class="card op">
+    <div class="op-head"><h3>{{ loop.index }}. {{ o.title }}</h3>{{ pill(o.priority, 'Prioridad ') }}</div>
+    <div class="op-grid">
+      <div><div class="k">Por qué</div>{{ o.rationale }}</div>
+      <div><div class="k">Quién lo hace hoy</div>{{ o.who_does_it or (o.evidence | join(' · ')) }}</div>
+    </div>
+    {% if o.concepts %}
+    <div class="ideas">
+      <div class="k" style="margin:0">Ideas para producir</div>
+      {% for c in o.concepts %}
+      <div class="idea">
+        <div class="tags"><span class="tag">{{ lbl(c.format) }}</span><span class="tag">Gancho: {{ lbl(c.hook_type) }}</span><span class="tag">Mensaje: {{ lbl(c.angle) }}</span></div>
+        <div class="copy">{{ c.copy_draft }}</div>
+        {% if c.visual_direction %}<div class="small muted" style="margin-top:6px"><b>Cómo se ve:</b> {{ c.visual_direction }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if o.how_to_measure %}<div class="measure"><b>Cómo lo medimos:</b> {{ o.how_to_measure }}</div>{% endif %}
+  </div>
+  {% else %}<div class="empty">Sin oportunidades detectadas este mes.</div>
+  {% endfor %}
+</section>
+
+<section id="riesgos">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Riesgos y saturación</h2></div>
+  <p class="sec-intro">Dónde todos dicen lo mismo. Si 8 de cada 10 competidores usan un mensaje, sumarse sin un giro propio nos hace invisibles.</p>
+  {% set sat = metrics.saturation %}
+  {% if sat and sat.angle %}
+  <div class="card" style="margin-bottom:16px">
+    <h3>Los mensajes más repetidos</h3>
+    <p class="small muted" style="margin:-4px 0 10px">Cada cuadrado es un competidor; en color, los que usan ese mensaje.</p>
+    {% for d in sat.angle[:6] %}
+    <div class="sat"><div>{{ lbl(d.value) }}</div><div class="sat-track">{% for k in range(sat.competitors) %}<i class="{{ 'on' if k < d.competitors else '' }}"></i>{% endfor %}</div><div class="small muted">{{ d.competitors }} de {{ sat.competitors }}</div></div>
     {% endfor %}
   </div>
-
-  {% if metrics.mom.has_previous %}
-  <h3>Mes vs mes anterior (familias de ángulo)</h3>
-  <table><thead><tr><th>Familia</th><th>Este mes</th><th>Mes anterior</th><th>Δ puntos</th></tr></thead><tbody>
-  {% for r in metrics.mom.angle_family %}
-  <tr><td>{{ r.value }}</td><td>{{ r.pct }}%</td><td>{{ r.prev_pct }}%</td><td class="{{ 'delta-up' if r.delta > 0 else 'delta-down' if r.delta < 0 else '' }}">{{ '%+.1f' % r.delta }}</td></tr>
+  {% endif %}
+  {% for r in risks %}
+  <div class="card risk" style="margin-bottom:14px">
+    <div class="op-head" style="padding:0"><h3>{{ r.title }}</h3>{{ pill(r.severity, 'Riesgo ') }}</div>
+    <div class="cols">
+      <div><div class="k">Qué está pasando</div>{{ r.description }}</div>
+      <div><div class="k">Por qué importa</div>{{ r.why_it_matters or '—' }}</div>
+      <div><div class="k">Cómo lo evitamos</div>{{ r.mitigation or '—' }}</div>
+    </div>
+  </div>
+  {% else %}<div class="empty">Sin riesgos de saturación relevantes este mes.</div>
   {% endfor %}
-  </tbody></table>
+</section>
+
+<section id="cliente">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>{{ client.name }} vs. mercado</h2></div>
+  {% if has_own %}
+  <p class="sec-intro">{{ synthesis.ours_vs_market or ('Cómo se compara lo que comunica ' ~ client.name ~ ' con el promedio del mercado.') }}</p>
+  <div class="cmp-legend"><span><i class="dot a"></i>{{ client.name }}</span><span><i class="dot b"></i>Promedio del mercado</span></div>
+  <div class="grid g2">
+    {% for d in own_compare %}
+    <div class="card"><h3>{{ d.title }}</h3>{{ paired(d.rows, client.name, 'Mercado') }}</div>
+    {% endfor %}
+  </div>
   {% else %}
-  <p class="note">Primer mes con datos: la comparación mes a mes se habilita a partir del próximo ciclo.</p>
-  {% endif %}
-
-  <h3>Longevidad de creativos</h3>
-  <table><thead><tr><th>0-6 días</th><th>7-30</th><th>31-90</th><th>91+</th><th>Mediana</th></tr></thead>
-  <tbody><tr>{% for k, v in metrics.longevity.buckets.items() %}<td>{{ v }}</td>{% endfor %}<td>{{ metrics.longevity.median_days }} días</td></tr></tbody></table>
-
-  <h2>04 — Creativos de referencia</h2>
-  <p class="sub">Elegidos por longevidad, cantidad de variantes o novedad de ángulo. Se adaptan, no se copian.</p>
-  {% for r in reference_creatives %}
-  {% set it = r.item %}
-  <div class="card creative">
-    <div>
-      {% if it.thumbnail_rel %}<img src="{{ it.thumbnail_rel }}" alt="Creativo #{{ it.id }} de {{ it.competitor }}">{% else %}<div class="ph">Sin captura disponible{% if it.snapshot_url %}<br><a href="{{ it.snapshot_url }}">Ver en la biblioteca</a>{% endif %}</div>{% endif %}
-    </div>
-    <div>
-      <h3>CREATIVE #{{ '%03d' % it.id }} · {{ it.competitor }}</h3>
-      <p><span class="badge">{{ it.platform }}</span><span class="badge">{{ it.format }}</span><span class="badge">{{ it.cls.product }}</span><span class="badge">{{ it.cls.funnel_stage }}</span><span class="badge dato">activo {{ it.days_active }} días</span></p>
-      {% if it.headline %}<p><b>Hook / titular:</b> “{{ it.headline }}”</p>{% endif %}
-      {% if it.body_text %}<p class="sub">{{ it.body_text[:300] }}{% if it.body_text | length > 300 %}…{% endif %}</p>{% endif %}
-      <p><b>Ángulo:</b> {{ it.cls.primary_angle }}{% if it.cls.secondary_angle %} + {{ it.cls.secondary_angle }}{% endif %} · <b>Hook:</b> {{ it.cls.hook_type }} · <b>Estilo:</b> {{ it.cls.creative_style }}</p>
-      <p><b>Por qué nos interesa:</b> {{ r.why_relevant }}</p>
-      <p><b>No copiar:</b> {{ r.what_not_to_copy }}</p>
-      <p><b>Adaptación sugerida:</b></p>
-      <ul>{% for a in r.adaptation_ideas %}<li>{{ a }}</li>{% endfor %}</ul>
-      {% if it.snapshot_url %}<p class="sub"><a href="{{ it.snapshot_url }}">Ver anuncio original</a></p>{% endif %}
-    </div>
+  <div class="empty">
+    <b>Todavía no estamos midiendo los anuncios de {{ client.name }}.</b><br>
+    Para comparar lo que comunica {{ client.name }} contra el mercado, cargá el ID de su página de Facebook (<code>meta_page_id</code>) y su dominio en la configuración del cliente. A partir del próximo ciclo esta sección muestra las diferencias y las pestañas de competidores se comparan directamente contra {{ client.name }}.
   </div>
-  {% endfor %}
-
-  {% if concepts %}
-  <h3>Familias creativas detectadas</h3>
-  <table><thead><tr><th>Competidor</th><th>Concepto</th><th>Variantes</th><th>Formatos</th><th>Primera vez</th><th>Última vez</th></tr></thead><tbody>
-  {% for c in concepts %}
-  <tr><td>{{ c.competitor }}</td><td>{{ c.name }}<br><span class="sub">{{ c.example_headline[:100] }}</span></td><td>{{ c.variants }}</td><td>{{ c.formats | join(', ') }}</td><td>{{ c.first_seen }}</td><td>{{ c.last_seen }}</td></tr>
-  {% endfor %}
-  </tbody></table>
   {% endif %}
+</section>
 
-  <h2>05 — Creative opportunities</h2>
-  <h3>Ángulos que no estamos explotando</h3>
-  <ul>{% for a in synthesis.unexploited_angles %}<li>{{ a }}</li>{% endfor %}</ul>
+<section id="plan">
+  <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Plan de acción</h2></div>
+  <p class="sec-intro">Qué hacemos, quién, para cuándo y cómo sabemos si salió bien. Ordenado por prioridad.</p>
+  <div class="tbl plan"><table>
+    <thead><tr><th>Prioridad</th><th>Acción</th><th>Responsable</th><th>Entregable</th><th>Cómo medimos</th><th>Fecha</th></tr></thead>
+    <tbody>
+    {% for a in actions %}
+    <tr>
+      <td>{{ pill(a.priority) }}</td>
+      <td><b>{{ a.title }}</b><div class="small muted">{{ a.description }}</div></td>
+      <td>{{ a.owner_role }}</td>
+      <td>{{ a.deliverable or '—' }}</td>
+      <td>{{ a.success_metric or '—' }}</td>
+      <td class="when">{{ a.due_date }}<div class="small muted">en {{ a.due_in_days }} días</div></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
 
-  <h3>White space del mercado</h3>
-  <div class="grid2">
-    <div>
-      <p class="sub">Familias de ángulo con menos de {{ metrics.white_space.threshold_pct }}% de participación</p>
-      {% for w in metrics.white_space.angle_families %}<div class="bar"><div class="label">{{ w.value }}</div><div class="track"><div class="fill" style="width:{{ w.pct | bar }}%"></div></div><div class="num">{{ w.pct }}%</div></div>{% endfor %}
-    </div>
-    <div>
-      <p class="sub">Hooks poco usados</p>
-      {% for w in metrics.white_space.hooks %}<div class="bar"><div class="label">{{ w.value }}</div><div class="track"><div class="fill" style="width:{{ w.pct | bar }}%"></div></div><div class="num">{{ w.pct }}%</div></div>{% endfor %}
-    </div>
-  </div>
+  <details class="method">
+    <summary>Cómo se armó este informe</summary>
+    <p>Relevamos los anuncios activos de cada competidor en la Biblioteca de anuncios de Meta y en el Centro de transparencia de anuncios de Google. Cada anuncio se clasifica con inteligencia artificial dentro de categorías fijas (mensaje, gancho, formato, etapa del cliente, producto) para poder comparar mes a mes, y una persona del equipo valida el análisis antes de publicarlo.</p>
+    <p>La duración de un anuncio es la diferencia entre la primera y la última vez que lo vimos activo. No tenemos acceso a resultados de los competidores (clics, ventas, inversión): cuando decimos que un anuncio "dura", es una señal, no una prueba de que funcione.</p>
+  </details>
+</section>
 
-  {% for o in synthesis.white_space + synthesis.recommendations %}
-  <div class="card">
-    <h3>Oportunidad #{{ '%02d' % loop.index }} · {{ o.title }}</h3>
-    <p>{{ o.rationale }}</p>
-    <p class="sub mono">{{ o.evidence | join(' · ') }}</p>
-    <table><thead><tr><th>Formato</th><th>Hook</th><th>Ángulo</th><th>Copy / guion</th></tr></thead><tbody>
-    {% for c in o.concepts %}<tr><td>{{ c.format }}</td><td>{{ c.hook_type }}</td><td>{{ c.angle }}</td><td>{{ c.copy_draft }}</td></tr>{% endfor %}
-    </tbody></table>
-  </div>
-  {% endfor %}
-
-  <h2>06 — Riesgos y saturación</h2>
-  {% for r in synthesis.risks %}
-  <div class="card"><h3>{{ r.title }}</h3><p>{{ r.description }}</p><p class="sub mono">{{ r.evidence | join(' · ') }}</p></div>
-  {% endfor %}
-
-  {% if metrics.ours_vs_market.has_own %}
-  <h2>07 — Mercado vs miSeguro</h2>
-  {% if synthesis.ours_vs_market %}<p>{{ synthesis.ours_vs_market }}</p>{% endif %}
-  <table><thead><tr><th>Familia de ángulo</th><th>Mercado</th><th>miSeguro</th><th>Gap (pts)</th></tr></thead><tbody>
-  {% for g in metrics.ours_vs_market.angle_family.gaps %}
-  <tr><td>{{ g.value }}</td><td>{{ g.market_pct }}%</td><td>{{ g.ours_pct }}%</td><td class="{{ 'delta-up' if g.gap > 0 else 'delta-down' if g.gap < 0 else '' }}">{{ '%+.1f' % g.gap }}</td></tr>
-  {% endfor %}
-  </tbody></table>
-  {% endif %}
-
-  <h2>08 — Plan de acción</h2>
-  <table><thead><tr><th>#</th><th>Acción</th><th>Responsable</th><th>Plazo</th></tr></thead><tbody>
-  {% for a in synthesis.action_items %}
-  <tr><td>{{ loop.index }}</td><td><b>{{ a.title }}</b><br><span class="sub">{{ a.description }}</span></td><td>{{ a.owner_role }}</td><td>{{ a.due_in_days }} días</td></tr>
-  {% endfor %}
-  </tbody></table>
-
-  <h2>Anexo — Todos los creativos observados</h2>
-  <table><thead><tr><th>#</th><th>Competidor</th><th>Plat.</th><th>Formato</th><th>Producto</th><th>Ángulo</th><th>Hook</th><th>Días</th><th>Estado</th><th>QA</th></tr></thead><tbody>
-  {% for it in items %}
-  <tr><td>{{ it.id }}</td><td>{{ it.competitor }}</td><td>{{ it.platform }}</td><td>{{ it.format }}</td><td>{{ it.cls.product }}</td><td>{{ it.cls.primary_angle }}</td><td>{{ it.cls.hook_type }}</td><td>{{ it.days_active }}</td><td>{{ it.status }}</td><td>{{ it.qa_status }}</td></tr>
-  {% endfor %}
-  </tbody></table>
-
-  <h2>Metodología</h2>
-  <p class="sub">Fuentes: Meta Ad Library y Google Ads Transparency Center (más importaciones manuales validadas). Cada creativo se clasifica con IA dentro de una taxonomía cerrada (config/taxonomy.yaml) y luego se agrega. Longevidad = última vez visto − primera vez visto. El engagement solo se reporta cuando es visible en la fuente. Las interpretaciones son hipótesis validadas por una persona antes de publicarse.</p>
+<footer>
+  <span>{{ brand.app_name }}{% if brand.agency_url %} · <a href="{{ brand.agency_url }}">{{ brand.agency }}</a>{% endif %}</span>
+  <span>Generado el {{ generated_at }}</span>
+</footer>
 </main>
+
+<script>
+  document.querySelectorAll('.tabs').forEach(function (bar) {
+    var group = bar.getAttribute('data-group');
+    bar.querySelectorAll('.tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        bar.querySelectorAll('.tab').forEach(function (b) { b.classList.remove('on'); });
+        document.querySelectorAll('.panel[data-group="' + group + '"]').forEach(function (p) { p.classList.remove('on'); });
+        btn.classList.add('on');
+        document.getElementById(btn.getAttribute('data-target')).classList.add('on');
+      });
+    });
+  });
+</script>
 </body>
 </html>

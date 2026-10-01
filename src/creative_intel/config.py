@@ -12,13 +12,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ROOT = Path(__file__).resolve().parents[2]
-CONFIG_DIR = Path(os.getenv("CONFIG_DIR", ROOT / "config"))
+# Multi-cliente: RADAR_CLIENT=<slug> usa config/clients/<slug>/ y datos/informes separados.
+# Sin RADAR_CLIENT se usa config/ (cliente por defecto) para no romper instalaciones existentes.
+RADAR_CLIENT = os.getenv("RADAR_CLIENT", "").strip()
+CLIENTS_DIR = ROOT / "config" / "clients"
+CONFIG_DIR = Path(os.getenv("CONFIG_DIR") or (CLIENTS_DIR / RADAR_CLIENT if RADAR_CLIENT else ROOT / "config"))
+DATA_DIR = ROOT / "data" / "clients" / RADAR_CLIENT if RADAR_CLIENT else ROOT / "data"
+REPORTS_DIR = Path(os.getenv("REPORTS_DIR") or (ROOT / "reports" / RADAR_CLIENT if RADAR_CLIENT else "reports"))
 
 
 @dataclass
 class Settings:
-    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{ROOT / 'data' / 'creative_intel.db'}")
-    assets_dir: Path = Path(os.getenv("ASSETS_DIR", ROOT / "data" / "assets"))
+    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / ('radar.db' if RADAR_CLIENT else 'creative_intel.db')}")
+    assets_dir: Path = Path(os.getenv("ASSETS_DIR", DATA_DIR / "assets"))
     classify_model: str = os.getenv("CLASSIFY_MODEL", "claude-opus-5-5")
     synth_model: str = os.getenv("SYNTH_MODEL", "claude-opus-5-5")
     anthropic_fallbacks: str = os.getenv("ANTHROPIC_FALLBACKS", "default")
@@ -107,6 +113,14 @@ class Taxonomy:
     products: list[str]
     confidence_levels: list[str]
     white_space_threshold_pct: float = 6.0
+    labels: dict[str, str] = field(default_factory=dict)
+
+    def label(self, value: Any) -> str:
+        """Nombre en castellano para mostrar en el informe."""
+        if value is None or value == "":
+            return "Sin dato"
+        v = str(value)
+        return self.labels.get(v) or v.replace("_", " ").capitalize()
 
     @property
     def angles(self) -> list[str]:
@@ -124,7 +138,8 @@ class Taxonomy:
 
 
 def load_taxonomy(path: Path | None = None) -> Taxonomy:
-    path = path or CONFIG_DIR / "taxonomy.yaml"
+    # Cada cliente puede tener su taxonomía (otra industria); si no, se usa la general.
+    path = path or next((p for p in (CONFIG_DIR / "taxonomy.yaml", ROOT / "config" / "taxonomy.yaml") if p.is_file()), CONFIG_DIR / "taxonomy.yaml")
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     return Taxonomy(
         angle_families={k: list(v) for k, v in data["angle_families"].items()},
@@ -137,4 +152,67 @@ def load_taxonomy(path: Path | None = None) -> Taxonomy:
         products=list(data["products"]),
         confidence_levels=list(data.get("confidence_levels", ["low", "medium", "high"])),
         white_space_threshold_pct=float(data.get("white_space_threshold_pct", 6)),
+        labels={str(k): str(v) for k, v in (data.get("labels") or {}).items()},
+    )
+
+
+@dataclass
+class Brand:
+    app_name: str = "Radar creativo de Ranker"
+    agency: str = "Ranker"
+    agency_url: str = ""
+    logo_url: str = ""
+    font_family: str = '-apple-system, "Segoe UI", Roboto, sans-serif'
+    font_url: str = ""
+    colors: dict[str, str] = field(default_factory=dict)
+
+
+BRAND_DEFAULT_COLORS = {
+    "primary": "#14123A", "accent": "#6C4CFF", "accent_2": "#00C2A8", "warn": "#FF8A3D",
+    "ink": "#1C1B2E", "muted": "#6B6A80", "line": "#E7E6F0", "soft": "#F6F5FB", "bg": "#FFFFFF",
+}
+
+
+def load_brand(path: Path | None = None) -> Brand:
+    """Marca del informe: primero la del cliente (si tiene brand.yaml propio), si no la global de Ranker."""
+    candidates = [path] if path else [CONFIG_DIR / "brand.yaml", ROOT / "config" / "brand.yaml"]
+    data: dict[str, Any] = {}
+    for p in candidates:
+        if p and Path(p).is_file():
+            data = yaml.safe_load(Path(p).read_text(encoding="utf-8")) or {}
+            break
+    colors = {**BRAND_DEFAULT_COLORS, **{k: str(v) for k, v in (data.get("colors") or {}).items()}}
+    return Brand(
+        app_name=data.get("app_name", Brand.app_name),
+        agency=data.get("agency", Brand.agency),
+        agency_url=data.get("agency_url", ""),
+        logo_url=data.get("logo_url", "") or "",
+        font_family=data.get("font_family", Brand.font_family),
+        font_url=data.get("font_url", "") or "",
+        colors=colors,
+    )
+
+
+@dataclass
+class ClientInfo:
+    """El cliente para el que se arma el plan (no necesariamente miSeguro)."""
+    slug: str
+    name: str
+    industry: str = ""
+    market: str = ""
+    description: str = ""
+
+
+def load_client(path: Path | None = None) -> ClientInfo:
+    path = path or CONFIG_DIR / "competitors.yaml"
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    c = data.get("client") or {}
+    own = next((cty.get("own") for cty in data.get("countries", []) if cty.get("own")), None) or {}
+    first_country = next(iter(data.get("countries", [])), {}) or {}
+    return ClientInfo(
+        slug=c.get("slug") or own.get("slug") or "cliente",
+        name=c.get("name") or own.get("name") or "el cliente",
+        industry=c.get("industry", ""),
+        market=c.get("market") or first_country.get("name", ""),
+        description=c.get("description", ""),
     )

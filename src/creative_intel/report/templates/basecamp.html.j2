@@ -1,62 +1,67 @@
 {# Basecamp acepta un subconjunto de HTML (div, h1, strong, em, a, ul/ol, blockquote, pre, bc-attachment). Sin tablas ni CSS. #}
+{%- set sec = namespace(n=0) -%}
+{%- macro num() -%}{%- set sec.n = sec.n + 1 -%}{{ '%02d' % sec.n }}{%- endmacro -%}
+{%- macro lvl(v) -%}{{ {'high':'alta','medium':'media','low':'baja'}.get((v or 'media') | lower, (v or 'media') | lower) }}{%- endmacro -%}
 <div>
-<h1>Plan creativo para {{ next_period_label }}</h1>
-<div><em>Periodo analizado: {{ period_label }} · {{ metrics.totals.competitors }} competidores · {{ metrics.totals.creatives }} creativos ({{ metrics.totals.active }} activos)</em></div>
-<blockquote><strong>DATO</strong> = conteos y fechas observadas en Meta Ad Library y Google Ads Transparency Center. <strong>INFERENCIA</strong> = hipótesis validadas por el equipo. No se estima rendimiento real de competidores.</blockquote>
+<h1>Plan creativo para {{ client.name }} — {{ next_period_label }}</h1>
+<div><em>{{ brand.app_name }} · basado en {{ metrics.totals.creatives }} anuncios de {{ metrics.totals.competitors }} competidores activos en {{ period_label | lower }}</em></div>
 
-<h1>01 — Executive summary</h1>
-<ol>{% for s in synthesis.executive_summary %}<li>{{ s }}</li>{% endfor %}</ol>
+<h1>{{ num() }} — Resumen ejecutivo</h1>
+<ol>{% for s in summary_points %}<li><strong>{{ s.headline }}</strong>{% if s.detail %} {{ s.detail }}{% endif %}{% if s.action %}<br><em>Qué hacemos:</em> {{ s.action }}{% endif %}</li>{% endfor %}</ol>
 
-<h1>02 — Top 3 insights</h1>
+<h1>{{ num() }} — Hallazgos clave</h1>
 {% for i in synthesis.top_insights %}
-<div><strong>{{ loop.index }}. {{ i.title }}</strong> (confianza {{ i.confidence }})</div>
+<div><strong>{{ loop.index }}. {{ i.title }}</strong> (certeza {{ lvl(i.confidence) }})</div>
 <ul>
-<li><strong>Dato:</strong> {{ i.observation }}</li>
-<li><strong>Inferencia:</strong> {{ i.interpretation }}</li>
-<li><strong>Implicancia:</strong> {{ i.implication_for_us }}</li>
-<li><em>{{ i.evidence | join(' · ') }}</em></li>
+<li><strong>Lo que vimos:</strong> {{ i.observation }}</li>
+<li><strong>Lo que creemos que significa:</strong> {{ i.interpretation }}</li>
+<li><strong>Qué hacemos:</strong> {{ i.implication_for_us }}</li>
 </ul>
 {% endfor %}
 
-<h1>03 — Landscape</h1>
-<div><strong>Ángulos:</strong> {% for d in metrics.angle_family_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}</div>
-<div><strong>Hooks:</strong> {% for d in metrics.hook_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}</div>
-<div><strong>Formatos:</strong> {% for d in metrics.format_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}</div>
-<div><strong>Longevidad:</strong> mediana {{ metrics.longevity.median_days }} días</div>
-<div><strong>Local vs global:</strong> {{ synthesis.local_vs_global }}</div>
-<ul>{% for comp, row in matrix.items() %}<li><strong>{{ comp }}</strong>: {% for f in families %}{{ f }} {{ row[f] }}{% if not loop.last %} · {% endif %}{% endfor %}</li>{% endfor %}</ul>
+<h1>{{ num() }} — Panorama competitivo</h1>
+<ul>{% for p in profiles %}<li><strong>{{ p.name }}</strong> ({{ lbl(p.tier) | lower }}): {{ p.creatives }} anuncios · mensaje principal: {{ lbl(p.top_family.value) if p.top_family else '—' }} · formato: {{ lbl(p.top_format.value) if p.top_format else '—' }} · duración típica: {{ p.longevity.median_days | round | int }} días</li>{% endfor %}</ul>
+{% if synthesis.local_vs_global %}<div><strong>Locales vs. globales:</strong> {{ synthesis.local_vs_global }}</div>{% endif %}
 
-<h1>04 — Creativos de referencia</h1>
-{% for r in reference_creatives %}{% set it = r.item %}
-<div><strong>CREATIVE #{{ '%03d' % it.id }} · {{ it.competitor }}</strong> — {{ it.platform }} · {{ it.format }} · {{ it.cls.product }} · activo {{ it.days_active }} días</div>
+<h1>{{ num() }} — Creativos de referencia</h1>
+{% for title, list_ in [('Top 10 locales', local_top), ('Top 10 globales', global_top)] %}
+<div><strong>{{ title }}</strong></div>
+{% for it in list_ %}
+<div><strong>#{{ loop.index }} · {{ it.competitor }}</strong> — {{ lbl(it.platform) }} · {{ lbl(it.format) }} · {{ it.days_active }} días al aire</div>
 {% if it.attachment_sgid %}<bc-attachment sgid="{{ it.attachment_sgid }}"></bc-attachment>{% endif %}
 <ul>
-{% if it.headline %}<li>Hook: “{{ it.headline }}”</li>{% endif %}
-<li>Ángulo: {{ it.cls.primary_angle }} · Hook: {{ it.cls.hook_type }} · Estilo: {{ it.cls.creative_style }}</li>
-<li>Por qué nos interesa: {{ r.why_relevant }}</li>
-<li>No copiar: {{ r.what_not_to_copy }}</li>
-<li>Adaptación: {{ r.adaptation_ideas | join(' / ') }}</li>
+{% if it.headline %}<li>“{{ it.headline }}”</li>{% endif %}
+{% if it.ref %}<li>Por qué nos interesa: {{ it.ref.why_relevant }}</li><li>Cómo adaptarlo: {{ it.ref.adaptation_ideas | join(' / ') }}</li>{% endif %}
 {% if it.snapshot_url %}<li><a href="{{ it.snapshot_url }}">Ver anuncio original</a></li>{% endif %}
 </ul>
 {% endfor %}
-
-<h1>05 — Oportunidades</h1>
-<div><strong>Ángulos no explotados:</strong> {{ synthesis.unexploited_angles | join(', ') }}</div>
-{% for o in synthesis.white_space + synthesis.recommendations %}
-<div><strong>Oportunidad #{{ '%02d' % loop.index }} · {{ o.title }}</strong></div>
-<div>{{ o.rationale }} <em>({{ o.evidence | join(' · ') }})</em></div>
-<ul>{% for c in o.concepts %}<li><strong>{{ c.format }} / {{ c.hook_type }} / {{ c.angle }}:</strong> {{ c.copy_draft }}</li>{% endfor %}</ul>
 {% endfor %}
 
-<h1>06 — Riesgos y saturación</h1>
-<ul>{% for r in synthesis.risks %}<li><strong>{{ r.title }}:</strong> {{ r.description }} <em>({{ r.evidence | join(' · ') }})</em></li>{% endfor %}</ul>
+<h1>{{ num() }} — Oportunidades creativas</h1>
+{% for o in opportunities %}
+<div><strong>{{ loop.index }}. {{ o.title }}</strong> (prioridad {{ lvl(o.priority) }})</div>
+<ul>
+<li><strong>Por qué:</strong> {{ o.rationale }}</li>
+{% if o.who_does_it %}<li><strong>Quién lo hace hoy:</strong> {{ o.who_does_it }}</li>{% endif %}
+{% for c in o.concepts %}<li><strong>Idea ({{ lbl(c.format) }} · gancho {{ lbl(c.hook_type) | lower }}):</strong> {{ c.copy_draft }}{% if c.visual_direction %} — <em>{{ c.visual_direction }}</em>{% endif %}</li>{% endfor %}
+{% if o.how_to_measure %}<li><strong>Cómo lo medimos:</strong> {{ o.how_to_measure }}</li>{% endif %}
+</ul>
+{% endfor %}
 
-{% if metrics.ours_vs_market.has_own %}
-<h1>07 — Mercado vs miSeguro</h1>
+<h1>{{ num() }} — Riesgos y saturación</h1>
+{% for r in risks %}
+<div><strong>{{ r.title }}</strong> (riesgo {{ lvl(r.severity) }})</div>
+<ul><li>{{ r.description }}</li>{% if r.why_it_matters %}<li><strong>Por qué importa:</strong> {{ r.why_it_matters }}</li>{% endif %}{% if r.mitigation %}<li><strong>Cómo lo evitamos:</strong> {{ r.mitigation }}</li>{% endif %}</ul>
+{% endfor %}
+
+<h1>{{ num() }} — {{ client.name }} vs. mercado</h1>
+{% if has_own %}
 {% if synthesis.ours_vs_market %}<div>{{ synthesis.ours_vs_market }}</div>{% endif %}
-<ul>{% for g in metrics.ours_vs_market.angle_family.gaps %}<li>{{ g.value }}: mercado {{ g.market_pct }}% · miSeguro {{ g.ours_pct }}% · gap {{ '%+.1f' % g.gap }}</li>{% endfor %}</ul>
+<ul>{% for d in own_compare[0].rows if own_compare %}<li>{{ lbl(d.value) }}: {{ client.name }} {{ d.a | round | int }}% · mercado {{ d.b | round | int }}%</li>{% endfor %}</ul>
+{% else %}
+<div><em>Todavía no estamos midiendo los anuncios de {{ client.name }}. Falta cargar su página de Facebook y su dominio en la configuración.</em></div>
 {% endif %}
 
-<h1>08 — Plan de acción</h1>
-<ol>{% for a in synthesis.action_items %}<li><strong>{{ a.title }}</strong> — {{ a.description }} ({{ a.owner_role }}, {{ a.due_in_days }} días)</li>{% endfor %}</ol>
+<h1>{{ num() }} — Plan de acción</h1>
+<ol>{% for a in actions %}<li><strong>{{ a.title }}</strong> (prioridad {{ lvl(a.priority) }}) — {{ a.description }}<br>Responsable: {{ a.owner_role }} · Fecha: {{ a.due_date }}{% if a.deliverable %} · Entregable: {{ a.deliverable }}{% endif %}{% if a.success_metric %} · Cómo medimos: {{ a.success_metric }}{% endif %}</li>{% endfor %}</ol>
 </div>

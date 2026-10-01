@@ -85,4 +85,15 @@ def test_mock_synthesis_validates_against_output_schema(session, sample_raws, ta
     data = mock_synthesis(metrics, items, metrics["concepts"], "2026-09")
     SynthesisOutput.model_validate(data)
     assert len(data["executive_summary"]) == 3
-    assert all(any(ch.isdigit() for ch in s) for s in data["executive_summary"]), "cada afirmación cita cifras"
+    assert all(any(ch.isdigit() for ch in s["detail"] + s["headline"]) for s in data["executive_summary"]), "cada punto cita cifras"
+    assert all(s["headline"] and s["action"] for s in data["executive_summary"])
+    def texts(o):
+        if isinstance(o, dict):
+            return " ".join(texts(v) for k, v in o.items() if k not in ("hook_type", "angle", "format"))
+        if isinstance(o, list):
+            return " ".join(texts(v) for v in o)
+        return str(o)
+
+    joined = texts(data)
+    for jerga in ("white space", "TOFU", "tofu", "hook"):
+        assert jerga not in joined, f"jerga en la síntesis: {jerga}"

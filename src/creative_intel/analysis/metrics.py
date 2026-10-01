@@ -39,6 +39,7 @@ def creative_to_item(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
         "last_seen": creative.last_seen.isoformat(),
         "engagement": dict(creative.engagement or {}),
         "thumbnail_path": creative.thumbnail_path,
+        "raw": {k: (creative.raw or {}).get(k) for k in ("screenshot", "variations", "text_in_image", "regions")},
         "snapshot_url": creative.snapshot_url,
         "landing_url": creative.landing_url,
         "headline": creative.headline,
@@ -162,6 +163,71 @@ def ours_vs_market(market: list[dict[str, Any]], ours: list[dict[str, Any]], key
     return {"market": m, "ours": o, "gaps": gaps}
 
 
+def profile(items: list[dict[str, Any]], name: str = "", tier: str = "") -> dict[str, Any]:
+    """Ficha de un anunciante (o del mercado entero): qué dice, cómo lo dice y cuánto dura."""
+    classified = [it for it in items if it.get("cls")]
+    days = [it["days_active"] for it in items]
+
+    def top(dist: list[dict[str, Any]]) -> dict[str, Any] | None:
+        return dist[0] if dist else None
+
+    fam = distribution(classified, _cls("angle_family"))
+    hook = distribution(classified, _cls("hook_type"))
+    fmt = distribution(classified, lambda it: it["format"])
+    lon = longevity(items)
+    return {
+        "name": name,
+        "slug": items[0].get("competitor_slug", "") if items and name else "",
+        "tier": tier,
+        "creatives": len(items),
+        "active": len([it for it in items if it.get("status") == "active"]),
+        "platforms": dict(Counter(it["platform"] for it in items)),
+        "angle_family_dist": fam,
+        "angle_dist": distribution(classified, _cls("primary_angle"))[:8],
+        "hook_dist": hook,
+        "format_dist": fmt,
+        "funnel_dist": distribution(classified, _cls("funnel_stage")),
+        "product_dist": distribution(classified, _cls("product")),
+        "style_dist": distribution(classified, _cls("creative_style")),
+        "top_family": top(fam),
+        "top_hook": top(hook),
+        "top_format": top(fmt),
+        "longevity": {
+            "buckets": lon["buckets"],
+            "median_days": lon["median_days"],
+            "max_days": max(days) if days else 0,
+            "top_ids": lon["top_ids"][:4],
+        },
+    }
+
+
+def competitor_profiles(market: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for it in market:
+        by[it["competitor"]].append(it)
+    profs = [profile(v, name=k, tier=v[0]["tier"]) for k, v in by.items()]
+    return sorted(profs, key=lambda p: (0 if p["tier"] == "local" else 1, -p["creatives"], p["name"]))
+
+
+def saturation(classified: list[dict[str, Any]]) -> dict[str, Any]:
+    """Cuántos competidores usan cada mensaje/gancho: si 8 de 10 dicen lo mismo, está saturado."""
+    comps = sorted({it["competitor"] for it in classified})
+    out: dict[str, Any] = {"competitors": len(comps)}
+    for key, getter in (("angle_family", _cls("angle_family")), ("hook", _cls("hook_type")), ("angle", _cls("primary_angle"))):
+        users: dict[Any, set] = defaultdict(set)
+        ads: Counter = Counter()
+        for it in classified:
+            v = getter(it)
+            if v:
+                users[v].add(it["competitor"])
+                ads[v] += 1
+        out[key] = sorted(
+            ({"value": v, "competitors": len(u), "names": sorted(u), "ads": ads[v]} for v, u in users.items()),
+            key=lambda d: (-d["competitors"], -d["ads"]),
+        )
+    return out
+
+
 def build_metrics(
     items: list[dict[str, Any]],
     taxonomy: Taxonomy,
@@ -236,6 +302,18 @@ def build_metrics(
             "hook": month_over_month(hook_dist, distribution(previous_items, _cls("hook_type"))),
             "product": month_over_month(distribution(classified, _cls("product")), distribution(previous_items, _cls("product"))),
         },
+        "competitor_profiles": competitor_profiles(market),
+        "market_profile": profile(market, name="Mercado"),
+        "market_profile_weighted": {
+            "angle_family_dist": weighted_distribution(classified, _cls("angle_family")),
+            "hook_dist": weighted_distribution(classified, _cls("hook_type")),
+            "format_dist": weighted_distribution(classified, lambda it: it["format"]),
+            "funnel_dist": weighted_distribution(classified, _cls("funnel_stage")),
+            "product_dist": weighted_distribution(classified, _cls("product")),
+        },
+        "tier_profiles": {t: profile([it for it in market if it["tier"] == t], name=t) for t in ("local", "global")},
+        "own_profile": profile(own_items, name="own") if own_items else None,
+        "saturation": saturation(classified),
         "ours_vs_market": {
             "has_own": bool(own_items),
             "angle_family": ours_vs_market(classified, [o for o in own_items if o.get("cls")], "angle_family"),

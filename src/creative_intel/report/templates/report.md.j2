@@ -1,93 +1,103 @@
-# Competitive Creative Intelligence — {{ period_label }}
+{%- set sec = namespace(n=0) -%}
+{%- macro num() -%}{%- set sec.n = sec.n + 1 -%}{{ '%02d' % sec.n }}{%- endmacro -%}
+{%- macro lvl(v) -%}{{ {'high':'alta','medium':'media','low':'baja'}.get((v or 'media') | lower, (v or 'media') | lower) }}{%- endmacro -%}
+# Plan creativo para {{ client.name }} — {{ next_period_label }}
 
-Plan creativo para **{{ next_period_label }}** · {{ metrics.totals.competitors }} competidores · {{ metrics.totals.creatives }} creativos ({{ metrics.totals.active }} activos) · Generado {{ generated_at }}
+{{ brand.app_name }} · basado en {{ metrics.totals.creatives }} anuncios de {{ metrics.totals.competitors }} competidores activos en {{ period_label | lower }} · Generado {{ generated_at }}
 
-> **DATO** = conteos y fechas observadas. **INFERENCIA** = hipótesis del análisis. No se estima rendimiento real de competidores.
+## {{ num() }} — Resumen ejecutivo
 
-## 01 — Executive summary
-{% for s in synthesis.executive_summary %}
-{{ loop.index }}. {{ s }}
-{% endfor %}{{ '' }}
+{% for s in summary_points %}
+{{ loop.index }}. **{{ s.headline }}**{% if s.detail %} {{ s.detail }}{% endif %}{% if s.action %} — *Qué hacemos:* {{ s.action }}{% endif %}{{ '' }}
+{% endfor %}
 
-## 02 — Top 3 insights
+## {{ num() }} — Hallazgos clave
+
 {% for i in synthesis.top_insights %}
-### {{ loop.index }}. {{ i.title }} (confianza: {{ i.confidence }})
-- **Dato:** {{ i.observation }}
-- **Inferencia:** {{ i.interpretation }}
-- **Implicancia:** {{ i.implication_for_us }}
-- Evidencia: {{ i.evidence | join(' · ') }}
-{% endfor %}{{ '' }}
+### {{ loop.index }}. {{ i.title }} (certeza {{ lvl(i.confidence) }})
+- **Lo que vimos:** {{ i.observation }}
+- **Lo que creemos que significa:** {{ i.interpretation }}
+- **Qué hacemos:** {{ i.implication_for_us }}
 
-## 03 — Competitive landscape
-| Competidor | Tier |{% for f in families %} {{ f }} |{% endfor %}{{ '' }}
-|---|---|{% for f in families %}---|{% endfor %}{{ '' }}
-{% for comp, row in matrix.items() %}
-| {{ comp }} | {{ tier_of.get(comp, '') }} |{% for f in families %} {{ row[f] }} |{% endfor %}{{ '' }}
-{% endfor %}{{ '' }}
+{% endfor %}
+## {{ num() }} — Panorama competitivo
 
-**Ángulos (familias):** {% for d in metrics.angle_family_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+| Competidor | Tipo | Anuncios | Mensaje principal | Formato principal | Duración típica |
+|---|---|---|---|---|---|
+{% for p in profiles %}
+| {{ p.name }} | {{ lbl(p.tier) }} | {{ p.creatives }} | {{ lbl(p.top_family.value) if p.top_family else '—' }} | {{ lbl(p.top_format.value) if p.top_format else '—' }} | {{ p.longevity.median_days | round | int }} días |
+{% endfor %}
 
-**Ángulos ponderados por competidor:** {% for d in metrics.angle_family_dist_weighted %}{{ d.value }} {{ d.pct }}% ({{ d.count }} comp.){% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+{% if synthesis.local_vs_global %}**Locales vs. globales:** {{ synthesis.local_vs_global }}{% endif %}{{ '' }}
 
-**Hooks:** {% for d in metrics.hook_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
-
-**Formatos:** {% for d in metrics.format_dist %}{{ d.value }} {{ d.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
-
-**Local vs global:** {{ synthesis.local_vs_global }}
-
-**Longevidad:** mediana {{ metrics.longevity.median_days }} días · {% for k, v in metrics.longevity.buckets.items() %}{{ k }}: {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
+### Qué cambió respecto al mes anterior
 
 {% if metrics.mom.has_previous %}
-**Mes vs mes anterior:** {% for r in metrics.mom.angle_family %}{{ r.value }} {{ '%+.1f' % r.delta }}{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
-{% endif %}
-
-## 04 — Creativos de referencia
-{% for r in reference_creatives %}
-{% set it = r.item %}
-### CREATIVE #{{ '%03d' % it.id }} · {{ it.competitor }}
-- {{ it.platform }} · {{ it.format }} · {{ it.cls.product }} · {{ it.cls.funnel_stage }} · **activo {{ it.days_active }} días**
-{% if it.headline %}- Hook: “{{ it.headline }}”
-{% endif %}
-- Ángulo: {{ it.cls.primary_angle }} · Hook: {{ it.cls.hook_type }} · Estilo: {{ it.cls.creative_style }}
-- Por qué nos interesa: {{ r.why_relevant }}
-- No copiar: {{ r.what_not_to_copy }}
-- Adaptación: {% for a in r.adaptation_ideas %}{{ a }}{% if not loop.last %} / {% endif %}{% endfor %}{{ '' }}
-{% if it.thumbnail_rel %}- ![captura]({{ it.thumbnail_rel }})
-{% endif %}
-{% if it.snapshot_url %}- [Ver anuncio original]({{ it.snapshot_url }})
-{% endif %}
-{% endfor %}{{ '' }}
-
-## 05 — Creative opportunities
-**Ángulos no explotados:** {{ synthesis.unexploited_angles | join(', ') }}
-
-**White space (familias):** {% for w in metrics.white_space.angle_families %}{{ w.value }} {{ w.pct }}%{% if not loop.last %} · {% endif %}{% endfor %}{{ '' }}
-{% for o in synthesis.white_space + synthesis.recommendations %}
-
-### Oportunidad #{{ '%02d' % loop.index }} · {{ o.title }}
-{{ o.rationale }} ({{ o.evidence | join(' · ') }})
-{% for c in o.concepts %}
-- **{{ c.format }} / {{ c.hook_type }} / {{ c.angle }}:** {{ c.copy_draft }}
-{% endfor %}{{ '' }}
-{% endfor %}{{ '' }}
-
-## 06 — Riesgos y saturación
-{% for r in synthesis.risks %}
-- **{{ r.title }}:** {{ r.description }} ({{ r.evidence | join(' · ') }})
-{% endfor %}{{ '' }}
-
-{% if metrics.ours_vs_market.has_own %}
-## 07 — Mercado vs miSeguro
-{% if synthesis.ours_vs_market %}{{ synthesis.ours_vs_market }}
-{% endif %}
-| Familia | Mercado | miSeguro | Gap |
+| Mensaje | Este mes | Mes anterior | Cambio |
 |---|---|---|---|
-{% for g in metrics.ours_vs_market.angle_family.gaps %}
-| {{ g.value }} | {{ g.market_pct }}% | {{ g.ours_pct }}% | {{ '%+.1f' % g.gap }} |
-{% endfor %}{{ '' }}
+{% for r in metrics.mom.angle_family %}
+| {{ lbl(r.value) }} | {{ r.pct | round | int }}% | {{ r.prev_pct | round | int }}% | {{ '%+d' % (r.delta | round | int) }} pts |
+{% endfor %}
+{% else %}
+Primer mes con datos: la comparación aparece a partir del próximo informe.
 {% endif %}
 
-## 08 — Plan de acción
-{% for a in synthesis.action_items %}
-- [ ] **{{ a.title }}** — {{ a.description }} · {{ a.owner_role }} · {{ a.due_in_days }} días
-{% endfor %}{{ '' }}
+## {{ num() }} — Creativos de referencia
+
+{% for title, list_ in [('Top 10 locales', local_top), ('Top 10 globales', global_top)] %}
+### {{ title }}
+{% for it in list_ %}
+{{ loop.index }}. **{{ it.competitor }}** — {{ lbl(it.platform) }} · {{ lbl(it.format) }} · {{ it.days_active }} días al aire{% if it.headline %} · “{{ it.headline }}”{% endif %}{% if it.snapshot_url %} · [ver original]({{ it.snapshot_url }}){% endif %}{{ '' }}
+{% endfor %}
+
+{% endfor %}
+## {{ num() }} — Oportunidades creativas
+
+{% for o in opportunities %}
+### {{ loop.index }}. {{ o.title }} (prioridad {{ lvl(o.priority) }})
+- **Por qué:** {{ o.rationale }}
+{% if o.who_does_it %}
+- **Quién lo hace hoy:** {{ o.who_does_it }}
+{% endif %}
+{% for c in o.concepts %}
+- **Idea ({{ lbl(c.format) }}, gancho {{ lbl(c.hook_type) | lower }}):** {{ c.copy_draft }}{% if c.visual_direction %} — *{{ c.visual_direction }}*{% endif %}{{ '' }}
+{% endfor %}
+{% if o.how_to_measure %}
+- **Cómo lo medimos:** {{ o.how_to_measure }}
+{% endif %}
+
+{% endfor %}
+## {{ num() }} — Riesgos y saturación
+
+{% for r in risks %}
+### {{ r.title }} (riesgo {{ lvl(r.severity) }})
+- {{ r.description }}
+{% if r.why_it_matters %}
+- **Por qué importa:** {{ r.why_it_matters }}
+{% endif %}
+{% if r.mitigation %}
+- **Cómo lo evitamos:** {{ r.mitigation }}
+{% endif %}
+
+{% endfor %}
+## {{ num() }} — {{ client.name }} vs. mercado
+
+{% if has_own %}
+{% if synthesis.ours_vs_market %}{{ synthesis.ours_vs_market }}{% endif %}{{ '' }}
+
+| Mensaje | {{ client.name }} | Mercado |
+|---|---|---|
+{% for d in (own_compare[0].rows if own_compare else []) %}
+| {{ lbl(d.value) }} | {{ d.a | round | int }}% | {{ d.b | round | int }}% |
+{% endfor %}
+{% else %}
+Todavía no estamos midiendo los anuncios de {{ client.name }}: falta cargar su página de Facebook y su dominio en la configuración.
+{% endif %}
+
+## {{ num() }} — Plan de acción
+
+| Prioridad | Acción | Responsable | Entregable | Cómo medimos | Fecha |
+|---|---|---|---|---|---|
+{% for a in actions %}
+| {{ lvl(a.priority) | capitalize }} | **{{ a.title }}** — {{ a.description }} | {{ a.owner_role }} | {{ a.deliverable or '—' }} | {{ a.success_metric or '—' }} | {{ a.due_date }} |
+{% endfor %}

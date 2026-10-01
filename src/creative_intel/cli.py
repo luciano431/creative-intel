@@ -16,7 +16,7 @@ from .config import load_competitors, load_taxonomy
 from .db import init_db, session_scope, get_or_create_run
 from .review import approve_all_pending, data_qa_queue, latest_synthesis, review_synthesis, set_qa_status
 
-app = typer.Typer(help="Competitive Creative Intelligence para aseguradoras (Meta + Google).", no_args_is_help=True)
+app = typer.Typer(help="Radar creativo de Ranker: monitoreo creativo de la competencia (Meta + Google) y plan creativo mensual por cliente. Para trabajar con otro cliente: RADAR_CLIENT=<slug> radar ...", no_args_is_help=True)
 competitors_app = typer.Typer(help="Universo de competidores")
 review_app = typer.Typer(help="Checkpoints humanos (Data QA y Strategic QA)")
 basecamp_app = typer.Typer(help="Configuración de Basecamp (login OAuth e IDs)")
@@ -267,6 +267,69 @@ def purge(
         typer.confirm(f"Borrar creativos platform={platform} only={only or 'todos'} source={source}?", abort=True)
     with session_scope() as s:
         console.print(purge_creatives(s, platform=platform, slugs=only or None, source=source))
+
+
+@app.command("new-client")
+def new_client(
+    slug: str = typer.Argument(..., help="Identificador corto, sin espacios (ej. banco-x)"),
+    name: str = typer.Option(..., "--name", help="Nombre del cliente como aparece en el informe"),
+    industry: str = typer.Option("", "--industry", help="Industria (ej. Seguros, Banca, Retail)"),
+    country: str = typer.Option("UY", "--country", help="Código de país principal"),
+    market: str = typer.Option("", "--market", help="Nombre del mercado (ej. Uruguay)"),
+) -> None:
+    """Crea la carpeta de configuración de un cliente nuevo (config/clients/<slug>/)."""
+    import shutil
+
+    from .config import CLIENTS_DIR, ROOT
+
+    dest = CLIENTS_DIR / slug
+    if dest.exists():
+        raise typer.BadParameter(f"Ya existe {dest}")
+    dest.mkdir(parents=True)
+    (dest / "competitors.yaml").write_text(f"""# Cliente y universo de competidores de {name}.
+# Completar meta_page_id (Biblioteca de anuncios de Meta) y website / google_domain (Google).
+client:
+  slug: {slug}
+  name: {name}
+  industry: {industry}
+  market: {market or country}
+  description: ""
+
+countries:
+  - code: {country}
+    name: {market or country}
+    languages: [es]
+    own:
+      slug: {slug}
+      name: {name}
+      website: ""
+      meta_page_id: ""
+      google_advertiser_id: ""
+      products: []
+    competitors:
+      local:
+        - slug: competidor-1
+          name: Competidor 1
+          website: ""
+          meta_page_id: ""
+          google_advertiser_id: ""
+          products: []
+          active: true
+      global:
+        - slug: referente-1
+          name: Referente global 1
+          website: ""
+          meta_page_id: ""
+          google_advertiser_id: ""
+          ad_countries: [ALL]
+          products: []
+          active: true
+""", encoding="utf-8")
+    shutil.copy(ROOT / "config" / "taxonomy.yaml", dest / "taxonomy.yaml")
+    console.print(f"[green]Cliente creado en {dest}[/green]")
+    console.print("1. Completá competitors.yaml (IDs de Meta, dominios de Google).")
+    console.print("2. Ajustá taxonomy.yaml si la industria no es seguros (productos, mensajes).")
+    console.print(f"3. Usalo con: [bold]RADAR_CLIENT={slug} radar init-db && RADAR_CLIENT={slug} radar competitors sync[/bold]")
 
 
 @app.command("debug-html")

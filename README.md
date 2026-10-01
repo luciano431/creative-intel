@@ -1,9 +1,23 @@
-# creative-intel — Competitive Creative Intelligence para aseguradoras
+# Radar creativo de Ranker
 
-Sistema semi-automatizado que monitorea los creativos activos de aseguradoras en **Meta** (Facebook/Instagram) y **Google** (Search/Display/YouTube), los clasifica con IA dentro de una taxonomía cerrada, compara contra el histórico y contra nuestros propios anuncios, y produce un **reporte mensual accionable** que un humano valida antes de publicarlo en **Basecamp**.
+Herramienta de Ranker para armar el **plan creativo mensual de cualquier cliente** a partir de lo que pauta su competencia. Sistema semi-automatizado que monitorea los creativos activos de la competencia en **Meta** (Facebook/Instagram) y **Google** (Search/Display/YouTube), los clasifica con IA dentro de una taxonomía cerrada, compara contra el histórico y contra nuestros propios anuncios, y produce un **reporte mensual accionable** que un humano valida antes de publicarlo en **Basecamp**.
 
 > Regla del sistema: **la máquina encuentra patrones, el humano decide cuáles se convierten en estrategia.**
 > Todo lo que se reporta distingue **DATO** (conteos, fechas, días activo) de **INFERENCIA** (hipótesis). Nunca se estima el rendimiento real de un competidor.
+
+## Clientes
+
+Cada cliente tiene su propia carpeta de configuración, base de datos e informes:
+
+```bash
+radar new-client banco-x --name "Banco X" --industry Banca --market Uruguay   # crea config/clients/banco-x/
+# completar config/clients/banco-x/competitors.yaml (IDs de Meta, dominios de Google)
+export RADAR_CLIENT=banco-x
+radar init-db && radar competitors sync
+radar run-cycle --period 2026-10          # informe en reports/banco-x/2026-10/
+```
+
+Sin `RADAR_CLIENT` se usa `config/` (el cliente por defecto). La marca del informe (nombre, logo, paleta) está en `config/brand.yaml`; un cliente puede tener su propio `brand.yaml` en su carpeta. Los nombres en castellano de cada categoría están en la sección `labels` de `taxonomy.yaml`.
 
 ## Arquitectura
 

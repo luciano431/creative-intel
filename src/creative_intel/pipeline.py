@@ -188,7 +188,9 @@ def report_context(session: Session, period: str) -> dict[str, Any]:
 
 
 def build_report(session: Session, period: str, out_dir: str | Path | None = None) -> dict[str, Path]:
-    out_dir = Path(out_dir or Path("reports") / period)
+    from .config import REPORTS_DIR
+
+    out_dir = Path(out_dir or Path(REPORTS_DIR) / period)
     ctx = report_context(session, period)
     paths = render_report(ctx, out_dir)
     (out_dir / "metrics.json").write_text(json.dumps(ctx["metrics"], ensure_ascii=False, indent=2, default=str), encoding="utf-8")

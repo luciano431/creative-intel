@@ -18,13 +18,19 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class SummaryPoint(_Strict):
+    headline: str = Field(description="Frase corta y clara (máx. 14 palabras), sin jerga: qué está pasando")
+    detail: str = Field(description="Una o dos oraciones que lo explican con una cifra entendible (ej. '8 de cada 10 anuncios')")
+    action: str = Field(description="Qué hacemos nosotros con esto, en una oración")
+
+
 class Insight(_Strict):
     title: str
-    observation: str = Field(description="Dato observable con números")
-    interpretation: str = Field(description="Inferencia estratégica, redactada como hipótesis")
-    evidence: list[str] = Field(description="Cifras concretas: 'X anuncios / Y competidores / Z%'")
-    implication_for_us: str
-    confidence: str = Field(description="low | medium | high")
+    observation: str = Field(description="Lo que vimos: dato observable con números")
+    interpretation: str = Field(description="Lo que creemos que significa, redactado como hipótesis")
+    evidence: list[str] = Field(description="Cifras concretas: 'X anuncios de Y competidores'")
+    implication_for_us: str = Field(description="Qué hacemos nosotros")
+    confidence: str = Field(description="low | medium | high: qué tan seguros estamos de la interpretación")
 
 
 class ReferenceCreative(_Strict):
@@ -39,32 +45,42 @@ class ConceptIdea(_Strict):
     format: str
     hook_type: str
     angle: str
-    copy_draft: str = Field(description="Copy o guion breve en español rioplatense")
+    copy_draft: str = Field(description="Copy o guion breve en el idioma y tono del cliente")
+    visual_direction: str = Field(description="Cómo se ve: escena, casting, recursos visuales")
 
 
 class Opportunity(_Strict):
     title: str
-    rationale: str
+    priority: str = Field(description="alta | media | baja")
+    rationale: str = Field(description="Por qué es una oportunidad, en lenguaje simple")
+    who_does_it: str = Field(description="Quién lo hace hoy en el mercado (o 'nadie'), con cifras")
     evidence: list[str]
-    concepts: list[ConceptIdea]
+    concepts: list[ConceptIdea] = Field(description="1 a 3 ideas ejecutables")
+    how_to_measure: str = Field(description="Cómo sabremos si funcionó (métrica y umbral)")
 
 
 class Risk(_Strict):
     title: str
-    description: str
+    severity: str = Field(description="alta | media | baja")
+    description: str = Field(description="Qué está pasando")
+    why_it_matters: str = Field(description="Por qué nos afecta")
+    mitigation: str = Field(description="Cómo lo evitamos, concreto")
     evidence: list[str]
 
 
 class ActionItem(_Strict):
     title: str
     description: str
-    owner_role: str = Field(description="Ej: Creative lead, Copywriter, Media buyer")
+    priority: str = Field(description="alta | media | baja")
+    owner_role: str = Field(description="Ej: Líder creativo, Redactor, Media buyer, Diseño")
     due_in_days: int
+    deliverable: str = Field(description="Qué se entrega concretamente")
+    success_metric: str = Field(description="Cómo medimos el resultado")
 
 
 class SynthesisOutput(_Strict):
     period_label: str
-    executive_summary: list[str] = Field(description="Exactamente 3 cambios del mes, cada uno con cifras")
+    executive_summary: list[SummaryPoint] = Field(description="Exactamente 3 puntos")
     top_insights: list[Insight] = Field(description="Top 3")
     local_vs_global: str
     reference_creatives: list[ReferenceCreative]
@@ -73,22 +89,27 @@ class SynthesisOutput(_Strict):
     recommendations: list[Opportunity]
     risks: list[Risk] = Field(description="Saturación y riesgos de mensajería")
     ours_vs_market: str | None
-    action_items: list[ActionItem]
+    action_items: list[ActionItem] = Field(description="4 a 8 acciones ordenadas por prioridad")
 
 
-SYSTEM_PROMPT = """Sos el/la director/a de estrategia de un equipo creativo de performance para miSeguro (aseguradora digital en Uruguay).
-Recibís las métricas mensuales del monitoreo competitivo (Meta + Google), la lista de creativos ya clasificados y, si existe, el mes anterior y nuestros propios anuncios.
+SYSTEM_PROMPT_TEMPLATE = """Sos el/la director/a de estrategia creativa de Ranker. Armás el plan creativo mensual para {client} ({industry}, {market}).
+Recibís las métricas del monitoreo competitivo (Meta + Google), los creativos ya clasificados y, si existen, el mes anterior y los anuncios de {client}.
 
-Principios no negociables:
-1. Separá siempre DATO de INFERENCIA. El dato es un conteo o una fecha. La inferencia es una hipótesis y se redacta como tal ("podría indicar", "sugiere").
-2. Nunca afirmes que un anuncio "funciona" o "es el mejor". Podés decir que lleva N días activo, que tiene N variantes o que aparece en N competidores.
-3. Cada afirmación del executive summary y de cada insight cita cifras: X anuncios / Y competidores / Z%.
-4. Los creativos de referencia se eligen por longevidad, cantidad de variantes o novedad de ángulo, y siempre con adaptación propia: no copiar, desarrollar.
-5. Las oportunidades salen del white space y de los gaps entre mercado y miSeguro. Cada oportunidad trae conceptos ejecutables (formato + hook + ángulo + copy en español rioplatense).
-6. Los riesgos son de saturación: si 8 de 10 competidores dicen lo mismo, no queremos ser el número 11 sin un giro.
-7. Escribí en español, claro, para un equipo creativo que lo va a ejecutar la semana siguiente.
-8. Las distribuciones `*_weighted` ponderan cada competidor por igual; usalas para hablar de 'cuántos competidores' y las crudas para 'cuántos anuncios'. Un anunciante con 100 creativos no define el mercado por sí solo.
-9. Si los datos son escasos (pocos creativos, un solo mes), decilo explícitamente y bajá la confianza; no rellenes."""
+Cómo escribir (lo lee el cliente, no un analista):
+1. Castellano claro y directo. Nada de jerga en inglés: no digas "hook", "white space", "TOFU", "insight", "branding" ni "awareness". Usá los nombres del diccionario `labels` que viene en los datos (ej. "Prueba social", "Descubrimiento").
+2. Números que se entiendan: "8 de cada 10 anuncios", "6 de los 10 competidores", "lleva 120 días al aire". Evitá listas de porcentajes sueltos.
+3. Separá lo que vimos (dato: un conteo o una fecha) de lo que creemos que significa (hipótesis: "podría indicar", "sugiere").
+4. Nunca afirmes que un anuncio "funciona" o "es el mejor". Podés decir cuántos días lleva activo, cuántas variantes tiene o cuántos competidores lo usan.
+5. Resumen ejecutivo: exactamente 3 puntos, cada uno con un titular corto, una explicación con una cifra y qué hacemos.
+6. Oportunidades: salen de los mensajes y ganchos que casi nadie usa y de las diferencias entre el mercado y {client}. Cada una trae prioridad, por qué, quién lo hace hoy, 1 a 3 ideas ejecutables (formato, gancho, mensaje, copy y dirección visual) y cómo lo vamos a medir.
+7. Riesgos: saturación (si 8 de 10 competidores dicen lo mismo, no queremos ser el número 11 sin un giro), con severidad, por qué importa y cómo lo evitamos.
+8. Plan de acción: 4 a 8 acciones ordenadas por prioridad, con responsable, plazo en días, entregable concreto y cómo medimos el resultado.
+9. Cada competidor pesa por igual al hablar de "el mercado": un anunciante con 100 anuncios no define el mercado por sí solo. Usá `market_profile_weighted` y `saturation` para eso.
+10. Si los datos son escasos o la clasificación es parcial, decilo y bajá la certeza; no rellenes."""
+
+
+def _system_prompt(client: str, industry: str, market: str) -> str:
+    return SYSTEM_PROMPT_TEMPLATE.format(client=client, industry=industry or "sin industria definida", market=market or "mercado local")
 
 
 def _compact_items(items: list[dict[str, Any]], limit: int = 400) -> list[dict[str, Any]]:
@@ -129,8 +150,15 @@ def synthesize(
     own_items: list[dict[str, Any]] | None = None,
     model: str | None = None,
     client=None,
+    client_info: Any = None,
+    labels: dict[str, str] | None = None,
 ) -> dict[str, Any]:
+    from ..config import load_client
+
+    ci = client_info or load_client()
     payload = {
+        "client": {"name": ci.name, "industry": ci.industry, "market": ci.market, "description": ci.description},
+        "labels": labels or {},
         "period": period,
         "metrics": metrics,
         "previous_period_metrics": previous_metrics or None,
@@ -140,74 +168,173 @@ def synthesize(
     }
     content = [{"type": "text", "text": "Datos del mes (JSON):\n" + json.dumps(payload, ensure_ascii=False, default=str) + "\n\nProducí la síntesis estratégica."}]
     result = structured_call(
-        SynthesisOutput, SYSTEM_PROMPT, content, model=model or settings.synth_model, max_tokens=32000, effort="high", stream=True, client=client
+        SynthesisOutput, _system_prompt(ci.name, ci.industry, ci.market), content, model=model or settings.synth_model, max_tokens=32000, effort="high", stream=True, client=client
     )
     return result.model_dump()
 
 
-def mock_synthesis(metrics: dict[str, Any], items: list[dict[str, Any]], concepts: list[dict[str, Any]], period: str) -> dict[str, Any]:
-    """Síntesis determinística a partir de métricas: para demo/tests, sin IA. Mantiene la regla dato/inferencia."""
-    fam = metrics.get("angle_family_dist") or []
-    hooks = metrics.get("hook_dist") or []
+def _of10(pct: float) -> int:
+    return max(1, round(float(pct or 0) / 10)) if pct else 0
+
+
+def mock_synthesis(
+    metrics: dict[str, Any],
+    items: list[dict[str, Any]],
+    concepts: list[dict[str, Any]],
+    period: str,
+    label: Any = None,
+    client_name: str | None = None,
+) -> dict[str, Any]:
+    """Síntesis determinística a partir de las métricas, sin IA (demo/tests). Redactada para el cliente."""
+    from ..config import load_client, load_taxonomy
+
+    label = label or load_taxonomy().label
+    client = client_name or load_client().name
     totals = metrics.get("totals", {})
-    top_fam = fam[0] if fam else {"value": "n/d", "pct": 0, "count": 0}
-    top_hook = hooks[0] if hooks else {"value": "n/d", "pct": 0, "count": 0}
+    n_comp = totals.get("competitors", 0) or 0
+    n_cls = totals.get("classified", 0) or 0
+    weighted = metrics.get("market_profile_weighted") or {}
+    fam = weighted.get("angle_family_dist") or metrics.get("angle_family_dist") or []
+    fmt = weighted.get("format_dist") or metrics.get("format_dist") or []
+    sat = metrics.get("saturation") or {}
+    sat_fam = (sat.get("angle_family") or [])
+    sat_angle = (sat.get("angle") or [])
+    top_fam = fam[0] if fam else {"value": None, "pct": 0}
+    top_fmt = fmt[0] if fmt else {"value": None, "pct": 0}
+    fam_users = next((d for d in sat_fam if d["value"] == top_fam["value"]), {"competitors": 0, "ads": 0})
     ws = (metrics.get("white_space") or {}).get("angle_families") or []
-    long_ids = (metrics.get("longevity") or {}).get("top_ids", [])[:3]
+    ws_hooks = (metrics.get("white_space") or {}).get("hooks") or []
+    profiles = metrics.get("competitor_profiles") or []
+    longest = max(profiles, key=lambda p: p["longevity"]["max_days"], default=None)
+    tiers = metrics.get("tier_profiles") or {}
+    loc_top = ((tiers.get("local") or {}).get("top_family") or {}).get("value")
+    glo_top = ((tiers.get("global") or {}).get("top_family") or {}).get("value")
     by_id = {it["id"]: it for it in items}
-    refs = [
-        ReferenceCreative(
-            creative_id=i,
-            competitor=by_id[i]["competitor"],
-            why_relevant=f"Lleva {by_id[i]['days_active']} días activo (dato). Permanencia alta podría indicar que el anunciante lo considera útil (inferencia).",
-            what_not_to_copy="El hook literal y la estética del competidor.",
-            adaptation_ideas=["Misma tensión, cuantificar el costo del riesgo en pesos", "Versión UGC 15s con la misma promesa"],
-        ).model_dump()
-        for i in long_ids
-        if i in by_id
+    low_data = n_cls < 30
+    conf = "low" if low_data else "medium"
+
+    summary = [
+        SummaryPoint(
+            headline=f"El mensaje que más se repite en el mercado: {label(top_fam['value'])}",
+            detail=f"En promedio, {_of10(top_fam['pct'])} de cada 10 anuncios de cada competidor usan ese mensaje, y lo usan {fam_users['competitors']} de los {n_comp} competidores.",
+            action=f"Si {client} va por ese territorio, necesita un giro propio; si no, hay espacio en los mensajes que casi nadie usa.",
+        ),
+        SummaryPoint(
+            headline=f"El formato que más se repite es {label(top_fmt['value']).lower()}",
+            detail=f"Representa {_of10(top_fmt['pct'])} de cada 10 anuncios por competidor en Meta y Google.",
+            action="Probar al menos una pieza en un formato distinto al dominante para diferenciarnos en el feed.",
+        ),
+        SummaryPoint(
+            headline=(f"{longest['name']} tiene el anuncio que más dura: {longest['longevity']['max_days']} días al aire" if longest else "Todavía no hay historial de permanencia"),
+            detail="Un anuncio que sigue activo durante semanas es una señal (no una prueba) de que al anunciante le sirve.",
+            action="Revisar los creativos de referencia y adaptar la idea, no copiarla.",
+        ),
     ]
-    n_comp = totals.get("competitors", 0)
+    insights = [
+        Insight(
+            title=f"{label(top_fam['value'])}: el territorio más concurrido",
+            observation=f"{fam_users['competitors']} de los {n_comp} competidores usan mensajes de {label(top_fam['value']).lower()} ({fam_users['ads']} anuncios).",
+            interpretation="Podría indicar que es el argumento que la categoría considera seguro; también que está saturado y cuesta destacarse ahí.",
+            evidence=[f"{fam_users['ads']} anuncios de {fam_users['competitors']} competidores"],
+            implication_for_us="No ser uno más con el mismo mensaje: si lo usamos, con una prueba concreta o un tono distinto.",
+            confidence=conf,
+        ),
+    ]
+    if loc_top and glo_top:
+        insights.append(
+            Insight(
+                title="Locales y globales no hablan igual" if loc_top != glo_top else "Locales y globales coinciden",
+                observation=f"Los locales se apoyan más en {label(loc_top).lower()}; los referentes globales, en {label(glo_top).lower()}.",
+                interpretation="Lo que hacen los globales puede anticipar hacia dónde va la categoría en el mercado local.",
+                evidence=[f"Local: {label(loc_top)} · Global: {label(glo_top)}"],
+                implication_for_us="Tomar de los globales lo que todavía nadie hace localmente.",
+                confidence=conf,
+            )
+        )
+    if ws:
+        insights.append(
+            Insight(
+                title="Mensajes que casi nadie usa",
+                observation="Casi nadie habla de " + ", ".join(label(w["value"]).lower() for w in ws[:3]) + ".",
+                interpretation="Son territorios libres: pueden diferenciar, o pueden ser poco relevantes para la categoría; hay que probarlos.",
+                evidence=[f"{label(w['value'])}: {round(w['pct'])}% de los anuncios" for w in ws[:3]],
+                implication_for_us="Probar una pieza en el territorio libre más afín a la marca.",
+                confidence="low",
+            )
+        )
+
+    opportunities = []
+    for w in ws[:3]:
+        users = next((d for d in sat_fam if d["value"] == w["value"]), None)
+        hook = ws_hooks[0]["value"] if ws_hooks else "pregunta"
+        opportunities.append(
+            Opportunity(
+                title=f"Ocupar el territorio de {label(w['value']).lower()}",
+                priority="alta" if w["pct"] < 2 else "media",
+                rationale=(f"Solo {round(w['pct'])}% de los anuncios del mercado usan este mensaje" if w["pct"] >= 1 else "Ningún anuncio del mercado usa este mensaje") + f": hay espacio para que {client} lo haga propio.",
+                who_does_it=(f"Lo usan {users['competitors']} de {n_comp} competidores ({', '.join(users['names'][:3])})" if users else "Ningún competidor lo usa hoy"),
+                evidence=[f"{round(w['pct'])}% de {n_cls} anuncios clasificados"],
+                concepts=[
+                    ConceptIdea(
+                        format="video",
+                        hook_type=hook,
+                        angle=w["value"],
+                        copy_draft="[Borrador a desarrollar por el equipo creativo]",
+                        visual_direction="Plano corto, persona real, el problema en los primeros 3 segundos.",
+                    )
+                ],
+                how_to_measure="Comparar tasa de clics y costo por cotización contra el anuncio actual más usado, durante 14 días.",
+            )
+        )
+    top_sat = [d for d in sat_angle if n_comp and d["competitors"] >= max(2, round(n_comp * 0.5))][:3]
+    risks = [
+        Risk(
+            title=f"Ser uno más hablando de {label(d['value']).lower()}",
+            severity="alta" if d["competitors"] >= round(n_comp * 0.7) else "media",
+            description=f"{d['competitors']} de los {n_comp} competidores usan este mismo mensaje ({d['ads']} anuncios).",
+            why_it_matters="Con tantos anuncios diciendo lo mismo, el nuestro se confunde con el resto y cuesta más que lo recuerden.",
+            mitigation="Si lo usamos, cuantificarlo (cifras, casos reales) o contarlo con un formato que nadie usa.",
+            evidence=[f"{d['ads']} anuncios de {d['competitors']} competidores"],
+        )
+        for d in top_sat
+    ] or [
+        Risk(
+            title="Datos todavía parciales",
+            severity="media",
+            description="La clasificación de este mes es preliminar.",
+            why_it_matters="Las conclusiones pueden cambiar con la clasificación completa.",
+            mitigation="Validar con la clasificación con IA antes de producir.",
+            evidence=[f"{n_cls} anuncios clasificados"],
+        )
+    ]
+    refs = []
+    for i in (metrics.get("longevity") or {}).get("top_ids", [])[:3]:
+        if i in by_id:
+            refs.append(
+                ReferenceCreative(
+                    creative_id=i,
+                    competitor=by_id[i]["competitor"],
+                    why_relevant=f"Lleva {by_id[i]['days_active']} días al aire: podría indicar que al anunciante le sirve.",
+                    what_not_to_copy="El titular literal y la estética del competidor.",
+                    adaptation_ideas=["La misma tensión, contada con un caso real de un cliente", "Versión corta de 15 segundos para Reels/Stories"],
+                ).model_dump()
+            )
     out = SynthesisOutput(
         period_label=period,
-        executive_summary=[
-            f"La familia de ángulos dominante fue '{top_fam['value']}': {top_fam['count']} anuncios / {n_comp} competidores / {top_fam['pct']}%.",
-            f"El hook más usado fue '{top_hook['value']}' ({top_hook['pct']}% de {totals.get('classified', 0)} creativos clasificados).",
-            f"Se observaron {totals.get('creatives', 0)} creativos ({totals.get('active', 0)} activos) en {', '.join(f'{k}: {v}' for k, v in (totals.get('platforms') or {}).items())}.",
-        ],
-        top_insights=[
-            Insight(
-                title=f"Concentración en {top_fam['value']}",
-                observation=f"{top_fam['pct']}% de los creativos clasificados usan la familia {top_fam['value']}.",
-                interpretation="Podría indicar saturación del argumento; diferenciarse requiere un giro o cuantificación.",
-                evidence=[f"{top_fam['count']} anuncios / {n_comp} competidores / {top_fam['pct']}%"],
-                implication_for_us="Evitar ser el anuncio N+1 con el mismo mensaje; probar cuantificación del riesgo.",
-                confidence="medium" if totals.get("classified", 0) >= 20 else "low",
-            )
-        ],
-        local_vs_global="Comparación local vs global disponible en la matriz de ángulos por tier (ver métricas).",
+        executive_summary=summary,
+        top_insights=insights[:3],
+        local_vs_global=(f"Los competidores locales se apoyan en {label(loc_top).lower()} y los globales en {label(glo_top).lower()}." if loc_top and glo_top else "Sin datos suficientes para comparar locales y globales."),
         reference_creatives=refs,
-        unexploited_angles=[w["value"] for w in ws],
-        white_space=[
-            Opportunity(
-                title=f"White space: {w['value']}",
-                rationale=f"Solo {w['pct']}% del mercado usa esta familia de ángulos (dato).",
-                evidence=[f"{w['pct']}% de {totals.get('classified', 0)} creativos"],
-                concepts=[ConceptIdea(format="video", hook_type="pregunta", angle=w["value"], copy_draft="[Borrador a desarrollar por el equipo creativo]")],
-            )
-            for w in ws[:3]
-        ],
+        unexploited_angles=[label(w["value"]) for w in ws],
+        white_space=opportunities,
         recommendations=[],
-        risks=[
-            Risk(
-                title=f"Saturación en {top_fam['value']}",
-                description="Mensaje repetido por la mayoría del mercado.",
-                evidence=[f"{top_fam['pct']}% de los creativos"],
-            )
-        ],
+        risks=risks,
         ours_vs_market=("Comparación disponible" if (metrics.get("ours_vs_market") or {}).get("has_own") else None),
         action_items=[
-            ActionItem(title="Validar insights del mes", description="Revisar top 3 insights y oportunidades; aprobar/editar.", owner_role="Head of Growth", due_in_days=2),
-            ActionItem(title="Producir 3 conceptos de white space", description="Un static, un UGC y un reel según oportunidades.", owner_role="Creative lead", due_in_days=7),
+            ActionItem(title="Validar el plan con el cliente", description="Revisar hallazgos, oportunidades y riesgos; aprobar o ajustar.", priority="alta", owner_role="Director/a de cuenta", due_in_days=2, deliverable="Plan aprobado en Basecamp", success_metric="Aprobación antes del día 3"),
+            ActionItem(title="Producir las piezas de la oportunidad principal", description="Una imagen, un video corto UGC y un carrusel.", priority="alta", owner_role="Líder creativo", due_in_days=7, deliverable="3 piezas listas para pautar", success_metric="Piezas al aire en 7 días"),
+            ActionItem(title="Lanzar prueba A/B contra el anuncio actual", description="Mismo presupuesto y audiencia, 14 días.", priority="media", owner_role="Media buyer", due_in_days=10, deliverable="Campaña de prueba activa", success_metric="Costo por cotización vs. control"),
+            ActionItem(title="Revisar resultados y decidir", description="Escalar la ganadora, cortar la perdedora.", priority="media", owner_role="Director/a de cuenta", due_in_days=24, deliverable="Informe de resultados", success_metric="Decisión documentada"),
         ],
     )
     return out.model_dump()

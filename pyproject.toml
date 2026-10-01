@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "creative-intel"
 version = "0.1.0"
-description = "Competitive Creative Intelligence: monitoreo mensual de creativos de aseguradoras en Meta y Google"
+description = "Radar creativo de Ranker: monitoreo creativo de la competencia en Meta y Google y plan creativo mensual por cliente"
 requires-python = ">=3.11"
 dependencies = [
   "anthropic>=1.10",
@@ -27,6 +27,7 @@ dev = ["pytest>=8"]
 
 [project.scripts]
 creative-intel = "creative_intel.cli:app"
+radar = "creative_intel.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]

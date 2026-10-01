@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 from ..config import Taxonomy, settings
 from .client import structured_call
 
-SYSTEM_PROMPT = """Sos un analista senior de publicidad del sector seguros en LATAM.
+SYSTEM_PROMPT = """Sos un analista senior de publicidad ({industry}, {market}).
 Clasificás UN anuncio de un competidor dentro de una taxonomía cerrada. Reglas:
 - Usá solo los valores permitidos por el esquema; si algo no aplica devolvé null donde el esquema lo permita.
 - Distinguí siempre dato observable (lo que el anuncio dice y muestra) de inferencia (audiencia, etapa del funnel). Marcá la inferencia bajando `confidence` cuando el material sea pobre.
@@ -26,7 +26,15 @@ Clasificás UN anuncio de un competidor dentro de una taxonomía cerrada. Reglas
 - `pain_point` y `promise` en 2-6 palabras, en español.
 - `key_claims`: afirmaciones concretas y verificables del anuncio (precios, plazos, % , "sin franquicia"), máximo 5.
 - `summary`: una oración neutral que describa el anuncio sin juzgar su rendimiento.
+- Si el texto del anuncio está dentro de la imagen (anuncios de búsqueda archivados como imagen, piezas gráficas), leelo de la imagen y usalo como si fuera el copy.
 - No inventes engagement ni rendimiento; no están en tu alcance."""
+
+
+def _classify_prompt() -> str:
+    from ..config import load_client
+
+    ci = load_client()
+    return SYSTEM_PROMPT.format(industry=ci.industry or "publicidad digital", market=ci.market or "LATAM")
 
 
 def build_classification_model(taxonomy: Taxonomy) -> Type[BaseModel]:
@@ -36,7 +44,7 @@ def build_classification_model(taxonomy: Taxonomy) -> Type[BaseModel]:
         return Literal[tuple(values)]  # type: ignore[valid-type]
 
     fields: dict[str, Any] = {
-        "product": (lit(taxonomy.products), Field(description="Producto asegurador principal")),
+        "product": (lit(taxonomy.products), Field(description="Producto o línea principal que promociona")),
         "format_detected": (lit(taxonomy.formats), Field(description="Formato real del creativo")),
         "placement_guess": (lit(taxonomy.placements), Field(description="Ubicación probable")),
         "hook_type": (lit(taxonomy.hook_types), Field(description="Mecanismo de apertura")),
@@ -100,7 +108,7 @@ def classify_creative(creative: Any, taxonomy: Taxonomy, model: str | None = Non
             content.append(img)
     content.append({"type": "text", "text": creative_prompt(creative)})
     result = structured_call(
-        schema, SYSTEM_PROMPT, content, model=model or settings.classify_model, max_tokens=2000, effort="low", client=client
+        schema, _classify_prompt(), content, model=model or settings.classify_model, max_tokens=2000, effort="low", client=client
     )
     data = result.model_dump()
     data["angle_family"] = taxonomy.family_of(data["primary_angle"])

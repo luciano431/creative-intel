@@ -84,3 +84,73 @@ confidence_levels: [low, medium, high]
 
 # Umbral: un ángulo con participación menor a este % se considera "white space"
 white_space_threshold_pct: 6
+
+# ---------------------------------------------------------------------------
+# Cómo se muestra cada valor en el informe (en castellano, para el cliente).
+# Lo que no esté acá se muestra capitalizado y sin guiones bajos.
+# ---------------------------------------------------------------------------
+labels:
+  # familias de ángulo (mensajes)
+  proteccion: Protección
+  economico: Ahorro y precio
+  emocional: Emocional
+  conveniencia: Comodidad y facilidad
+  lifestyle: Estilo de vida
+  social_proof: Prueba social
+  oferta: Promociones
+  # ángulos
+  danio: Daños
+  perdida: Pérdida
+  imprevistos: Imprevistos
+  evitar_gastos_inesperados: Evitar gastos inesperados
+  costo_bajo: Costo bajo
+  perdida_emocional: Pérdida emocional
+  contratacion_online: Contratación online
+  cantidad_clientes: Cantidad de clientes
+  precio_especial: Precio especial
+  # ganchos
+  pregunta: Pregunta
+  problema: Problema
+  estadistica: Dato / estadística
+  miedo: Miedo
+  precio: Precio
+  testimonial: Testimonio
+  demostracion: Demostración
+  storytelling: Historia
+  humor: Humor
+  comparacion: Comparación
+  before_after: Antes y después
+  educativo: Educativo
+  direct_response: Respuesta directa
+  branding: Marca (institucional)
+  # formatos
+  video: Video
+  imagen: Imagen
+  carousel: Carrusel
+  texto: Texto (búsqueda)
+  collection: Colección
+  desconocido: Sin dato
+  # embudo
+  tofu: Descubrimiento
+  mofu: Consideración
+  bofu: Conversión
+  # estilos
+  ugc: Contenido de usuario (UGC)
+  produccion: Producción
+  motion_graphics: Motion graphics
+  foto_stock: Foto de banco
+  ilustracion: Ilustración
+  texto_plano: Texto plano
+  institucional: Institucional
+  # productos
+  multiproducto: Varios productos
+  marca: Marca (sin producto)
+  # plataformas y tipos
+  meta: Meta
+  google: Google
+  local: Local
+  global: Global
+  # certeza
+  high: Alta
+  medium: Media
+  low: Baja

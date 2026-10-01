@@ -11,6 +11,15 @@
 #   (formato AR0123456789...)
 # ad_countries: países donde observar sus anuncios en la Ad Library. ALL = todos los países.
 # ---------------------------------------------------------------------------
+# Cliente para el que se arma el plan. Para otro cliente: copiar esta carpeta
+# con `creative-intel new-client <slug> --name "..."` y completar.
+client:
+  slug: miseguro
+  name: miSeguro
+  industry: Seguros
+  market: Uruguay
+  description: Aseguradora 100% digital
+
 countries:
   - code: UY
     name: Uruguay
