@@ -50,7 +50,7 @@
 
 <h1>{{ num() }} — Riesgos y saturación</h1>
 {% for r in risks %}
-<div><strong>{{ r.title }}</strong> (riesgo {{ lvl(r.severity) }})</div>
+<div><strong>{{ r.title }}</strong> (riesgo {{ {'alta':'alto','media':'medio','baja':'bajo'}.get(lvl(r.severity), lvl(r.severity)) }})</div>
 <ul><li>{{ r.description }}</li>{% if r.why_it_matters %}<li><strong>Por qué importa:</strong> {{ r.why_it_matters }}</li>{% endif %}{% if r.mitigation %}<li><strong>Cómo lo evitamos:</strong> {{ r.mitigation }}</li>{% endif %}</ul>
 {% endfor %}
 

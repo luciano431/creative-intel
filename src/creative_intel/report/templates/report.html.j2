@@ -4,7 +4,8 @@
 {%- macro pill(level, kind='') -%}
   {%- set l = (level or 'media') | lower -%}
   {%- set norm = {'high':'alta','medium':'media','low':'baja'}.get(l, l) -%}
-  <span class="pill lvl-{{ norm }}">{{ kind }}{{ norm | capitalize }}</span>
+  {%- set word = {'alta':'alto','media':'medio','baja':'bajo'}.get(norm, norm) if kind == 'Riesgo ' else norm -%}
+  <span class="pill lvl-{{ norm }}">{{ kind }}{{ word if kind else word | capitalize }}</span>
 {%- endmacro -%}
 {%- macro preview(it, big=False) -%}
   <div class="pv{% if big %} pv-big{% endif %}">

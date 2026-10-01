@@ -70,7 +70,7 @@ Primer mes con datos: la comparación aparece a partir del próximo informe.
 ## {{ num() }} — Riesgos y saturación
 
 {% for r in risks %}
-### {{ r.title }} (riesgo {{ lvl(r.severity) }})
+### {{ r.title }} (riesgo {{ {'alta':'alto','media':'medio','baja':'bajo'}.get(lvl(r.severity), lvl(r.severity)) }})
 - {{ r.description }}
 {% if r.why_it_matters %}
 - **Por qué importa:** {{ r.why_it_matters }}
