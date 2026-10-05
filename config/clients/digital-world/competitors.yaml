@@ -26,23 +26,5 @@ countries:
     - accesorios
     - movilidad_electrica
   competitors:
-    local:
-    - slug: competidor-1
-      name: Competidor 1
-      website: ''
-      meta_page_id: ''
-      google_domain: ''
-      google_advertiser_id: ''
-      products: []
-      active: true
-    global:
-    - slug: referente-1
-      name: Referente global 1
-      website: ''
-      meta_page_id: ''
-      google_domain: ''
-      google_advertiser_id: ''
-      ad_countries:
-      - ALL
-      products: []
-      active: true
+    local: []
+    global: []
