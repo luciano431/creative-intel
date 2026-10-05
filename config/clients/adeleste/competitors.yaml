@@ -1,9 +1,9 @@
 client:
   slug: adeleste
   name: Adeleste
-  industry: Muebles para hogar y jardín
+  industry: Ecommerce de muebles para hogar y jardín
   market: Uruguay
-  description: Muebles de interior y exterior, juegos infantiles para el patio y climatización
+  description: 'Ecommerce con taller propio: muebles de interior y exterior, parrillas, juegos de hierro y de plaza, climatización'
 countries:
 - code: UY
   name: Uruguay
@@ -17,29 +17,29 @@ countries:
     google_domain: adeleste.com
     google_advertiser_id: ''
     products:
-    - muebles_exterior
     - muebles_interior
-    - juegos_infantiles
+    - muebles_exterior
+    - parrillas
+    - juegos_de_plaza
+    - juegos_de_hierro
     - climatizacion
     - decoracion
   competitors:
     local:
-    - slug: competidor-1
-      name: Competidor 1
+    - slug: sodimac
+      name: Sodimac Homecenter
       website: ''
-      meta_page_id: ''
-      google_domain: ''
+      meta_page_id: '632451910196134'
+      google_domain: sodimac.com.uy
       google_advertiser_id: ''
       products: []
       active: true
-    global:
-    - slug: referente-1
-      name: Referente global 1
+    - slug: mercado-libre
+      name: Mercado Libre
       website: ''
       meta_page_id: ''
-      google_domain: ''
+      google_domain: mercadolibre.com.uy
       google_advertiser_id: ''
-      ad_countries:
-      - ALL
       products: []
       active: true
+    global: []

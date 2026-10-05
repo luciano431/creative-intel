@@ -12,9 +12,9 @@ countries:
   own:
     slug: verona
     name: Verona Office & Home
-    website: ''
+    website: http://verona.com.uy/
     meta_page_id: '1346728418517082'
-    google_domain: ''
+    google_domain: verona.com.uy
     google_advertiser_id: ''
     products:
     - moquettes
@@ -26,22 +26,58 @@ countries:
     - mobiliario_oficina
   competitors:
     local:
-    - slug: competidor-1
-      name: Competidor 1
+    - slug: vinibel
+      name: Vinibel Uruguay
+      website: ''
+      meta_page_id: '485649101557927'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: tecnomadera
+      name: Tecnomadera
       website: ''
       meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: metropolitana
+      name: Metropolitana
+      website: ''
+      meta_page_id: '358443427545517'
       google_domain: ''
       google_advertiser_id: ''
       products: []
       active: true
     global:
-    - slug: referente-1
-      name: Referente global 1
+    - slug: belgotex
+      name: Belgotex
+      website: ''
+      meta_page_id: '117072845026951'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - ZA
+    - slug: hanwha
+      name: Hanwha
       website: ''
       meta_page_id: ''
       google_domain: ''
       google_advertiser_id: ''
-      ad_countries:
-      - ALL
       products: []
       active: true
+      ad_countries:
+      - ALL
+    - slug: c-and-a
+      name: C&A
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - ALL

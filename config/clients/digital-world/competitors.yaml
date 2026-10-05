@@ -1,9 +1,9 @@
 client:
   slug: digital-world
   name: Digital World
-  industry: Movilidad eléctrica
+  industry: Ecommerce de tecnología
   market: Uruguay
-  description: Vehículos eléctricos livianos (bicicletas, monopatines, motos)
+  description: 'Ecommerce de tecnología: notebooks, celulares, gaming, accesorios y movilidad eléctrica'
 countries:
 - code: UY
   name: Uruguay
@@ -17,11 +17,14 @@ countries:
     google_domain: digitalworld.com.uy
     google_advertiser_id: ''
     products:
-    - bicicletas_electricas
-    - monopatines
-    - motos_electricas
-    - autos_electricos
+    - notebooks
+    - celulares
+    - tablets
+    - gaming
+    - audio
+    - smart_home
     - accesorios
+    - movilidad_electrica
   competitors:
     local:
     - slug: competidor-1

@@ -147,10 +147,10 @@ def test_heuristic_works_with_another_industry_taxonomy(taxonomy):
     from creative_intel.config import load_taxonomy, ROOT
 
     t = load_taxonomy(ROOT / "config" / "clients" / "adeleste" / "taxonomy.yaml")
-    ad = SimpleNamespace(headline="Juegos infantiles para tu patio", body_text="Hasta 12 cuotas sin recargo", description="",
+    ad = SimpleNamespace(headline="Juegos de plaza para tu patio", body_text="Hasta 12 cuotas sin recargo", description="",
                          cta_text="", format="imagen", placements=["feed"])
     d = heuristic_classify(ad, t)
-    assert d["primary_angle"] in t.angles and d["product"] == "juegos_infantiles"
+    assert d["primary_angle"] in t.angles and d["product"] == "juegos_de_plaza"
     plain = heuristic_classify(SimpleNamespace(headline="Hola", body_text="", description="", cta_text="", format="imagen", placements=[]), t)
     assert plain["primary_angle"] in t.angles and plain["product"] in t.products
     assert t.label("diseno") == "Diseño"

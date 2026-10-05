@@ -8,6 +8,7 @@ angle_families:
   - resistencia_intemperie
   - seguridad_ninos
   - garantia
+  - fabricacion_propia
   economico:
   - precio
   - cuotas
@@ -27,10 +28,10 @@ angle_families:
   - rapidez
   lifestyle:
   - aire_libre
+  - parrilla_y_reuniones
   - diseno
   - decoracion
   - juego
-  - descanso
   social_proof:
   - testimonios
   - trayectoria
@@ -100,9 +101,11 @@ creative_styles:
   - institucional
 
 products:
-- muebles_exterior
 - muebles_interior
-- juegos_infantiles
+- muebles_exterior
+- parrillas
+- juegos_de_plaza
+- juegos_de_hierro
 - climatizacion
 - decoracion
 - multiproducto
@@ -256,3 +259,20 @@ labels:
   membresia: Membresía
   asesoria: Asesoría
   precio_especial: Precio especial
+  fabricacion_propia: Fabricación propia (taller)
+  parrilla_y_reuniones: Parrilla y reuniones
+  parrillas: Parrillas
+  juegos_de_plaza: Juegos de plaza
+  juegos_de_hierro: Juegos de hierro
+  notebooks: Notebooks
+  smart_home: Hogar inteligente
+  movilidad_electrica: Movilidad eléctrica
+  envio_rapido: Envío rápido
+  stock_inmediato: Stock inmediato
+  compra_online: Compra online
+  retiro_en_local: Retiro en el local
+  compra_segura: Compra segura
+  trabajo_remoto: Trabajo remoto
+  regalo_con_compra: Regalo con la compra
+  gaming: Gaming
+  audio: Audio

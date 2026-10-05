@@ -7,30 +7,32 @@ angle_families:
   - garantia
   - service
   - repuestos
-  - seguridad_vial
+  - compra_segura
   economico:
-  - ahorro_combustible
   - precio
   - cuotas
   - financiacion
-  - bajo_mantenimiento
+  - ahorro
+  - ahorro_combustible
   emocional:
   - libertad
   - diversion
   - tranquilidad
   - orgullo
+  - regalo
   conveniencia:
+  - envio_rapido
+  - stock_inmediato
+  - compra_online
+  - retiro_en_local
   - practicidad
-  - carga_facil
-  - sin_libreta
-  - estacionamiento
-  - rapidez
   lifestyle:
+  - tecnologia
+  - gaming
+  - trabajo_remoto
+  - estudio
   - movilidad_urbana
   - sustentabilidad
-  - tecnologia
-  - deporte
-  - trabajo_delivery
   social_proof:
   - clientes
   - testimonios
@@ -40,7 +42,7 @@ angle_families:
   - descuento
   - promocion
   - precio_especial
-  - regalo
+  - regalo_con_compra
   - beneficio
 
 hook_types:
@@ -100,11 +102,14 @@ creative_styles:
   - institucional
 
 products:
-- bicicletas_electricas
-- monopatines
-- motos_electricas
-- autos_electricos
+- notebooks
+- celulares
+- tablets
+- gaming
+- audio
+- smart_home
 - accesorios
+- movilidad_electrica
 - multiproducto
 - marca
 
@@ -256,3 +261,20 @@ labels:
   membresia: Membresía
   asesoria: Asesoría
   precio_especial: Precio especial
+  fabricacion_propia: Fabricación propia (taller)
+  parrilla_y_reuniones: Parrilla y reuniones
+  parrillas: Parrillas
+  juegos_de_plaza: Juegos de plaza
+  juegos_de_hierro: Juegos de hierro
+  notebooks: Notebooks
+  smart_home: Hogar inteligente
+  movilidad_electrica: Movilidad eléctrica
+  envio_rapido: Envío rápido
+  stock_inmediato: Stock inmediato
+  compra_online: Compra online
+  retiro_en_local: Retiro en el local
+  compra_segura: Compra segura
+  trabajo_remoto: Trabajo remoto
+  regalo_con_compra: Regalo con la compra
+  gaming: Gaming
+  audio: Audio

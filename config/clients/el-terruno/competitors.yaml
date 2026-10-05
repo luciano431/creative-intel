@@ -1,0 +1,50 @@
+client:
+  slug: el-terruno
+  name: El Terruño
+  industry: Venta de terrenos
+  market: Uruguay
+  description: Desarrollos de terrenos y lotes financiados (Lotes El Palmar, Las Piedras, cerca de Montevideo)
+countries:
+- code: UY
+  name: Uruguay
+  languages:
+  - es
+  own:
+    slug: el-terruno
+    name: El Terruño (Lotes El Palmar)
+    website: http://landing.terrenosuruguay.com.uy/
+    meta_page_id: '106837405810949'
+    google_domain: terrenosuruguay.com.uy
+    google_advertiser_id: ''
+    products:
+    - terrenos
+    - lotes_financiados
+    - barrio_privado
+    - chacras
+  competitors:
+    local:
+    - slug: varela-inmobiliaria
+      name: Varela Inmobiliaria
+      website: ''
+      meta_page_id: '1627341317525346'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: fraccionamiento-del-cerro
+      name: Fraccionamiento Del Cerro
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: cerro-nuevo
+      name: Cerro Nuevo
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global: []
