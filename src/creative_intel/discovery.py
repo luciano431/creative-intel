@@ -135,13 +135,20 @@ def name_match(query: str, name: str) -> float:
     q, n = _norm(query), _norm(name)
     if not q or not n:
         return 0.0
-    if q == n or q.replace(" ", "") == n.replace(" ", ""):
+    foreign_chars = any(ch.isalpha() and not ch.isascii() and unicodedata.category(ch) != "Mn"
+                        for ch in unicodedata.normalize("NFKD", name or ""))
+    if (q == n or q.replace(" ", "") == n.replace(" ", "")) and not foreign_chars:
         return 1.0
     qt, nt = set(q.split()), set(n.split())
     overlap = len(qt & nt) / len(qt) if qt else 0.0
     # Palabras de más en la página que no son genéricas ("Barraca" en "Barraca Nuevo Cerro" buscando
     # "Cerro Nuevo") indican otro negocio que comparte palabras: no alcanza para darlo por seguro.
     extra = nt - qt - GENERIC_NAME_WORDS
+    # Letras de otros alfabetos (coreano, chino, cirílico…) se pierden al normalizar: también cuentan como "de más".
+    foreign = sum(1 for ch in unicodedata.normalize("NFKD", name or "")
+                  if ch.isalpha() and not ch.isascii() and unicodedata.category(ch) != "Mn")
+    if foreign >= 2:
+        return min(0.6, max(overlap * 0.6, 0.0))
     score = overlap * (0.9 if not extra else 0.6)
     return max(score, SequenceMatcher(None, q, n).ratio())
 

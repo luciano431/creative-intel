@@ -71,3 +71,8 @@ def test_name_match_rejects_other_businesses_sharing_words():
     assert is_confident(MetaPage("2", "Vinibel Uruguay", ads={"a"}), "Vinibel")
     assert is_confident(MetaPage("3", "Sodimac Homecenter", ads={"a"}), "Sodimac")
     assert is_confident(MetaPage("4", "MiseguroOk", ads={"a"}), "miSeguroOk")
+
+
+def test_name_match_with_other_alphabets_is_not_confident():
+    assert not is_confident(MetaPage("5", "한화데이즈(Hanwha)", ads={"a"}), "Hanwha")
+    assert is_confident(MetaPage("6", "Construcción Pérez", ads={"a"}), "Construccion Perez"), "las tildes no cuentan"
