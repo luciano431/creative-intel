@@ -139,3 +139,18 @@ def test_mock_ideas_are_ready_to_produce(session, sample_raws, taxonomy, today):
         assert c["title"] and c["hook_line"] and c["cta"]
         assert len(c["script"]) >= 4
         assert "[" not in c["copy_draft"] and "equipo creativo" not in c["copy_draft"].lower()
+
+
+def test_heuristic_works_with_another_industry_taxonomy(taxonomy):
+    from types import SimpleNamespace
+
+    from creative_intel.config import load_taxonomy, ROOT
+
+    t = load_taxonomy(ROOT / "config" / "clients" / "adeleste" / "taxonomy.yaml")
+    ad = SimpleNamespace(headline="Juegos infantiles para tu patio", body_text="Hasta 12 cuotas sin recargo", description="",
+                         cta_text="", format="imagen", placements=["feed"])
+    d = heuristic_classify(ad, t)
+    assert d["primary_angle"] in t.angles and d["product"] == "juegos_infantiles"
+    plain = heuristic_classify(SimpleNamespace(headline="Hola", body_text="", description="", cta_text="", format="imagen", placements=[]), t)
+    assert plain["primary_angle"] in t.angles and plain["product"] in t.products
+    assert t.label("diseno") == "Diseño"

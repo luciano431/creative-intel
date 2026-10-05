@@ -1,0 +1,47 @@
+client:
+  slug: verona
+  name: Verona Office & Home
+  industry: Revestimientos e interiorismo
+  market: Uruguay
+  description: Moquettes, pisos, acústica y cableado para oficinas y hogares
+countries:
+- code: UY
+  name: Uruguay
+  languages:
+  - es
+  own:
+    slug: verona
+    name: Verona Office & Home
+    website: ''
+    meta_page_id: '1346728418517082'
+    google_domain: ''
+    google_advertiser_id: ''
+    products:
+    - moquettes
+    - pisos
+    - acustica
+    - cableado
+    - cortinas
+    - revestimientos
+    - mobiliario_oficina
+  competitors:
+    local:
+    - slug: competidor-1
+      name: Competidor 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global:
+    - slug: referente-1
+      name: Referente global 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      ad_countries:
+      - ALL
+      products: []
+      active: true

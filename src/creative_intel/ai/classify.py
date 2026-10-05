@@ -141,8 +141,14 @@ def _heuristic_offer(creative: Any) -> str | None:
 def heuristic_classify(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
     """Clasificador por reglas: para demo/tests y como fallback si la IA no está disponible."""
     text = " ".join([creative.headline or "", creative.body_text or "", creative.description or "", creative.cta_text or ""]).lower()
-    angle = next((a for k, a in _ANGLE_KEYWORDS if k in text and a in taxonomy.angles), "seguridad")
-    product = next((p for k, p in _PRODUCT_KEYWORDS if k in text and p in taxonomy.products), "multiproducto")
+    # Primero, palabras de la propia taxonomía del cliente ("juegos_infantiles" -> "juegos infantiles");
+    # después, las palabras de seguros; si nada coincide, un valor que exista en esta taxonomía.
+    own_angles = [(a.replace("_", " "), a) for a in taxonomy.angles]
+    own_products = [(x.replace("_", " "), x) for x in taxonomy.products if x not in ("multiproducto", "marca")]
+    angle = next((a for k, a in own_angles + _ANGLE_KEYWORDS if k in text and a in taxonomy.angles), None)
+    angle = angle or ("seguridad" if "seguridad" in taxonomy.angles else (taxonomy.angle_families.get("emocional") or taxonomy.angles)[0])
+    product = next((x for k, x in own_products + _PRODUCT_KEYWORDS if k in text and x in taxonomy.products), None)
+    product = product or ("multiproducto" if "multiproducto" in taxonomy.products else taxonomy.products[-1])
     first_line = (creative.headline or creative.body_text or "").strip().split("\n")[0]
     if "?" in first_line or "¿" in first_line:
         hook = "pregunta"

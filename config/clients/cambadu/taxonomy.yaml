@@ -1,15 +1,46 @@
 # ---------------------------------------------------------------------------
-# Taxonomía cerrada. La IA clasifica SOLO dentro de estos valores para que
+# Taxonomía cerrada de Cambadu (Gremial de almacenes y supermercados). La IA clasifica SOLO dentro de estos valores para que
 # las distribuciones sean comparables mes a mes.
 # ---------------------------------------------------------------------------
 angle_families:
-  proteccion: [robo, accidente, danio, perdida, imprevistos, responsabilidad]
-  economico: [ahorro, precio, cuotas, evitar_gastos_inesperados, costo_bajo]
-  emocional: [tranquilidad, familia, miedo, seguridad, perdida_emocional]
-  conveniencia: [facilidad, rapidez, digital, contratacion_online, asistencia]
-  lifestyle: [movilidad, tecnologia, deporte, viajes, trabajo, entretenimiento]
-  social_proof: [cantidad_clientes, testimonios, reputacion, confianza, trayectoria]
-  oferta: [descuento, promocion, bundle, beneficio, cashback, precio_especial]
+  proteccion:
+  - respaldo_gremial
+  - asesoramiento_legal
+  - seguridad_comercio
+  - representacion
+  economico:
+  - ahorro
+  - beneficios_socios
+  - convenios
+  - precio
+  - financiacion
+  emocional:
+  - comunidad
+  - orgullo_comerciante
+  - tranquilidad
+  - apoyo
+  conveniencia:
+  - gestion_simple
+  - capacitacion
+  - herramientas_digitales
+  - asesoramiento
+  - rapidez
+  lifestyle:
+  - crecimiento_negocio
+  - profesionalizacion
+  - innovacion
+  - tecnologia
+  social_proof:
+  - cantidad_socios
+  - trayectoria
+  - testimonios
+  - reputacion
+  oferta:
+  - descuento
+  - promocion
+  - beneficio
+  - precio_especial
+  - membresia_bonificada
 
 hook_types:
   - pregunta
@@ -68,17 +99,13 @@ creative_styles:
   - institucional
 
 products:
-  - auto
-  - moto
-  - hogar
-  - celular
-  - vida
-  - salud
-  - viaje
-  - mascotas
-  - empresa
-  - multiproducto
-  - marca
+- membresia
+- capacitaciones
+- asesoria
+- convenios
+- eventos
+- multiproducto
+- marca
 
 confidence_levels: [low, medium, high]
 
@@ -163,3 +190,68 @@ labels:
   comprar: Comprá online
   registrarse: Registrate
   sin_cta: Sin llamado a la acción
+  # valores propios de este rubro
+  diseno: Diseño
+  seguridad_ninos: Seguridad de los niños
+  resistencia_intemperie: Resiste la intemperie
+  financiacion: Financiación
+  envio: Envío
+  instalacion: Instalación
+  atencion_whatsapp: Atención por WhatsApp
+  a_medida: A medida
+  decoracion: Decoración
+  aire_libre: Aire libre
+  liquidacion: Liquidación
+  climatizacion: Climatización
+  muebles_exterior: Muebles de exterior
+  muebles_interior: Muebles de interior
+  juegos_infantiles: Juegos infantiles
+  acustica: Acústica
+  instalacion_rapida: Instalación rápida
+  sin_obra: Sin obra
+  orgullo_del_espacio: Orgullo por el espacio
+  proyectos_realizados: Proyectos realizados
+  clientes_corporativos: Clientes corporativos
+  mobiliario_oficina: Mobiliario de oficina
+  seguridad_juridica: Seguridad jurídica
+  inversion_segura: Inversión segura
+  revalorizacion: Revalorización
+  entrega_minima: Entrega mínima
+  casa_propia: Casa propia
+  suenos: Sueños
+  ubicacion: Ubicación
+  cercania_montevideo: Cerca de Montevideo
+  tramites_simples: Trámites simples
+  vida_tranquila: Vida tranquila
+  familias_propietarias: Familias propietarias
+  lotes_financiados: Lotes financiados
+  barrio_privado: Barrio privado
+  ahorro_combustible: Ahorro de combustible
+  bajo_mantenimiento: Bajo mantenimiento
+  seguridad_vial: Seguridad vial
+  diversion: Diversión
+  carga_facil: Carga fácil
+  sin_libreta: Sin libreta
+  movilidad_urbana: Movilidad urbana
+  tecnologia: Tecnología
+  trabajo_delivery: Trabajo de delivery
+  bicicletas_electricas: Bicicletas eléctricas
+  motos_electricas: Motos eléctricas
+  autos_electricos: Autos eléctricos
+  respaldo_gremial: Respaldo gremial
+  asesoramiento_legal: Asesoramiento legal
+  seguridad_comercio: Seguridad del comercio
+  representacion: Representación
+  beneficios_socios: Beneficios para socios
+  orgullo_comerciante: Orgullo de comerciante
+  gestion_simple: Gestión simple
+  capacitacion: Capacitación
+  herramientas_digitales: Herramientas digitales
+  crecimiento_negocio: Crecimiento del negocio
+  profesionalizacion: Profesionalización
+  innovacion: Innovación
+  cantidad_socios: Cantidad de socios
+  membresia_bonificada: Membresía bonificada
+  membresia: Membresía
+  asesoria: Asesoría
+  precio_especial: Precio especial

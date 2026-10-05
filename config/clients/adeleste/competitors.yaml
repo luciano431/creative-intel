@@ -1,9 +1,9 @@
 client:
   slug: adeleste
   name: Adeleste
-  industry: null
+  industry: Muebles para hogar y jardín
   market: Uruguay
-  description: ''
+  description: Muebles de interior y exterior, juegos infantiles para el patio y climatización
 countries:
 - code: UY
   name: Uruguay
@@ -13,10 +13,15 @@ countries:
     slug: adeleste
     name: Adeleste
     website: http://adeleste.com
-    meta_page_id: ''
+    meta_page_id: '559481710770944'
     google_domain: adeleste.com
     google_advertiser_id: ''
-    products: []
+    products:
+    - muebles_exterior
+    - muebles_interior
+    - juegos_infantiles
+    - climatizacion
+    - decoracion
   competitors:
     local:
     - slug: competidor-1

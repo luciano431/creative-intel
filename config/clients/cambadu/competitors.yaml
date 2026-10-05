@@ -1,9 +1,9 @@
 client:
   slug: cambadu
   name: Cambadu
-  industry: null
+  industry: Gremial de almacenes y supermercados
   market: Uruguay
-  description: ''
+  description: Gremial que asesora y respalda a almaceneros, autoservicios y supermercados
 countries:
 - code: UY
   name: Uruguay
@@ -16,7 +16,12 @@ countries:
     meta_page_id: '397212753672468'
     google_domain: cambadu.com.uy
     google_advertiser_id: ''
-    products: []
+    products:
+    - membresia
+    - capacitaciones
+    - asesoria
+    - convenios
+    - eventos
   competitors:
     local:
     - slug: competidor-1

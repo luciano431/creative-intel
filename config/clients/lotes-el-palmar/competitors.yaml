@@ -1,0 +1,44 @@
+client:
+  slug: lotes-el-palmar
+  name: Lotes El Palmar
+  industry: Venta de terrenos
+  market: Uruguay
+  description: Lotes y terrenos financiados cerca de Montevideo (Las Piedras)
+countries:
+- code: UY
+  name: Uruguay
+  languages:
+  - es
+  own:
+    slug: lotes-el-palmar
+    name: Lotes El Palmar
+    website: ''
+    meta_page_id: '106837405810949'
+    google_domain: ''
+    google_advertiser_id: ''
+    products:
+    - terrenos
+    - lotes_financiados
+    - barrio_privado
+    - chacras
+  competitors:
+    local:
+    - slug: competidor-1
+      name: Competidor 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global:
+    - slug: referente-1
+      name: Referente global 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      ad_countries:
+      - ALL
+      products: []
+      active: true

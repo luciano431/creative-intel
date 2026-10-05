@@ -1,0 +1,258 @@
+# ---------------------------------------------------------------------------
+# Taxonomía cerrada de Verona Office & Home (Revestimientos e interiorismo). La IA clasifica SOLO dentro de estos valores para que
+# las distribuciones sean comparables mes a mes.
+# ---------------------------------------------------------------------------
+angle_families:
+  proteccion:
+  - durabilidad
+  - resistencia
+  - garantia
+  - mantenimiento
+  economico:
+  - precio
+  - cuotas
+  - ahorro
+  - financiacion
+  emocional:
+  - bienestar
+  - confort
+  - orgullo_del_espacio
+  - tranquilidad
+  conveniencia:
+  - instalacion_rapida
+  - sin_obra
+  - asesoramiento
+  - a_medida
+  - rapidez
+  lifestyle:
+  - diseno
+  - tendencia
+  - productividad
+  - decoracion
+  - sustentabilidad
+  social_proof:
+  - proyectos_realizados
+  - clientes_corporativos
+  - testimonios
+  - trayectoria
+  oferta:
+  - descuento
+  - promocion
+  - precio_especial
+  - beneficio
+
+hook_types:
+  - pregunta
+  - problema
+  - estadistica
+  - miedo
+  - precio
+  - oferta
+  - testimonial
+  - demostracion
+  - storytelling
+  - humor
+  - comparacion
+  - before_after
+  - educativo
+  - direct_response
+  - branding
+
+formats:
+  - video
+  - imagen
+  - carousel
+  - texto        # anuncios de búsqueda
+  - collection
+  - desconocido
+
+placements:
+  - feed
+  - stories
+  - reels
+  - search
+  - display
+  - youtube
+  - desconocido
+
+funnel_stages: [tofu, mofu, bofu]
+
+cta_types:
+  - cotizar
+  - contratar
+  - mas_info
+  - descargar_app
+  - contactar
+  - comprar
+  - registrarse
+  - sin_cta
+
+creative_styles:
+  - ugc
+  - produccion
+  - motion_graphics
+  - foto_stock
+  - ilustracion
+  - texto_plano
+  - testimonial
+  - institucional
+
+products:
+- moquettes
+- pisos
+- acustica
+- cableado
+- cortinas
+- revestimientos
+- mobiliario_oficina
+- multiproducto
+- marca
+
+confidence_levels: [low, medium, high]
+
+# Umbral: un ángulo con participación menor a este % se considera "white space"
+white_space_threshold_pct: 6
+
+# ---------------------------------------------------------------------------
+# Cómo se muestra cada valor en el informe (en castellano, para el cliente).
+# Lo que no esté acá se muestra capitalizado y sin guiones bajos.
+# ---------------------------------------------------------------------------
+labels:
+  # familias de ángulo (mensajes)
+  proteccion: Protección
+  economico: Ahorro y precio
+  emocional: Emocional
+  conveniencia: Comodidad y facilidad
+  lifestyle: Estilo de vida
+  social_proof: Prueba social
+  oferta: Promociones
+  # ángulos
+  danio: Daños
+  perdida: Pérdida
+  imprevistos: Imprevistos
+  evitar_gastos_inesperados: Evitar gastos inesperados
+  costo_bajo: Costo bajo
+  perdida_emocional: Pérdida emocional
+  contratacion_online: Contratación online
+  cantidad_clientes: Cantidad de clientes
+  precio_especial: Precio especial
+  # ganchos
+  pregunta: Pregunta
+  problema: Problema
+  estadistica: Dato / estadística
+  miedo: Miedo
+  precio: Precio
+  testimonial: Testimonio
+  demostracion: Demostración
+  storytelling: Historia
+  humor: Humor
+  comparacion: Comparación
+  before_after: Antes y después
+  educativo: Educativo
+  direct_response: Respuesta directa
+  branding: Marca (institucional)
+  # formatos
+  video: Video
+  imagen: Imagen
+  carousel: Carrusel
+  texto: Texto (búsqueda)
+  collection: Colección
+  desconocido: Sin dato
+  # embudo
+  tofu: Descubrimiento
+  mofu: Consideración
+  bofu: Conversión
+  # estilos
+  ugc: Contenido de usuario (UGC)
+  produccion: Producción
+  motion_graphics: Motion graphics
+  foto_stock: Foto de banco
+  ilustracion: Ilustración
+  texto_plano: Texto plano
+  institucional: Institucional
+  # productos
+  multiproducto: Varios productos
+  marca: Marca (sin producto)
+  # plataformas y tipos
+  meta: Meta
+  google: Google
+  local: Local
+  global: Global
+  # certeza
+  high: Alta
+  medium: Media
+  low: Baja
+  # llamados a la acción
+  cotizar: Cotizá online
+  contratar: Contratá online
+  mas_info: Conocé más
+  descargar_app: Descargá la app
+  contactar: Escribinos
+  comprar: Comprá online
+  registrarse: Registrate
+  sin_cta: Sin llamado a la acción
+  # valores propios de este rubro
+  diseno: Diseño
+  seguridad_ninos: Seguridad de los niños
+  resistencia_intemperie: Resiste la intemperie
+  financiacion: Financiación
+  envio: Envío
+  instalacion: Instalación
+  atencion_whatsapp: Atención por WhatsApp
+  a_medida: A medida
+  decoracion: Decoración
+  aire_libre: Aire libre
+  liquidacion: Liquidación
+  climatizacion: Climatización
+  muebles_exterior: Muebles de exterior
+  muebles_interior: Muebles de interior
+  juegos_infantiles: Juegos infantiles
+  acustica: Acústica
+  instalacion_rapida: Instalación rápida
+  sin_obra: Sin obra
+  orgullo_del_espacio: Orgullo por el espacio
+  proyectos_realizados: Proyectos realizados
+  clientes_corporativos: Clientes corporativos
+  mobiliario_oficina: Mobiliario de oficina
+  seguridad_juridica: Seguridad jurídica
+  inversion_segura: Inversión segura
+  revalorizacion: Revalorización
+  entrega_minima: Entrega mínima
+  casa_propia: Casa propia
+  suenos: Sueños
+  ubicacion: Ubicación
+  cercania_montevideo: Cerca de Montevideo
+  tramites_simples: Trámites simples
+  vida_tranquila: Vida tranquila
+  familias_propietarias: Familias propietarias
+  lotes_financiados: Lotes financiados
+  barrio_privado: Barrio privado
+  ahorro_combustible: Ahorro de combustible
+  bajo_mantenimiento: Bajo mantenimiento
+  seguridad_vial: Seguridad vial
+  diversion: Diversión
+  carga_facil: Carga fácil
+  sin_libreta: Sin libreta
+  movilidad_urbana: Movilidad urbana
+  tecnologia: Tecnología
+  trabajo_delivery: Trabajo de delivery
+  bicicletas_electricas: Bicicletas eléctricas
+  motos_electricas: Motos eléctricas
+  autos_electricos: Autos eléctricos
+  respaldo_gremial: Respaldo gremial
+  asesoramiento_legal: Asesoramiento legal
+  seguridad_comercio: Seguridad del comercio
+  representacion: Representación
+  beneficios_socios: Beneficios para socios
+  orgullo_comerciante: Orgullo de comerciante
+  gestion_simple: Gestión simple
+  capacitacion: Capacitación
+  herramientas_digitales: Herramientas digitales
+  crecimiento_negocio: Crecimiento del negocio
+  profesionalizacion: Profesionalización
+  innovacion: Innovación
+  cantidad_socios: Cantidad de socios
+  membresia_bonificada: Membresía bonificada
+  membresia: Membresía
+  asesoria: Asesoría
+  precio_especial: Precio especial

@@ -1,9 +1,9 @@
 client:
   slug: digital-world
   name: Digital World
-  industry: null
+  industry: Movilidad eléctrica
   market: Uruguay
-  description: ''
+  description: Vehículos eléctricos livianos (bicicletas, monopatines, motos)
 countries:
 - code: UY
   name: Uruguay
@@ -16,7 +16,12 @@ countries:
     meta_page_id: '204268313089904'
     google_domain: digitalworld.com.uy
     google_advertiser_id: ''
-    products: []
+    products:
+    - bicicletas_electricas
+    - monopatines
+    - motos_electricas
+    - autos_electricos
+    - accesorios
   competitors:
     local:
     - slug: competidor-1
