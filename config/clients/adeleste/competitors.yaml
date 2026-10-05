@@ -1,0 +1,40 @@
+client:
+  slug: adeleste
+  name: Adeleste
+  industry: null
+  market: Uruguay
+  description: ''
+countries:
+- code: UY
+  name: Uruguay
+  languages:
+  - es
+  own:
+    slug: adeleste
+    name: Adeleste
+    website: http://adeleste.com
+    meta_page_id: ''
+    google_domain: adeleste.com
+    google_advertiser_id: ''
+    products: []
+  competitors:
+    local:
+    - slug: competidor-1
+      name: Competidor 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global:
+    - slug: referente-1
+      name: Referente global 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      ad_countries:
+      - ALL
+      products: []
+      active: true

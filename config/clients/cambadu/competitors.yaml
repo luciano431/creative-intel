@@ -1,0 +1,40 @@
+client:
+  slug: cambadu
+  name: Cambadu
+  industry: null
+  market: Uruguay
+  description: ''
+countries:
+- code: UY
+  name: Uruguay
+  languages:
+  - es
+  own:
+    slug: cambadu
+    name: Cambadu
+    website: https://cambadu.com.uy
+    meta_page_id: '397212753672468'
+    google_domain: cambadu.com.uy
+    google_advertiser_id: ''
+    products: []
+  competitors:
+    local:
+    - slug: competidor-1
+      name: Competidor 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global:
+    - slug: referente-1
+      name: Referente global 1
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      ad_countries:
+      - ALL
+      products: []
+      active: true
