@@ -387,7 +387,7 @@ def fill_ids(
 ) -> None:
     """Completa los IDs que faltan (Meta y dominio de Google) del cliente actual y sus competidores."""
     from .config import CONFIG_DIR
-    from .discovery import find_meta_pages, google_check, is_confident, update_ids
+    from .discovery import find_meta_pages, google_check, is_confident, meta_page_domain, update_ids
     from .collectors.google_web import domain_of
 
     t = Table(title="IDs del cliente y sus competidores")
@@ -411,6 +411,10 @@ def fill_ids(
                 meta_note, status = f"¿{pages[0].name} ({pages[0].page_id})?", "revisar"
             else:
                 meta_note, status = "sin anuncios en Meta", "revisar"
+        elif not dom:
+            dom = meta_page_domain(meta_id, country, headless=not show)
+            if dom:
+                updates.setdefault(c.slug, {})["google_domain"] = dom
         g_note = "—"
         if dom and check_google:
             g = google_check(dom, country if country.upper() != "ALL" else "anywhere", headless=not show)

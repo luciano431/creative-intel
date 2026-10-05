@@ -64,3 +64,10 @@ def test_update_ids_and_add_competitors(tmp_path):
     assert uy["own"]["meta_page_id"] == "123" and uy["own"]["google_domain"] == "x.com"
     assert [c["slug"] for c in uy["competitors"]["local"]] == ["seguros-uno"], "saca el ejemplo vacío de la plantilla"
     assert (tmp_path / "competitors.yaml.bak").exists()
+
+
+def test_name_match_rejects_other_businesses_sharing_words():
+    assert not is_confident(MetaPage("1", "Barraca Nuevo Cerro", ads={"a"}), "Cerro Nuevo")
+    assert is_confident(MetaPage("2", "Vinibel Uruguay", ads={"a"}), "Vinibel")
+    assert is_confident(MetaPage("3", "Sodimac Homecenter", ads={"a"}), "Sodimac")
+    assert is_confident(MetaPage("4", "MiseguroOk", ads={"a"}), "miSeguroOk")

@@ -124,6 +124,12 @@ def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", s).strip()
 
 
+GENERIC_NAME_WORDS = {
+    "uruguay", "uy", "oficial", "official", "store", "tienda", "online", "shop", "sa", "srl", "s", "r", "l", "ltda",
+    "inc", "grupo", "group", "homecenter", "home", "center", "argentina", "ar", "es", "mx", "the", "de", "del", "la", "el",
+}
+
+
 def name_match(query: str, name: str) -> float:
     """0 a 1: qué tanto se parece el nombre de la página al buscado (sin tildes ni mayúsculas)."""
     q, n = _norm(query), _norm(name)
@@ -133,7 +139,11 @@ def name_match(query: str, name: str) -> float:
         return 1.0
     qt, nt = set(q.split()), set(n.split())
     overlap = len(qt & nt) / len(qt) if qt else 0.0
-    return max(overlap * 0.9, SequenceMatcher(None, q, n).ratio())
+    # Palabras de más en la página que no son genéricas ("Barraca" en "Barraca Nuevo Cerro" buscando
+    # "Cerro Nuevo") indican otro negocio que comparte palabras: no alcanza para darlo por seguro.
+    extra = nt - qt - GENERIC_NAME_WORDS
+    score = overlap * (0.9 if not extra else 0.6)
+    return max(score, SequenceMatcher(None, q, n).ratio())
 
 
 def rank_pages(pages: dict[str, MetaPage], query: str = "", exclude: Iterable[str] = ()) -> list[MetaPage]:
@@ -167,9 +177,8 @@ def meta_library_url(query: str, country: str, exact: bool = True, active_only: 
     )
 
 
-def meta_search_text(queries: list[tuple[str, str]], exact: bool = True, scroll_rounds: int = 6, headless: bool = True,
-                     active_only: bool = False) -> list[str]:
-    """Para cada (consulta, país) devuelve todo el texto de las respuestas de la Biblioteca (HTML + API interna)."""
+def _meta_texts(urls: list[str], scroll_rounds: int = 6, headless: bool = True) -> list[str]:
+    """Para cada URL de la Biblioteca devuelve todo el texto de sus respuestas (HTML + API interna)."""
     from playwright.sync_api import sync_playwright
 
     out: list[str] = []
@@ -187,9 +196,9 @@ def meta_search_text(queries: list[tuple[str, str]], exact: bool = True, scroll_
                 pass
 
         page.on("response", on_response)
-        for query, country in queries:
+        for url in urls:
             chunks.clear()
-            page.goto(meta_library_url(query, country, exact, active_only), wait_until="domcontentloaded", timeout=90_000)
+            page.goto(url, wait_until="domcontentloaded", timeout=90_000)
             page.wait_for_timeout(4000)
             for _ in range(scroll_rounds):
                 page.mouse.wheel(0, 4000)
@@ -201,6 +210,25 @@ def meta_search_text(queries: list[tuple[str, str]], exact: bool = True, scroll_
             out.append("\n".join(chunks))
         browser.close()
     return out
+
+
+def meta_search_text(queries: list[tuple[str, str]], exact: bool = True, scroll_rounds: int = 6, headless: bool = True,
+                     active_only: bool = False) -> list[str]:
+    """Para cada (consulta, país) devuelve todo el texto de las respuestas de la Biblioteca (HTML + API interna)."""
+    return _meta_texts([meta_library_url(q, c, exact, active_only) for q, c in queries], scroll_rounds, headless)
+
+
+def meta_page_domain(page_id: str, country: str = "ALL", headless: bool = True) -> str:
+    """Dominio al que llevan los anuncios de una página (para buscarla en Google)."""
+    url = (f"https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country={country.upper()}"
+           f"&view_all_page_id={page_id}&search_type=page&media_type=all")
+    pages = pages_from_text(_meta_texts([url], scroll_rounds=3, headless=headless)[0])
+    if page_id in pages and pages[page_id].top_domain:
+        return pages[page_id].top_domain
+    merged: Counter = Counter()
+    for pg in pages.values():
+        merged.update(pg.domains)
+    return merged.most_common(1)[0][0] if merged else ""
 
 
 def find_meta_pages(name: str, country: str = "UY", headless: bool = True) -> list[MetaPage]:
