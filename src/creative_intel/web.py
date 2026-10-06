@@ -215,13 +215,19 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
                 raise HTTPException(400, "Evento desconocido")
             args = ["evento", key_ev]
             edition = str(body.get("edition") or "")
-            if edition:
+            if edition == "vivo":
+                from .events import live_edition
+
+                args.append("--live")
+                ed = live_edition(events[key_ev])
+            elif edition:
                 if edition not in {e.label for e in events[key_ev].editions}:
                     raise HTTPException(400, "Edición desconocida")
                 args += ["--edition", edition]
             if not body.get("ai"):
                 args.append("--mock-ai")
-            ed = events[key_ev].edition(edition or None)
+            if edition != "vivo":
+                ed = events[key_ev].edition(edition or None)
             job = jobs.start(c, kind, f"Guía de {events[key_ev].name} ({ed.label})" + (" con IA" if body.get("ai") else " sin IA"),
                              [_radar("init-db"), _radar(*args)],
                              result_url=c.report_url("x").rsplit("/x/", 1)[0] + f"/eventos/{key_ev}-{ed.label}/report.html")

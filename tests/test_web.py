@@ -105,3 +105,5 @@ def test_event_task_validates_and_starts(site, monkeypatch):
     r = client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "cyberlunes", "edition": "2025-06"})
     assert r.status_code == 200 and started["cmd"][-4:] == ["cyberlunes", "--edition", "2025-06", "--mock-ai"]
     assert started["url"].endswith("/eventos/cyberlunes-2025-06/report.html")
+    r = client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "cyberlunes", "edition": "vivo", "ai": True})
+    assert r.status_code == 200 and "--live" in started["cmd"] and "--mock-ai" not in started["cmd"]

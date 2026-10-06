@@ -33,7 +33,7 @@
     </div>
     <p class="kicker">Modo evento</p>
     <h1>Guía de {{ event.name }} para <span>{{ client.name }}</span></h1>
-    <p class="lead">Basada en los anuncios de la edición {{ edition.label }}{% if m.event_start %} (evento: {{ m.event_start }}{% if m.event_end and m.event_end != m.event_start %} al {{ m.event_end }}{% endif %}{% if not m.official_dates %}, día de más anuncios{% endif %}){% endif %}</p>
+    <p class="lead">{% if live %}Edición en curso: anuncios activos que arrancaron entre {{ edition.date_from }} y {{ edition.date_to }}{% else %}Basada en los anuncios de la edición {{ edition.label }}{% endif %}{% if m.event_start %} (evento: {{ m.event_start }}{% if m.event_end and m.event_end != m.event_start %} al {{ m.event_end }}{% endif %}{% if not m.official_dates %}, día de más anuncios{% endif %}){% endif %}</p>
     <div class="chips">
       <span class="chip">{{ m.ads }} anuncios de la edición</span>
       {% if next_dates.start %}<span class="chip">Próxima edición: {{ next_dates.start }}</span>{% else %}<span class="chip warn">Fecha de la próxima edición sin confirmar</span>{% endif %}
@@ -47,12 +47,18 @@
 {% else %}
 <section>
   <div class="sec-head"><span class="sec-num">01</span><h2>Cómo lo encaró el mercado</h2></div>
-  <p class="sec-intro">Los hechos de la edición anterior: cuándo salieron los anuncios, con qué oferta y con cuánta urgencia.</p>
+  <p class="sec-intro">Los hechos {{ 'de lo que está activo ahora' if live else 'de la edición anterior' }}: cuándo salieron los anuncios, con qué oferta y con cuánta urgencia.</p>
   <div class="grid g3">
     {% for f in plan.summary %}<div class="card sum"><h3>{{ f.headline }}</h3><div>{{ f.detail }}</div></div>{% endfor %}
   </div>
 </section>
 
+{% if live and not m.official_dates %}
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Cuándo arrancan</h2></div>
+  <div class="card">Todavía no está cargada la fecha de esta edición. Cuando se confirme, cargala en <code>events.yaml</code> (next: start/end) y esta sección muestra cuántos días antes arranca cada marca.</div>
+</section>
+{% else %}
 <section>
   <div class="sec-head"><span class="sec-num">02</span><h2>Cuándo arrancan</h2></div>
   <p class="sec-intro">Anuncios según cuándo empezaron a circular respecto del día del evento. El primero arrancó {{ m.timing.earliest_days_before }} días antes.</p>
@@ -64,6 +70,7 @@
     {% endfor %}
   </div>
 </section>
+{% endif %}
 
 <section>
   <div class="sec-head"><span class="sec-num">03</span><h2>Ofertas y urgencia</h2></div>

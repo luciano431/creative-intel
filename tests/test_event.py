@@ -64,3 +64,15 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
         out = evmod.run_event(s, ev, ev.edition(), mock_ai=True, out_dir=tmp_path / "rep")
     html = (tmp_path / "rep" / "report.html").read_text(encoding="utf-8")
     assert out["ads"] == 2 and "Guía de CyberLunes" in html and "Tienda X" in html and "1 a 7 días antes" in html
+
+
+def test_live_edition_uses_next_dates_only_when_close():
+    from creative_intel.config import EventConfig
+    from creative_intel.events import live_edition
+
+    ev = EventConfig(key="cyberlunes", name="CyberLunes", keywords=["cyberlunes"], countries=["UY"], editions=[],
+                     next_start=dt.date(2026, 11, 2), next_end=dt.date(2026, 11, 4))
+    ed = live_edition(ev, today=dt.date(2026, 10, 6))
+    assert ed.label == "vivo-2026-10" and ed.date_from == dt.date(2026, 8, 7) and ed.start == dt.date(2026, 11, 2)
+    old = EventConfig(key="x", name="X", keywords=[], countries=["UY"], editions=[], next_start=dt.date(2025, 1, 1))
+    assert live_edition(old, today=dt.date(2026, 10, 6)).start is None

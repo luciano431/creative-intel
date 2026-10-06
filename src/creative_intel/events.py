@@ -25,6 +25,22 @@ def event_period(event: EventConfig, edition: EventEdition) -> str:
     return f"ev-{event.key}-{edition.label}"
 
 
+def live_edition(event: EventConfig, today: dt.date | None = None, lookback_days: int = 60) -> EventEdition:
+    """Edición en curso: lo que hoy está activo y arrancó en los últimos `lookback_days` días.
+
+    Cada corrida suma al mismo archivo (mismo label por mes), así se ve cómo arranca el mercado antes del evento.
+    """
+    today = today or dt.date.today()
+    start = event.next_start if event.next_start and event.next_start >= today - dt.timedelta(days=15) else None
+    return EventEdition(label=f"vivo-{today:%Y-%m}", date_from=today - dt.timedelta(days=lookback_days), date_to=today,
+                        start=start, end=event.next_end if start else None)
+
+
+NO_ADS_HELP = ("Fuera de la Unión Europea, la Biblioteca de Meta solo muestra los anuncios mientras están activos: "
+               "las ediciones pasadas ya no están. Corré el modo en vivo (--live) unos días antes y durante el evento; "
+               "el Radar guarda su propio archivo y el año que viene esta edición ya va a estar para estudiar.")
+
+
 def _register_market_advertisers(session: Session, raws: list[RawCreative]) -> None:
     """Los anunciantes encontrados por palabra clave que no están configurados quedan como 'mercado'."""
     known = {c.slug for c in session.query(Competitor).all()}
@@ -103,8 +119,11 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     run = get_or_create_run(session, period)
     items = pipeline.items_for(session, run, taxonomy)
     if not items:
-        raise pipeline.NoData(f"No hay anuncios guardados de {event.name} {edition.label}: corré sin --skip-collect "
-                              "o revisá las fechas y palabras en events.yaml.")
+        stats = (summary.get("collect") or {})
+        errs = "; ".join(stats.get("errors") or [])[:600]
+        raise pipeline.NoData(f"No se encontraron anuncios de {event.name} {edition.label}. "
+                              + (f"Errores al recolectar: {errs}. " if errs else "")
+                              + ("" if edition.label.startswith("vivo-") else NO_ADS_HELP))
     for it in items:
         it["signals"] = signal_list(it, start_known(it))
     metrics = analyze_event(items, edition.start, edition.end, own_name=client.name)
@@ -124,7 +143,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     render_assets(refs, out)
     brand = load_brand()
     html = _env().get_template("event.html.j2").render(
-        event=event, edition=edition, client=client, brand=brand, lbl=taxonomy.label, event_metrics=metrics, plan=plan,
+        live=edition.label.startswith("vivo-"), event=event, edition=edition, client=client, brand=brand, lbl=taxonomy.label, event_metrics=metrics, plan=plan,
         refs=refs, next_dates=next_dates, generated_at=dt.datetime.now().strftime("%d/%m/%Y %H:%M"))
     (out / "report.html").write_text(html, encoding="utf-8")
     summary["ads"] = metrics.get("ads", 0)

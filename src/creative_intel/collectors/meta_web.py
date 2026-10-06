@@ -99,6 +99,12 @@ class MetaAdLibraryWebCollector:
             self._scroll(page, rounds=max(2, limit // 4))
             fake = CompetitorConfig(slug=slug or "mercado", name=name, country=country, tier="local") if slug is not None else None
             self._take(page, fake, country, out, assets, limit=limit, market=slug is None)
+            print(f"[meta_web] {name or 'búsqueda por palabra'} ({country}): {len(out)} anuncios en la ventana")
+            if not out and os.getenv("CREATIVE_INTEL_DEBUG"):
+                dbg = settings.assets_dir / "debug"
+                dbg.mkdir(parents=True, exist_ok=True)
+                tag = (slug or "keyword") + "_" + country
+                page.screenshot(path=str(dbg / f"meta_window_{tag}.png"), full_page=True)
             browser.close()
         return out
 

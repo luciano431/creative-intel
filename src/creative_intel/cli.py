@@ -633,8 +633,9 @@ def evento(
     edition: Optional[str] = typer.Option(None, "--edition", "-e", help="Edición a estudiar (por defecto, la última cargada)"),
     mock_ai: bool = typer.Option(False, "--mock-ai", help="Sin IA: prueba el circuito sin gastar"),
     skip_collect: bool = typer.Option(False, "--skip-collect", help="Usar los anuncios del evento ya bajados"),
+    live: bool = typer.Option(False, "--live", help="Edición en curso: lo que está activo ahora (correrlo varias veces antes y durante el evento)"),
 ) -> None:
-    """Guía de un evento comercial: cómo lo encaró el mercado en la edición anterior y qué hace el cliente."""
+    """Guía de un evento comercial: cómo lo encara el mercado (edición en curso o archivada) y qué hace el cliente."""
     from .ai.client import ApiUnavailable, api_problem, usage
     from .config import load_events
     from .events import run_event
@@ -644,7 +645,9 @@ def evento(
         raise typer.BadParameter(f"No existe «{key}». Los que hay: {', '.join(events) or 'ninguno (ver config/events.yaml)'}")
     ev = events[key]
     try:
-        ed = ev.edition(edition)
+        from .events import live_edition
+
+        ed = live_edition(ev) if live else ev.edition(edition)
         usage.reset()
         with session_scope() as s:
             summary = run_event(s, ev, ed, mock_ai=mock_ai, skip_collect=skip_collect)

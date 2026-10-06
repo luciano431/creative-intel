@@ -32,7 +32,7 @@
       {% if events %}
       <div class="fields">
         <div class="field"><label for="ev">Evento</label><select id="ev">{% for k, e in events.items() %}<option value="{{ k }}">{{ e.name }}</option>{% endfor %}</select></div>
-        <div class="field"><label for="ed">Edición a estudiar</label><select id="ed">{% for k, e in events.items() %}{% for x in e.editions %}<option data-ev="{{ k }}" value="{{ x.label }}"{% if loop.last %} selected{% endif %}>{{ e.name }} {{ x.label }}</option>{% endfor %}{% endfor %}</select></div>
+        <div class="field"><label for="ed">Edición a estudiar</label><select id="ed">{% for k, e in events.items() %}{% for x in e.editions %}<option data-ev="{{ k }}" value="{{ x.label }}">{{ e.name }} {{ x.label }} (archivo)</option>{% endfor %}<option data-ev="{{ k }}" value="vivo" selected>{{ e.name }}: en curso (lo activo ahora)</option>{% endfor %}</select></div>
       </div>
       <label class="check"><input type="checkbox" id="ev-ai" {{ 'checked' if has_api_key }}> Con IA ({{ ai_name or 'Claude' }})</label>
       <div class="row" style="margin-top:14px"><button class="btn" id="go-ev" {{ 'disabled' if running }}>Generar guía</button></div>

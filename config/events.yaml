@@ -1,4 +1,9 @@
 # ---------------------------------------------------------------------------
+# IMPORTANTE: fuera de la Unión Europea, la Biblioteca de Meta solo muestra los anuncios comerciales
+# MIENTRAS ESTÁN ACTIVOS. Las ediciones pasadas no se pueden reconstruir desde Meta: por eso el modo
+# evento se corre "en vivo" (radar evento <clave> --live) varias veces antes y durante el evento,
+# y el Radar guarda su propio archivo. Al año siguiente, esa edición ya queda disponible para estudiar.
+#
 # Fechas comerciales para el "modo evento". Cada cliente puede sumar o pisar eventos
 # en config/clients/<cliente>/events.yaml (misma forma).
 #
@@ -20,10 +25,10 @@ events:
         from: 2025-05-12
         to: 2025-06-10
       - label: 2025-11
-        start: null            # edición de fin de año: completar las fechas reales; mientras tanto se toma el pico de anuncios
-        end: null
+        start: 2025-11-03      # 3 al 5 de noviembre (anuncio de SKY en la Biblioteca: "Comprá del 03 al 05 de Noviembre")
+        end: 2025-11-05
         from: 2025-10-15
-        to: 2025-12-05
+        to: 2025-11-12
     next:
       start: null              # completar cuando el organizador confirme la fecha
       end: null
