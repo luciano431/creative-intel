@@ -41,9 +41,10 @@ class MetaAdLibraryWebCollector:
     name = "meta_web"
     platform = "meta"
 
-    def __init__(self, headless: bool = True, max_cards: int = 200, screenshots: bool = True):
+    def __init__(self, headless: bool = True, max_cards: int | None = None, screenshots: bool = True):
         self.headless = headless
-        self.max_cards = max_cards
+        # Los N anuncios más vistos por marca y país (la Biblioteca se pide ordenada por impresiones)
+        self.max_cards = max_cards or settings.top_ads_per_brand
         self.screenshots = screenshots
 
     def supports(self, competitor: CompetitorConfig) -> bool:
@@ -53,6 +54,7 @@ class MetaAdLibraryWebCollector:
         return (
             "https://www.facebook.com/ads/library/?active_status=active&ad_type=all"
             f"&country={country}&view_all_page_id={competitor.meta_page_id}&media_type=all&search_type=page"
+            "&sort_data[direction]=desc&sort_data[mode]=total_impressions"
         )
 
     def collect(self, competitor: CompetitorConfig) -> list[RawCreative]:
@@ -70,20 +72,23 @@ class MetaAdLibraryWebCollector:
             for country in competitor.ad_countries:
                 page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
                 page.wait_for_timeout(4000)
-                self._scroll(page)
+                self._scroll(page, rounds=2 if self.max_cards <= 10 else 8)
                 cards = page.locator("div[class*='x1plvlek'] >> xpath=ancestor::div[contains(@class,'xh8yej3')][1]")
                 if cards.count() == 0:
                     cards = page.locator("div:has-text('Library ID'), div:has-text('Identificador de la biblioteca')").locator("xpath=ancestor::div[1]")
-                count = min(cards.count(), self.max_cards)
-                for i in range(count):
+                taken = 0
+                for i in range(cards.count()):
+                    if taken >= self.max_cards:
+                        break
                     card = cards.nth(i)
                     try:
                         text = card.inner_text(timeout=5000)
                     except Exception:
                         continue
                     ext_id = (ID_RE.search(text) or [None, ""])[1] if ID_RE.search(text) else ""
-                    if not ext_id:
+                    if not ext_id or any(r.external_id == ext_id for r in out):
                         continue
+                    taken += 1
                     start = START_RE.search(text)
                     img_info = card.locator("img").evaluate_all("els => els.map(e => ({src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height}))")
                     imgs = [i["src"] for i in sorted(img_info, key=lambda i: -(i["w"] * i["h"])) if i["src"] and i["w"] >= 150 and i["h"] >= 150]

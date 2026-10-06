@@ -25,8 +25,12 @@ REPORTS_DIR = Path(os.getenv("REPORTS_DIR") or (ROOT / "reports" / RADAR_CLIENT 
 class Settings:
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / ('radar.db' if RADAR_CLIENT else 'creative_intel.db')}")
     assets_dir: Path = Path(os.getenv("ASSETS_DIR", DATA_DIR / "assets"))
-    classify_model: str = os.getenv("CLASSIFY_MODEL", "claude-opus-5-5")
+    classify_model: str = os.getenv("CLASSIFY_MODEL", "claude-sonnet-5-5")
     synth_model: str = os.getenv("SYNTH_MODEL", "claude-opus-5-5")
+    # Anuncios por marca y por plataforma: en Meta los más vistos (orden por impresiones), en Google los primeros.
+    top_ads_per_brand: int = int(os.getenv("TOP_ADS_PER_BRAND", "5"))
+    # Tope de gasto de IA por corrida (por cliente). Al llegar, la clasificación se detiene y guarda lo hecho.
+    max_ai_usd_per_run: float = float(os.getenv("MAX_AI_USD_PER_RUN", "2.00"))
     anthropic_fallbacks: str = os.getenv("ANTHROPIC_FALLBACKS", "default")
     meta_access_token: str = os.getenv("META_ACCESS_TOKEN", "")
     meta_graph_version: str = os.getenv("META_GRAPH_VERSION", "v21.0")

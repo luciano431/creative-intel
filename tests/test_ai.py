@@ -154,3 +154,37 @@ def test_heuristic_works_with_another_industry_taxonomy(taxonomy):
     plain = heuristic_classify(SimpleNamespace(headline="Hola", body_text="", description="", cta_text="", format="imagen", placements=[]), t)
     assert plain["primary_angle"] in t.angles and plain["product"] in t.products
     assert t.label("diseno") == "Diseño"
+
+
+def test_usage_tracker_prices_and_budget_stop(session, sample_raws, taxonomy, today, monkeypatch):
+    from types import SimpleNamespace
+
+    import creative_intel.pipeline as pipeline
+    from creative_intel.ai.client import usage
+    from creative_intel.config import settings
+
+    usage.reset()
+    cost = usage.add("claude-sonnet-5-5", SimpleNamespace(input_tokens=1_000_000, output_tokens=100_000))
+    assert round(cost, 2) == 3.00 and "US$ 3.00" in usage.summary()
+
+    run = get_or_create_run(session, "2026-09")
+    upsert_creatives(session, run, sample_raws, today)
+
+    def pricey(creative, tax):
+        usage.add("claude-sonnet-5-5", SimpleNamespace(input_tokens=300_000, output_tokens=0))  # US$ 0.60 por anuncio
+        return heuristic_classify(creative, tax)
+
+    monkeypatch.setattr(pipeline, "classify_creative", pricey)
+    monkeypatch.setattr(settings, "max_ai_usd_per_run", 1.00)
+    stats = classify(session, "2026-09")
+    assert stats["classified"] == 2 and "tope de gasto" in stats["aborted"], "frena al pasar US$ 1"
+    assert stats["usd"] == 1.2
+
+
+def test_meta_asks_for_the_most_seen_ads():
+    from creative_intel.collectors.meta_web import MetaAdLibraryWebCollector
+    from creative_intel.config import CompetitorConfig, settings
+
+    c = CompetitorConfig(slug="x", name="X", country="UY", tier="local", meta_page_id="123")
+    col = MetaAdLibraryWebCollector()
+    assert "sort_data[mode]=total_impressions" in col.url_for(c, "UY") and col.max_cards == settings.top_ads_per_brand

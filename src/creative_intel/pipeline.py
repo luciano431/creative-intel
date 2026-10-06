@@ -121,10 +121,13 @@ def _is_fatal_api_error(exc: Exception) -> bool:
 
 
 def classify(session: Session, period: str, mock: bool = False, reclassify: bool = False, taxonomy: Taxonomy | None = None, retry_failed: bool = False) -> dict[str, Any]:
+    from .ai.client import usage
+
     taxonomy = taxonomy or load_taxonomy()
     run = get_or_create_run(session, period)
     stats: Counter = Counter()
     model_name = "heuristic" if mock else settings.classify_model
+    usage.reset()
     for creative in run_creatives(session, run):
         latest = creative.latest_classification
         if latest and not reclassify and not (retry_failed and _is_fallback(latest)):
@@ -143,9 +146,15 @@ def classify(session: Session, period: str, mock: bool = False, reclassify: bool
             stats["fallback"] += 1
         session.add(Classification(creative_id=creative.id, run_id=run.id, model=model_name, data=data, confidence=data.get("confidence", "medium")))
         stats["classified"] += 1
+        if not mock and usage.usd >= settings.max_ai_usd_per_run:
+            log.error("clasificación detenida: se llegó al tope de gasto de US$ %.2f (MAX_AI_USD_PER_RUN)", settings.max_ai_usd_per_run)
+            stats["aborted"] = f"tope de gasto de US$ {settings.max_ai_usd_per_run:.2f} alcanzado"
+            break
     session.flush()
     session.expire_all()
     run.status = "classified"
+    if not mock:
+        stats["usd"] = round(usage.usd, 3)
     run.stats = {**(run.stats or {}), "classify": dict(stats)}
     return dict(stats)
 

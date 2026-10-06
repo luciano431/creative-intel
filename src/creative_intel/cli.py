@@ -108,11 +108,15 @@ def classify(
     """Etapa 1: clasifica cada creativo dentro de la taxonomía cerrada."""
     with session_scope() as s:
         stats = pipeline.classify(s, _period(period), mock=mock_ai, reclassify=reclassify, retry_failed=retry_failed)
+    from .ai.client import usage
+
     rprint(stats)
+    if not mock_ai:
+        rprint(usage.summary())
     if stats.get("aborted"):
-        rprint("[red]Clasificación detenida por un error de la API (crédito o clave).[/red] "
-               "Lo ya clasificado quedó guardado; cuando lo resuelvas corré: "
-               f"creative-intel classify --period {_period(period)} --retry-failed")
+        rprint(f"[red]Clasificación detenida: {stats['aborted']}.[/red] "
+               "Lo ya clasificado quedó guardado; para seguir, corré: "
+               f"radar classify --period {_period(period)} --retry-failed")
         raise typer.Exit(1)
 
 
@@ -132,8 +136,13 @@ def analyze(period: Optional[str] = PeriodOpt) -> None:
 def synthesize(period: Optional[str] = PeriodOpt, mock_ai: bool = typer.Option(False, "--mock-ai")) -> None:
     """Etapa 2: síntesis estratégica (borrador para validación humana)."""
     with session_scope() as s:
+        from .ai.client import usage
+
+        usage.reset()
         synth = pipeline.synthesize_run(s, _period(period), mock=mock_ai)
         rprint(f"[green]Síntesis #{synth.id} creada[/green] (modelo {synth.model}, estado {synth.status}).")
+        if not mock_ai:
+            rprint(usage.summary())
         for i, p in enumerate(synth.data["executive_summary"], 1):
             _print_point(i, p)
 
@@ -523,6 +532,10 @@ def run_cycle(
     with session_scope() as s:
         summary = pipeline.run_cycle(s, _period(period), mock_ai=mock_ai, skip_collect=skip_collect, sources=source or None, out_dir=out, send_notifications=not no_notify)
     rprint(summary)
+    if not mock_ai:
+        from .ai.client import usage
+
+        rprint(usage.summary())
 
 
 @app.command()

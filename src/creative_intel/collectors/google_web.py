@@ -160,9 +160,9 @@ class GoogleTransparencyWebCollector:
 
     def __init__(self, headless: bool = True, max_cards: int | None = None):
         self.headless = headless
-        # Tope de anuncios por competidor y país. Cada anuncio se abre uno por uno (~5 s c/u),
-        # así que 40 por competidor alcanza para el plan y la corrida tarda minutos, no horas.
-        self.max_cards = max_cards or int(os.getenv("GOOGLE_MAX_CARDS", "40"))
+        # Tope de anuncios por marca y país (TOP_ADS_PER_BRAND). Google no informa impresiones:
+        # se toman los primeros que muestra. Cada anuncio se abre uno por uno (~5 s c/u).
+        self.max_cards = max_cards or settings.top_ads_per_brand
 
     def supports(self, competitor: CompetitorConfig) -> bool:
         return bool(competitor.google_advertiser_id or domain_of(competitor))
