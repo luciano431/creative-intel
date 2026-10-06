@@ -211,7 +211,7 @@ def review_show(period: Optional[str] = PeriodOpt, export: Optional[Path] = type
             _print_point(i, p)
         rprint("\n[bold]Hallazgos clave[/bold]")
         for i in d["top_insights"]:
-            rprint(f"  • {i['title']} [{i['confidence']}] — {i['observation']}")
+            rprint(f"  • {i['title']} — {i['observation']}")
         rprint("\n[bold]Oportunidades[/bold]")
         for o in d["white_space"] + d["recommendations"]:
             rprint(f"  • {o['title']}")
@@ -592,6 +592,30 @@ def run_cycle(
         from .ai.client import usage
 
         rprint(usage.summary())
+
+
+@app.command()
+def audit(period: Optional[str] = PeriodOpt, only: Optional[str] = typer.Option(None, "--only", help="slug de un competidor")) -> None:
+    """Muestra qué se bajó de cada competidor (para revisar que los datos sean los correctos)."""
+    from .config import load_competitors, settings
+
+    with session_scope() as s:
+        run = get_or_create_run(s, _period(period))
+        items = pipeline.items_for(s, run, load_taxonomy())
+    target = settings.top_ads_per_brand
+    for c in load_competitors():
+        if only and c.slug != only:
+            continue
+        mine = [it for it in items if it["competitor"] == c.name]
+        n_meta = sum(it["platform"] == "meta" for it in mine)
+        n_google = sum(it["platform"] == "google" for it in mine)
+        flag = "[green]OK[/green]" if c.is_own or (n_meta >= target and n_google >= target) else "[red]faltan datos[/red]"
+        rprint(f"\n[bold]{c.name}[/bold] ({c.tier}) · Meta {n_meta}/{target} · Google {n_google}/{target} · {flag}")
+        rprint(f"  Meta ID: {c.meta_page_id or '—'} · Google: {c.google_advertiser_id or c.google_domain or c.website or '—'} · países: {', '.join(c.ad_countries)}")
+        for it in mine:
+            text = " ".join(((it.get("headline") or "") + " " + (it.get("body_text") or "")).split())[:90] or "(sin texto)"
+            img = "con imagen" if it.get("thumbnail_path") else "sin imagen"
+            rprint(f"  · {it['platform']:6} {it['status']:8} {it['days_active']:>4} días · {img} · {text}")
 
 
 @app.command("check-api")

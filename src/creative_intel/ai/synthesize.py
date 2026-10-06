@@ -26,12 +26,10 @@ class SummaryPoint(_Strict):
 
 
 class Insight(_Strict):
-    title: str
-    observation: str = Field(description="Lo que vimos: dato observable con números")
-    interpretation: str = Field(description="Lo que creemos que significa, redactado como hipótesis")
+    title: str = Field(description="Titular corto (máx. 10 palabras) con el dato")
+    observation: str = Field(description="El dato, en una o dos oraciones: conteos, %, días al aire o texto literal. Sin interpretar")
     evidence: list[str] = Field(description="Cifras concretas: 'X anuncios de Y competidores'")
-    implication_for_us: str = Field(description="Qué hacemos nosotros")
-    confidence: str = Field(description="low | medium | high: qué tan seguros estamos de la interpretación")
+    implication_for_us: str = Field(description="Qué hacemos nosotros, en una oración")
 
 
 class ReferenceCreative(_Strict):
@@ -86,7 +84,7 @@ class ActionItem(_Strict):
 class SynthesisOutput(_Strict):
     period_label: str
     executive_summary: list[SummaryPoint] = Field(description="Exactamente 3 puntos")
-    top_insights: list[Insight] = Field(description="Top 3")
+    top_insights: list[Insight] = Field(description="3 a 4 hallazgos, cortos, solo datos")
     local_vs_global: str
     reference_creatives: list[ReferenceCreative]
     unexploited_angles: list[str]
@@ -103,15 +101,16 @@ Recibís las métricas del monitoreo competitivo (Meta + Google), los creativos 
 Cómo escribir (lo lee el cliente, no un analista):
 1. Castellano claro y directo. Nada de jerga en inglés: no digas "hook", "white space", "TOFU", "insight", "branding" ni "awareness". Usá los nombres del diccionario `labels` que viene en los datos (ej. "Prueba social", "Descubrimiento").
 2. Números que se entiendan: "8 de cada 10 anuncios", "6 de los 10 competidores", "lleva 120 días al aire". Evitá listas de porcentajes sueltos.
-3. Separá lo que vimos (dato: un conteo o una fecha) de lo que creemos que significa (hipótesis: "podría indicar", "sugiere").
+3. Solo hechos. Cada afirmación sale de los datos: un conteo, un porcentaje, días al aire, una fecha o un texto literal de un anuncio. Prohibido suponer intenciones, estrategias o resultados de la competencia ("apuesta a", "busca", "probablemente", "podría indicar", "sugiere", "parece"). Si no está en los datos, no se dice.
 4. Nunca afirmes que un anuncio "funciona" o "es el mejor". Podés decir cuántos días lleva activo, cuántas variantes tiene o cuántos competidores lo usan.
 5. Resumen ejecutivo: exactamente 3 puntos, cada uno con un titular corto, una explicación con una cifra y qué hacemos.
+5b. Hallazgos: 3 o 4, cortos. Cada uno: titular con el dato, el dato en una o dos oraciones con sus cifras, y qué hacemos en una oración. Nada de interpretación.
 6. Oportunidades: salen de los mensajes y ganchos que casi nadie usa y de las diferencias entre el mercado y {client}. Cada una trae prioridad, por qué, quién lo hace hoy, 1 a 3 ideas y cómo lo vamos a medir.
 6b. Las ideas las escribís vos, completas y listas para producir: título, gancho textual (lo que se dice o se ve en los primeros 3 segundos), guion escena por escena con tiempos (placa por placa si es carrusel), copy listo para publicar, CTA y dirección visual. Apoyate en lo que viste en los datos (qué falta en el mercado, qué promesas y promociones usa la competencia) y en el tono de {client}. Nunca derives al equipo creativo ni dejes textos entre corchetes: el equipo creativo ajusta y produce, no arranca de cero.
 7. Riesgos: saturación (si 8 de 10 competidores dicen lo mismo, no queremos ser el número 11 sin un giro), con severidad, por qué importa y cómo lo evitamos.
 8. Plan de acción: 4 a 8 acciones ordenadas por prioridad, con responsable, plazo en días, entregable concreto y cómo medimos el resultado.
 9. Cada competidor pesa por igual al hablar de "el mercado": un anunciante con 100 anuncios no define el mercado por sí solo. Usá `market_profile_weighted` y `saturation` para eso.
-10. Si los datos son escasos o la clasificación es parcial, decilo y bajá la certeza; no rellenes.
+10. Cobertura (`coverage`): cuántos anuncios se analizaron de cada competidor en Meta y en Google, contra el objetivo (`target`). Si un competidor tiene menos que el objetivo en una plataforma, NO saques conclusiones de él en esa plataforma: solo informá el faltante como dato ("Belgotex: 2 anuncios en Meta, 0 en Google"). Las cifras del mercado se calculan con lo que sí hay y siempre decís sobre cuántos anuncios. No rellenes lo que falta.
 11. Si viene `client_brief` (la hoja del cliente), es ley: escribí con su tono, a su público, empujando lo que quieren vender más y apoyándote en su diferencial. Promociones: usá solo las que figuran ahí; si no hay, no inventes descuentos ni cuotas (podés proponer beneficios que no bajen el precio, como asesoramiento o visita técnica sin cargo, marcados como propuesta). Ninguna idea, oportunidad ni acción puede ir contra lo que dice `evitar`. Lo que hace la competencia es inspiración, no un molde: si su camino choca con la hoja, adaptalo a la marca o descartalo y decí por qué."""
 
 
@@ -166,6 +165,7 @@ def synthesize(
     payload = {
         "client": {"name": ci.name, "industry": ci.industry, "market": ci.market, "description": ci.description},
         "client_brief": ci.brief or None,
+        "coverage": metrics.get("coverage"),
         "labels": labels or {},
         "period": period,
         "metrics": metrics,
@@ -305,7 +305,7 @@ def mock_synthesis(
         ),
         SummaryPoint(
             headline=(f"{longest['name']} tiene el anuncio que más dura: {longest['longevity']['max_days']} días al aire" if longest else "Todavía no hay historial de permanencia"),
-            detail="Un anuncio que sigue activo durante semanas es una señal (no una prueba) de que al anunciante le sirve.",
+            detail="Es el que más tiempo lleva al aire entre los anuncios analizados.",
             action="Revisar los creativos de referencia y adaptar la idea, no copiarla.",
         ),
     ]
@@ -313,10 +313,8 @@ def mock_synthesis(
         Insight(
             title=f"{label(top_fam['value'])}: el territorio más concurrido",
             observation=f"{fam_users['competitors']} de los {n_comp} competidores usan el mensaje «{label(top_fam['value'])}» ({fam_users['ads']} anuncios).",
-            interpretation="Podría indicar que es el argumento que la categoría considera seguro; también que está saturado y cuesta destacarse ahí.",
             evidence=[f"{fam_users['ads']} anuncios de {fam_users['competitors']} competidores"],
             implication_for_us="No ser uno más con el mismo mensaje: si lo usamos, con una prueba concreta o un tono distinto.",
-            confidence=conf,
         ),
     ]
     if loc_top and glo_top:
@@ -325,10 +323,8 @@ def mock_synthesis(
                 title="Locales y globales no hablan igual" if loc_top != glo_top else "Locales y globales dicen lo mismo",
                 observation=(f"Los locales se apoyan más en «{label(loc_top)}»; los referentes globales, en «{label(glo_top)}»." if loc_top != glo_top
                              else f"Tanto los competidores locales como los globales se apoyan sobre todo en «{label(loc_top)}»."),
-                interpretation="Lo que hacen los globales puede anticipar hacia dónde va la categoría en el mercado local.",
                 evidence=[f"Local: {label(loc_top)} · Global: {label(glo_top)}"],
                 implication_for_us="Tomar de los globales lo que todavía nadie hace localmente.",
-                confidence=conf,
             )
         )
     if ws:
@@ -336,10 +332,8 @@ def mock_synthesis(
             Insight(
                 title="Mensajes que casi nadie usa",
                 observation="Casi nadie habla de " + ", ".join(label(w["value"]).lower() for w in ws[:3]) + ".",
-                interpretation="Son territorios libres: pueden diferenciar, o pueden ser poco relevantes para la categoría; hay que probarlos.",
                 evidence=[f"{label(w['value'])}: {round(w['pct'])}% de los anuncios" for w in ws[:3]],
                 implication_for_us="Probar una pieza en el territorio libre más afín a la marca.",
-                confidence="low",
             )
         )
 

@@ -98,7 +98,7 @@
   .sum .do b { color: var(--accent); }
 
   /* Hallazgos */
-  .ins { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; padding: 0; overflow: hidden; }
+  .ins { display: grid; grid-template-columns: 2fr 1fr; gap: 0; padding: 0; overflow: hidden; }
   .ins > div { padding: 18px 20px; border-right: 1px solid var(--line); }
   .ins > div:last-child { border-right: 0; background: var(--soft); }
   .ins .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 6px; }
@@ -155,7 +155,7 @@
 
   /* Creativos */
   .pv { position: relative; background: var(--soft); border-radius: 12px; overflow: hidden; aspect-ratio: 4/5; border: 1px solid var(--line); }
-  .pv img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .pv img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
   .pv-empty { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 13px; padding: 12px; }
   .pv-tag { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.65); color: #fff; padding: 2px 8px; border-radius: 6px; }
   .cr { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
@@ -275,17 +275,11 @@
 
 <section id="hallazgos">
   <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Hallazgos clave</h2></div>
-  <p class="sec-intro">Para cada hallazgo separamos lo que vimos en los anuncios (un dato) de lo que creemos que significa (una lectura nuestra).</p>
-  <div class="legend">
-    <span><b>Certeza alta:</b> el patrón se repite en muchos competidores y anuncios.</span>
-    <span><b>Media:</b> patrón claro pero con menos casos.</span>
-    <span><b>Baja:</b> señal temprana, hay que confirmarla.</span>
-  </div>
+  <p class="sec-intro">Lo que muestran los anuncios analizados, con sus números, y qué hacemos con cada dato.</p>
   {% for i in synthesis.top_insights %}
-  <div class="ins-head"><h3>{{ loop.index }}. {{ i.title }}</h3>{{ pill(i.confidence, 'Certeza ') }}</div>
+  <div class="ins-head"><h3>{{ loop.index }}. {{ i.title }}</h3></div>
   <div class="card ins">
-    <div><div class="k">Lo que vimos</div>{{ i.observation }}{% if i.evidence %}<div class="small muted" style="margin-top:8px">{{ i.evidence | join(' · ') }}</div>{% endif %}</div>
-    <div><div class="k">Lo que creemos que significa</div>{{ i.interpretation }}</div>
+    <div><div class="k">El dato</div>{{ i.observation }}{% if i.evidence %}<div class="small muted" style="margin-top:8px">{{ i.evidence | join(' · ') }}</div>{% endif %}</div>
     <div><div class="k">Qué hacemos</div>{{ i.implication_for_us }}</div>
   </div>
   {% endfor %}
@@ -294,6 +288,24 @@
 <section id="panorama">
   <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Panorama competitivo</h2></div>
   <p class="sec-intro">Quién está pautando, cuánto y con qué. El detalle de cada uno está en la sección siguiente.</p>
+  {% if metrics.coverage %}
+  <h3 style="margin:8px 0 6px">Con qué datos trabajamos</h3>
+  <p class="small muted" style="margin:0 0 10px">Objetivo: {{ metrics.coverage[0].target }} anuncios de Meta y {{ metrics.coverage[0].target }} de Google por competidor. Donde no se llega, no sacamos conclusiones de esa marca en esa plataforma.</p>
+  <div class="tbl" style="margin-bottom:22px"><table>
+    <thead><tr><th>Competidor</th><th>Tipo</th><th>Meta</th><th>Google</th><th>Estado</th></tr></thead>
+    <tbody>
+    {% for c in metrics.coverage %}
+      <tr>
+        <td><b>{{ c.name }}</b></td>
+        <td>{{ 'Local' if c.tier == 'local' else 'Global' }}</td>
+        <td>{{ c.meta }} / {{ c.target }}{% if not c.has_meta %} <span class="small muted">(sin página cargada)</span>{% endif %}</td>
+        <td>{{ c.google }} / {{ c.target }}{% if not c.has_google %} <span class="small muted">(sin dominio cargado)</span>{% endif %}</td>
+        <td>{% if c.meta >= c.target and c.google >= c.target %}Completo{% else %}<b style="color:#9B2F25">Datos insuficientes</b>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
   <div class="tbl"><table>
     <thead><tr><th>Competidor</th><th>Analizados (de los activos)</th><th>Mensaje principal</th><th>Cómo engancha</th><th>Formato principal</th><th>Con promoción</th><th>Duración típica</th></tr></thead>
     <tbody>

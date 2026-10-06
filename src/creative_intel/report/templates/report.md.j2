@@ -14,9 +14,8 @@
 ## {{ num() }} — Hallazgos clave
 
 {% for i in synthesis.top_insights %}
-### {{ loop.index }}. {{ i.title }} (certeza {{ lvl(i.confidence) }})
-- **Lo que vimos:** {{ i.observation }}
-- **Lo que creemos que significa:** {{ i.interpretation }}
+### {{ loop.index }}. {{ i.title }}
+- **El dato:** {{ i.observation }}
 - **Qué hacemos:** {{ i.implication_for_us }}
 
 {% endfor %}

@@ -15,6 +15,7 @@ from ..config import CompetitorConfig, settings
 from .base import RawCreative
 
 START_RE = re.compile(r"(?:Started running on|Comenzó a publicarse el|En circulación desde el)\s+(.+?)(?:\n|$)", re.I)
+INACTIVE_RE = re.compile(r"^\s*(Inactivo|Inactive|Finalizado)\b", re.I | re.M)
 ID_RE = re.compile(r"(?:Library ID|Identificador de la biblioteca|ID de la biblioteca)[:\s]+(\d+)", re.I)
 MONTHS = {
     "jan": 1, "ene": 1, "feb": 2, "mar": 3, "apr": 4, "abr": 4, "may": 5, "jun": 6, "jul": 7,
@@ -51,9 +52,9 @@ class MetaAdLibraryWebCollector:
     def supports(self, competitor: CompetitorConfig) -> bool:
         return bool(competitor.meta_page_id)
 
-    def url_for(self, competitor: CompetitorConfig, country: str) -> str:
+    def url_for(self, competitor: CompetitorConfig, country: str, status: str = "active") -> str:
         return (
-            "https://www.facebook.com/ads/library/?active_status=active&ad_type=all"
+            f"https://www.facebook.com/ads/library/?active_status={status}&ad_type=all"
             f"&country={country}&view_all_page_id={competitor.meta_page_id}&media_type=all&search_type=page"
             "&sort_data[direction]=desc&sort_data[mode]=total_impressions"
         )
@@ -78,59 +79,88 @@ class MetaAdLibraryWebCollector:
                     self.declared[competitor.slug] = self.declared.get(competitor.slug, 0) + total
                 print(f"[meta_web] {competitor.slug} ({country}): ~{total if total is not None else '?'} anuncios activos; se analizan hasta {self.max_cards}")
                 self._scroll(page, rounds=2 if self.max_cards <= 10 else 8)
-                cards = page.locator("div[class*='x1plvlek'] >> xpath=ancestor::div[contains(@class,'xh8yej3')][1]")
-                if cards.count() == 0:
-                    cards = page.locator("div:has-text('Library ID'), div:has-text('Identificador de la biblioteca')").locator("xpath=ancestor::div[1]")
-                taken = 0
-                for i in range(cards.count()):
-                    if taken >= self.max_cards:
-                        break
-                    card = cards.nth(i)
-                    try:
-                        text = card.inner_text(timeout=5000)
-                    except Exception:
-                        continue
-                    ext_id = (ID_RE.search(text) or [None, ""])[1] if ID_RE.search(text) else ""
-                    if not ext_id or any(r.external_id == ext_id for r in out):
-                        continue
-                    taken += 1
-                    start = START_RE.search(text)
-                    img_info = card.locator("img").evaluate_all("els => els.map(e => ({src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height}))")
-                    imgs = [i["src"] for i in sorted(img_info, key=lambda i: -(i["w"] * i["h"])) if i["src"] and i["w"] >= 150 and i["h"] >= 150]
-                    vids = card.locator("video").evaluate_all("els => els.map(e => e.src || (e.querySelector('source')||{}).src)")
-                    shot = ""
-                    if self.screenshots:
-                        shot_path = assets / f"meta_{ext_id}.png"
-                        try:
-                            card.screenshot(path=str(shot_path))
-                            shot = str(shot_path)
-                        except Exception:
-                            shot = ""
-                    parsed = parse_card_text(text, competitor.name)
-                    out.append(
-                        RawCreative(
-                            competitor_slug=competitor.slug,
-                            platform="meta",
-                            source="meta_web",
-                            external_id=ext_id,
-                            format="video" if any(vids) else "imagen" if any(imgs) else "desconocido",
-                            placements=["feed"],
-                            headline=parsed["headline"],
-                            body_text=parsed["body"],
-                            description=parsed["description"],
-                            cta_text=parsed["cta"],
-                            landing_url=parsed["landing"],
-                            media_urls=[u for u in (vids or imgs) if u],
-                            thumbnail_url=next((u for u in imgs if u), ""),
-                            snapshot_url=f"https://www.facebook.com/ads/library/?id={ext_id}",
-                            countries=[] if country.upper() == "ALL" else [country],
-                            first_seen=parse_human_date(start.group(1)) if start else None,
-                            is_active=True,
-                            raw={"card_text": text, "screenshot": shot, "multiple_versions": parsed["multiple_versions"]},
-                        )
-                    )
+                before = len(out)
+                self._take(page, competitor, country, out, assets)
+                got = len(out) - before
+                if got < self.max_cards:
+                    # Menos de N activos: se completa con los más vistos ya finalizados (siguen siendo datos reales)
+                    page.goto(self.url_for(competitor, country, status="all"), wait_until="domcontentloaded", timeout=90_000)
+                    page.wait_for_timeout(4000)
+                    self._scroll(page, rounds=3)
+                    self._take(page, competitor, country, out, assets, limit=self.max_cards - got)
+                    print(f"[meta_web] {competitor.slug} ({country}): {got} activos + {len(out) - before - got} finalizados")
             browser.close()
         return out
+
+    def _take(self, page, competitor: CompetitorConfig, country: str, out: list[RawCreative], assets: Path, limit: int | None = None) -> None:
+        """Toma hasta `limit` tarjetas nuevas (sin repetir IDs ya tomados) en el orden de la Biblioteca."""
+        limit = self.max_cards if limit is None else limit
+        cards = page.locator("div[class*='x1plvlek'] >> xpath=ancestor::div[contains(@class,'xh8yej3')][1]")
+        if cards.count() == 0:
+            cards = page.locator("div:has-text('Library ID'), div:has-text('Identificador de la biblioteca')").locator("xpath=ancestor::div[1]")
+        taken = 0
+        for i in range(cards.count()):
+            if taken >= limit:
+                break
+            card = cards.nth(i)
+            try:
+                text = card.inner_text(timeout=5000)
+            except Exception:
+                continue
+            ext_id = (ID_RE.search(text) or [None, ""])[1] if ID_RE.search(text) else ""
+            if not ext_id or any(r.external_id == ext_id for r in out):
+                continue
+            taken += 1
+            start = START_RE.search(text)
+            img_info = card.locator("img").evaluate_all("els => els.map(e => ({src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height}))")
+            imgs = [i["src"] for i in sorted(img_info, key=lambda i: -(i["w"] * i["h"])) if i["src"] and i["w"] >= 150 and i["h"] >= 150]
+            vids = card.locator("video").evaluate_all("els => els.map(e => e.src || (e.querySelector('source')||{}).src)")
+            shot = ""
+            if self.screenshots:
+                shot_path = assets / f"meta_{ext_id}.png"
+                try:
+                    self._shoot_creative(page, card, shot_path)
+                    shot = str(shot_path)
+                except Exception:
+                    shot = ""
+            parsed = parse_card_text(text, competitor.name)
+            out.append(
+                RawCreative(
+                    competitor_slug=competitor.slug,
+                    platform="meta",
+                    source="meta_web",
+                    external_id=ext_id,
+                    format="video" if any(vids) else "imagen" if any(imgs) else "desconocido",
+                    placements=["feed"],
+                    headline=parsed["headline"],
+                    body_text=parsed["body"],
+                    description=parsed["description"],
+                    cta_text=parsed["cta"],
+                    landing_url=parsed["landing"],
+                    media_urls=[u for u in (vids or imgs) if u],
+                    thumbnail_url=next((u for u in imgs if u), ""),
+                    snapshot_url=f"https://www.facebook.com/ads/library/?id={ext_id}",
+                    countries=[] if country.upper() == "ALL" else [country],
+                    first_seen=parse_human_date(start.group(1)) if start else None,
+                    is_active=not INACTIVE_RE.search(text),
+                    raw={"card_text": text, "screenshot": shot, "multiple_versions": parsed["multiple_versions"]},
+                )
+            )
+
+    @staticmethod
+    def _shoot_creative(page, card, path) -> None:
+        """Captura solo la pieza (video o imagen más grande de la tarjeta); si no hay, la tarjeta entera."""
+        card.scroll_into_view_if_needed(timeout=5000)
+        page.wait_for_timeout(800)  # que termine de cargar la imagen
+        target = None
+        if card.locator("video").count():
+            target = card.locator("video").first
+        else:
+            areas = card.locator("img").evaluate_all(
+                "els => els.map(e => { const r = e.getBoundingClientRect(); return r.width * r.height; })")
+            if areas and max(areas) >= 150 * 150:
+                target = card.locator("img").nth(areas.index(max(areas)))
+        (target or card).screenshot(path=str(path), timeout=10000)
 
     @staticmethod
     def _scroll(page, rounds: int = 8) -> None:

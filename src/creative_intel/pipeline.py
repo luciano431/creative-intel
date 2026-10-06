@@ -180,10 +180,28 @@ def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> 
     metrics = build_metrics(items, taxonomy, previous_items=prev_items, period=period)
     metrics["concepts"] = group_concepts([it for it in items if it["tier"] != "own"])
     add_declared_totals(metrics, (run.stats or {}).get("declared") or {})
+    metrics["coverage"] = coverage(items)
     run.metrics = metrics
     run.status = "analyzed"
     session.flush()
     return metrics
+
+
+def coverage(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Por competidor configurado: cuántos anuncios se analizaron en Meta y en Google contra el objetivo."""
+    from collections import Counter
+
+    counts = Counter((it["competitor"], it["platform"]) for it in items if it.get("tier") != "own")
+    out = []
+    for c in load_competitors():
+        if c.is_own or not c.active:
+            continue
+        out.append({
+            "name": c.name, "tier": c.tier, "target": settings.top_ads_per_brand,
+            "meta": counts[(c.name, "meta")], "google": counts[(c.name, "google")],
+            "has_meta": bool(c.meta_page_id), "has_google": bool(c.google_advertiser_id or c.google_domain or getattr(c, "google_domains", None) or c.website),
+        })
+    return sorted(out, key=lambda x: (0 if x["tier"] == "local" else 1, x["name"]))
 
 
 def add_declared_totals(metrics: dict[str, Any], declared: dict[str, dict[str, int]]) -> None:

@@ -11,10 +11,9 @@
 
 <h1>{{ num() }} — Hallazgos clave</h1>
 {% for i in synthesis.top_insights %}
-<div><strong>{{ loop.index }}. {{ i.title }}</strong> (certeza {{ lvl(i.confidence) }})</div>
+<div><strong>{{ loop.index }}. {{ i.title }}</strong></div>
 <ul>
-<li><strong>Lo que vimos:</strong> {{ i.observation }}</li>
-<li><strong>Lo que creemos que significa:</strong> {{ i.interpretation }}</li>
+<li><strong>El dato:</strong> {{ i.observation }}</li>
 <li><strong>Qué hacemos:</strong> {{ i.implication_for_us }}</li>
 </ul>
 {% endfor %}

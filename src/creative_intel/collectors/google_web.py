@@ -76,7 +76,11 @@ DEEP_DUMP_JS = """() => {
       if (el.children.length === 0 && removedRe.test(el.textContent || '') && visible(el)) { removedVisible = true; break; }
     }
   }
-  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c, candidates: summary, html, removed_visible: removedVisible};
+  // Rectángulo del creativo (coordenadas de página) para recortar la captura justo al anuncio
+  const target = preview || details;
+  const br = target ? target.getBoundingClientRect() : null;
+  const rect = br && br.width > 40 && br.height > 40 ? {x: br.left + window.scrollX, y: br.top + window.scrollY, w: br.width, h: br.height} : null;
+  return {details_scoped: !!details, creative_scoped: !!preview, details: d, creative: c, candidates: summary, html, removed_visible: removedVisible, rect};
 }"""
 READY_JS = """() => {
   const find = (root, sel, acc) => {
@@ -214,7 +218,8 @@ class GoogleTransparencyWebCollector:
                 for adv, cr in captured:
                     if not any(cr in h for h in hrefs):
                         hrefs.append(f"/advertiser/{adv}/creative/{cr}?region={region}")
-                hrefs = hrefs[: self.max_cards]
+                # Se recorren más candidatos de los necesarios: los quitados por Google o vacíos no cuentan
+                hrefs = hrefs[: self.max_cards * 3]
                 if debug:
                     self._grid_debug(page, dbg, competitor.slug, country, hrefs, captured)
                 total = _declared_total(page.inner_text("body"))
@@ -228,7 +233,10 @@ class GoogleTransparencyWebCollector:
                     (dbg / f"google_{competitor.slug}_{country}.html").write_text(page.content(), encoding="utf-8")
                     print(f"[google_web] 0 tarjetas para {competitor.slug} ({country}); diagnóstico guardado en {dbg}")
                     continue
+                useful = 0
                 for href in hrefs:
+                    if useful >= self.max_cards:
+                        break
                     m = re.search(r"/creative/(CR\w+)", href)
                     if not m:
                         continue
@@ -250,6 +258,9 @@ class GoogleTransparencyWebCollector:
                     if detail is None:
                         failed += 1
                         continue
+                    if detail["removed"] or not (detail["headline"] or detail["body"] or detail["media"]):
+                        continue  # sin contenido analizable: se busca el siguiente
+                    useful += 1
                     out.append(
                         RawCreative(
                             competitor_slug=competitor.slug,
@@ -427,7 +438,13 @@ class GoogleTransparencyWebCollector:
             body = "(Anuncio quitado por Google por incumplimiento de política: contenido no disponible)"
         shot = shots / f"google_{ext_id}.png"
         try:
-            page.screenshot(path=str(shot), full_page=False)
+            rect = deep.get("rect")
+            if rect:  # solo el anuncio, no la página entera
+                pad = 6
+                clip = {"x": max(rect["x"] - pad, 0), "y": max(rect["y"] - pad, 0), "width": rect["w"] + 2 * pad, "height": min(rect["h"] + 2 * pad, 2400)}
+                page.screenshot(path=str(shot), full_page=True, clip=clip)
+            else:
+                page.screenshot(path=str(shot), full_page=False)
         except Exception:
             shot = None
         if debug:
