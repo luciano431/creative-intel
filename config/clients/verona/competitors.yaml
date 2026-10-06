@@ -3,11 +3,12 @@ client:
   name: Verona Office & Home
   industry: Pisos y equipamiento de oficinas (B2B)
   market: Uruguay
-  description: Pisos técnicos y vinílicos, moquettes, acústica y mobiliario de oficina, con colocación propia, para empresas, proyectos y obras
-  # Hoja del cliente: la IA la respeta al escribir ideas y acciones.
+  description: Pisos técnicos y vinílicos, moquettes, acústica y mobiliario de oficina, con colocación propia, para empresas,
+    proyectos y obras
   brief:
     tono: Voseo, profesional y seguro. Le habla a empresas (B2B), no al consumidor final.
-    publico: Gerentes, dueños, CEOs, arquitectos, diseñadores, constructoras de edificios y dependencias del Estado; 30 a 65 años
+    publico: Gerentes, dueños, CEOs, arquitectos, diseñadores, constructoras de edificios y dependencias del Estado; 30 a
+      65 años
     vender_mas:
     - Pisos técnicos
     - Pisos vinílicos y baldosas vinílicas
@@ -17,7 +18,8 @@ client:
     - Servicio de colocación de pisos
     diferencial: Instalación con equipo propio y precio por mayor en proyectos grandes
     promos: []
-    evitar: Que la marca se vea como económica o de baja calidad. No asociarla a "barato", aunque sus precios tampoco son inaccesibles. Nada de guerra de precios ni descuentos agresivos.
+    evitar: Que la marca se vea como económica o de baja calidad. No asociarla a "barato", aunque sus precios tampoco son
+      inaccesibles. Nada de guerra de precios ni descuentos agresivos.
 countries:
 - code: UY
   name: Uruguay
@@ -41,11 +43,11 @@ countries:
     - cortinas
     - revestimientos
     - mobiliario_oficina
+    meta_ad_account_id: act_3578466658884675, act_28761379973457993
   competitors:
-    # Elegidos por volumen de anuncios activos en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: vinibel
-      name: Vinibel Uruguay          # ~37 anuncios activos
+      name: Vinibel Uruguay
       website: ''
       meta_page_id: '485649101557927'
       google_domain: vinibel.com.uy
@@ -53,7 +55,7 @@ countries:
       products: []
       active: true
     - slug: estilo-house
-      name: Estilo House             # ~20 anuncios activos
+      name: Estilo House
       website: ''
       meta_page_id: '272441869531569'
       google_domain: ''
@@ -61,7 +63,7 @@ countries:
       products: []
       active: true
     - slug: revko
-      name: REVKO                    # ~18 anuncios activos
+      name: REVKO
       website: ''
       meta_page_id: '586292537911849'
       google_domain: ''
@@ -69,7 +71,7 @@ countries:
       products: []
       active: true
     - slug: metropolitana
-      name: Metropolitana            # ~11 anuncios activos
+      name: Metropolitana
       website: ''
       meta_page_id: '358443427545517'
       google_domain: metropolitana.com.uy
@@ -77,7 +79,7 @@ countries:
       products: []
       active: true
     - slug: alad
-      name: Alad Alfombras           # ~11 anuncios activos
+      name: Alad Alfombras
       website: ''
       meta_page_id: '1449215451981684'
       google_domain: ''
@@ -86,7 +88,7 @@ countries:
       active: true
     global:
     - slug: steelcase
-      name: Steelcase                # mobiliario de oficina, ~77 anuncios activos
+      name: Steelcase
       website: https://www.steelcase.com
       meta_page_id: '86451021593'
       google_domain: steelcase.com
@@ -96,7 +98,7 @@ countries:
       ad_countries:
       - US
     - slug: interface
-      name: Interface                # pisos para oficinas y proyectos, ~31 anuncios activos
+      name: Interface
       website: https://www.interface.com
       meta_page_id: '124823057545947'
       google_domain: interface.com
@@ -106,7 +108,7 @@ countries:
       ad_countries:
       - US
     - slug: espattia
-      name: Espattia Dinamika        # México: pisos, alfombras y mobiliario para proyectos (B2B, en español)
+      name: Espattia Dinamika
       website: ''
       meta_page_id: '876148572257747'
       google_domain: ''

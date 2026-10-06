@@ -24,8 +24,8 @@ countries:
     - juegos_de_hierro
     - climatizacion
     - decoracion
+    meta_ad_account_id: act_448759884883972, act_1366768588737352
   competitors:
-    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: sodimac
       name: Sodimac Homecenter
@@ -44,7 +44,7 @@ countries:
       products: []
       active: true
     - slug: victoriana
-      name: Victoriana Muebles   # muebles y deco, Montevideo
+      name: Victoriana Muebles
       website: ''
       meta_page_id: '700577986814941'
       google_domain: victoriana.com.uy
@@ -52,7 +52,7 @@ countries:
       products: []
       active: true
     - slug: cardalgrill
-      name: Cardalgrill   # parrillas
+      name: Cardalgrill
       website: ''
       meta_page_id: '167442769792199'
       google_domain: cardalgrill.com
@@ -60,7 +60,7 @@ countries:
       products: []
       active: true
     - slug: herreria-2-manos
-      name: Herrería 2 Manos   # herrería y parrillas
+      name: Herrería 2 Manos
       website: ''
       meta_page_id: '2221886364790177'
       google_domain: ''
