@@ -1,7 +1,7 @@
 """Cuadros de los primeros segundos de un video, para que la IA lea el gancho (no solo la portada).
 
-Usa ffmpeg si está instalado (brew install ffmpeg). Sin ffmpeg, o si el video no se puede bajar,
-se sigue con la imagen de portada como hasta ahora.
+Usa el ffmpeg que viene con el paquete imageio-ffmpeg (se instala con pip, sin compilar) o, si no está,
+el del sistema. Sin ffmpeg, o si el video no se puede bajar, se sigue con la imagen de portada.
 """
 from __future__ import annotations
 
@@ -18,8 +18,17 @@ FRAME_AT = (0.5, 1.5, 3.0, 6.0)
 MAX_BYTES = 25_000_000
 
 
+def ffmpeg_path() -> str:
+    try:
+        import imageio_ffmpeg
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return shutil.which("ffmpeg") or ""
+
+
 def ffmpeg_available() -> bool:
-    return bool(shutil.which("ffmpeg"))
+    return bool(ffmpeg_path())
 
 
 def video_url(media_urls: list[str] | None) -> str:
@@ -62,7 +71,7 @@ def extract_frames(creative_id: int, url: str, out_dir: Path | None = None) -> l
         return []
     got = []
     for t, f in zip(FRAME_AT, frames):
-        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-ss", str(t), "-i", str(video), "-frames:v", "1", "-vf", "scale=640:-2", str(f)]
+        cmd = [ffmpeg_path(), "-y", "-loglevel", "error", "-ss", str(t), "-i", str(video), "-frames:v", "1", "-vf", "scale=640:-2", str(f)]
         try:
             subprocess.run(cmd, check=False, timeout=60)
         except Exception:
