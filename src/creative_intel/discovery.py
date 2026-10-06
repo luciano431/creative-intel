@@ -373,3 +373,21 @@ def add_competitors(path: Any, pages: list[MetaPage], tier: str, country: str = 
         shutil.copy(path, path.with_suffix(".yaml.bak"))
         path.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False, width=120), encoding="utf-8")
     return added
+
+
+def set_fields(path: Any, slug: str, fields: dict[str, Any]) -> dict[str, Any]:
+    """Cambia datos de una marca (cliente o competidor) por su slug. Un valor "" borra el dato."""
+    import shutil
+    from pathlib import Path
+
+    import yaml
+
+    path = Path(path)
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    entry = next((e for e in _entries(data) if e.get("slug") == slug), None)
+    if entry is None:
+        raise KeyError(slug)
+    entry.update(fields)
+    shutil.copy(path, path.with_suffix(".yaml.bak"))
+    path.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False, width=120), encoding="utf-8")
+    return entry

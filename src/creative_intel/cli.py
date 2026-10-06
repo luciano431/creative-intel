@@ -435,6 +435,40 @@ def fill_ids(
         rprint("Para guardar los que coinciden claramente, volvé a correrlo con [bold]--write[/bold].")
 
 
+@app.command("set")
+def set_cmd(
+    slug: str = typer.Argument(..., help="slug de la marca (ver competitors.yaml)"),
+    name: Optional[str] = typer.Option(None, "--name", help="Nombre a mostrar"),
+    meta: Optional[str] = typer.Option(None, "--meta", help="ID de la página de Meta (\"\" para borrarlo)"),
+    domain: Optional[str] = typer.Option(None, "--domain", help="Dominio para Google (\"\" para borrarlo)"),
+    website: Optional[str] = typer.Option(None, "--website", help="Web"),
+    countries: Optional[str] = typer.Option(None, "--countries", help="Países donde buscar sus anuncios, ej. ALL o ES,IT"),
+) -> None:
+    """Cambia a mano los datos de un competidor (o del cliente) del cliente actual."""
+    from .config import CONFIG_DIR
+    from .discovery import set_fields
+
+    fields: dict[str, object] = {}
+    if name is not None:
+        fields["name"] = name
+    if meta is not None:
+        fields["meta_page_id"] = meta.strip()
+    if domain is not None:
+        fields["google_domain"] = domain.strip().lower().removeprefix("https://").removeprefix("http://").removeprefix("www.").strip("/")
+    if website is not None:
+        fields["website"] = website.strip()
+    if countries is not None:
+        fields["ad_countries"] = [c.strip().upper() for c in countries.split(",") if c.strip()]
+    if not fields:
+        raise typer.BadParameter("Indicá al menos un dato: --name, --meta, --domain, --website o --countries")
+    try:
+        entry = set_fields(CONFIG_DIR / "competitors.yaml", slug, fields)
+    except KeyError:
+        slugs = ", ".join(c.slug for c in load_competitors())
+        raise typer.BadParameter(f"No existe «{slug}». Los que hay: {slugs}")
+    rprint(f"[green]{entry.get('name')}[/green]: " + ", ".join(f"{k} = {v!r}" for k, v in fields.items()))
+
+
 @app.command()
 def web(
     port: int = typer.Option(8080, "--port", help="Puerto"),

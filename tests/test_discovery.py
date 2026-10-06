@@ -76,3 +76,14 @@ def test_name_match_rejects_other_businesses_sharing_words():
 def test_name_match_with_other_alphabets_is_not_confident():
     assert not is_confident(MetaPage("5", "한화데이즈(Hanwha)", ads={"a"}), "Hanwha")
     assert is_confident(MetaPage("6", "Construcción Pérez", ads={"a"}), "Construccion Perez"), "las tildes no cuentan"
+
+
+def test_set_fields_can_clear_values(tmp_path):
+    from creative_intel.discovery import set_fields
+
+    path = tmp_path / "competitors.yaml"
+    path.write_text(yaml.safe_dump({"countries": [{"code": "UY", "competitors": {"global": [
+        {"slug": "hanwha", "name": "Hanwha", "meta_page_id": "204071546359884", "google_domain": "e2i.sg"}]}}]}), encoding="utf-8")
+    set_fields(path, "hanwha", {"name": "Headline Flooring", "meta_page_id": "", "google_domain": "headlineflooring.com"})
+    e = yaml.safe_load(path.read_text(encoding="utf-8"))["countries"][0]["competitors"]["global"][0]
+    assert e == {"slug": "hanwha", "name": "Headline Flooring", "meta_page_id": "", "google_domain": "headlineflooring.com"}
