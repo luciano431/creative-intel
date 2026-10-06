@@ -32,7 +32,7 @@ countries:
       name: Atom Store Uruguay   # movilidad eléctrica
       website: ''
       meta_page_id: '736712632862505'
-      google_domain: ''
+      google_domain: atom-store.com.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -40,7 +40,7 @@ countries:
       name: Tecnobox Uruguay   # notebooks y monopatines
       website: ''
       meta_page_id: '107182277301977'
-      google_domain: ''
+      google_domain: tecnobox.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -48,7 +48,7 @@ countries:
       name: ZonaTecno
       website: ''
       meta_page_id: '139087516133801'
-      google_domain: ''
+      google_domain: zonatecno.com.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -73,7 +73,7 @@ countries:
       name: Compra Gamer   # Argentina, tecnología
       website: ''
       meta_page_id: '137109989644482'
-      google_domain: ''
+      google_domain: compragamer.com
       google_advertiser_id: ''
       products: []
       active: true
@@ -83,7 +83,7 @@ countries:
       name: Cetrogar   # Argentina, retail de tecnología
       website: ''
       meta_page_id: '102097393168003'
-      google_domain: ''
+      google_domain: cetrogar.com.ar
       google_advertiser_id: ''
       products: []
       active: true

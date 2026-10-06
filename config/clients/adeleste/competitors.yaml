@@ -47,7 +47,7 @@ countries:
       name: Victoriana Muebles   # muebles y deco, Montevideo
       website: ''
       meta_page_id: '700577986814941'
-      google_domain: ''
+      google_domain: victoriana.com.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -55,7 +55,7 @@ countries:
       name: Cardalgrill   # parrillas
       website: ''
       meta_page_id: '167442769792199'
-      google_domain: ''
+      google_domain: cardalgrill.com
       google_advertiser_id: ''
       products: []
       active: true

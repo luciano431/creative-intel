@@ -59,7 +59,7 @@ def init_db_cmd() -> None:
 @competitors_app.command("list")
 def competitors_list() -> None:
     t = Table("slug", "nombre", "país", "tier", "meta_page_id", "google_advertiser_id", "activo")
-    for c in load_competitors():
+    for c in [x for x in load_competitors() if x.active]:
         t.add_row(c.slug, c.name, c.country, c.tier, c.meta_page_id or "[red]—[/red]", c.google_advertiser_id or "[red]—[/red]", "✓" if c.active else "✗")
     console.print(t)
     rprint("[dim]Para agregar competidores o países: editar config/competitors.yaml y correr `competitors sync`.[/dim]")

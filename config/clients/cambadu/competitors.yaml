@@ -28,7 +28,7 @@ countries:
     - slug: tienda-inglesa
       name: Tienda Inglesa
       website: ''
-      meta_page_id: ''
+      meta_page_id: '152900014726810'
       google_domain: tiendainglesa.com.uy
       google_advertiser_id: ''
       products: []
@@ -44,7 +44,7 @@ countries:
     - slug: devoto
       name: Devoto
       website: ''
-      meta_page_id: ''
+      meta_page_id: '105908134182917'
       google_domain: devoto.com.uy
       google_advertiser_id: ''
       products: []
@@ -52,7 +52,7 @@ countries:
     - slug: ta-ta
       name: Ta-Ta
       website: ''
-      meta_page_id: ''
+      meta_page_id: '287007558039879'
       google_domain: tata.com.uy
       google_advertiser_id: ''
       products: []
@@ -60,7 +60,7 @@ countries:
     - slug: el-dorado
       name: El Dorado
       website: ''
-      meta_page_id: ''
+      meta_page_id: '249240718510878'
       google_domain: ''
       google_advertiser_id: ''
       products: []
