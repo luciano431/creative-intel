@@ -81,3 +81,10 @@ def test_price_uses_longest_model_prefix():
 
     assert t.add("gpt-5.4-mini-2026-03-17", U()) == pytest.approx(0.75)
     assert t.add("gpt-5.4-2026-03-05", U()) == pytest.approx(2.50)
+
+
+def test_key_with_pasted_label_is_cleaned(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "api de ranker: sk-proj-ABCdef_123-456789012345678901234 ")
+    monkeypatch.setattr(ai, "_openai_client", None)
+    assert ai.get_openai_client().api_key == "sk-proj-ABCdef_123-456789012345678901234"
+    monkeypatch.setattr(ai, "_openai_client", None)

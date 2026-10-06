@@ -26,9 +26,15 @@ def get_client() -> anthropic.Anthropic:
 def get_openai_client() -> Any:
     global _openai_client
     if _openai_client is None:
+        import os
+        import re
+
         from openai import OpenAI
 
-        _openai_client = OpenAI(timeout=900, max_retries=3)  # OPENAI_API_KEY
+        # Si en .env quedó texto pegado junto a la clave ("api de ranker sk-proj-..."), se usa solo la clave.
+        raw = os.getenv("OPENAI_API_KEY", "").strip()
+        found = re.search(r"sk-[A-Za-z0-9_\-]{20,}", raw)
+        _openai_client = OpenAI(api_key=found.group(0) if found else (raw or None), timeout=900, max_retries=3)
     return _openai_client
 
 
