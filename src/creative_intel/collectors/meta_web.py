@@ -18,6 +18,7 @@ START_RE = re.compile(r"(?:Started running on|Comenzó a publicarse el|En circul
 # Anuncios finalizados: "3 nov 2025 - 5 nov 2025" / "Nov 3, 2025 - Nov 5, 2025"
 _DATE_PART = r"(\d{1,2}\s+(?:de\s+)?[A-Za-zÁÉÍÓÚáéíóú]{3,10}\.?\s+(?:de\s+)?\d{4}|[A-Za-z]{3,10}\.?\s+\d{1,2},?\s+\d{4})"
 RANGE_RE = re.compile(_DATE_PART + r"\s*[-–]\s*" + _DATE_PART)
+NET_ERR_RE = re.compile(r"ERR_NAME_NOT_RESOLVED|ERR_INTERNET_DISCONNECTED|ERR_NETWORK_CHANGED|ERR_CONNECTION_(RESET|CLOSED|REFUSED|TIMED_OUT)|ERR_TIMED_OUT")
 INACTIVE_RE = re.compile(r"^\s*(Inactivo|Inactive|Finalizado)\b", re.I | re.M)
 ID_RE = re.compile(r"(?:Library ID|Identificador de la biblioteca|ID de la biblioteca)[:\s]+(\d+)", re.I)
 MONTHS = {
@@ -77,8 +78,14 @@ class MetaAdLibraryWebCollector:
         )
 
     def collect_window(self, competitor: CompetitorConfig, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
-        """Los anuncios más vistos de una marca que arrancaron dentro de una ventana de fechas (activos o finalizados)."""
-        url = self.url_for(competitor, country, status="all") + self.window_params(date_from, date_to)
+        """Los anuncios más vistos de una marca que arrancaron dentro de una ventana de fechas (activos o finalizados).
+
+        Sin fechas (modo en vivo): los activos hoy, empiecen cuando empiecen.
+        """
+        if date_from is None and date_to is None:
+            url = self.url_for(competitor, country, status="active")
+        else:
+            url = self.url_for(competitor, country, status="all") + self.window_params(date_from, date_to)
         return self._collect_url(url, competitor.slug, competitor.name, country, limit)
 
     def collect_keyword(self, keyword: str, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
@@ -86,6 +93,21 @@ class MetaAdLibraryWebCollector:
         return self._collect_url(self.keyword_url(keyword, country, date_from, date_to), None, "", country, limit)
 
     def _collect_url(self, url: str, slug: str | None, name: str, country: str, limit: int) -> list[RawCreative]:
+        """Con reintentos si se corta internet (sin conexión, DNS): 15 s, 45 s y 2 min."""
+        import time
+
+        for attempt, pause in enumerate((0, 15, 45, 120)):
+            if pause:
+                print(f"[meta_web] sin conexión; reintento {attempt}/3 de {name or 'búsqueda'} en {pause}s")
+                time.sleep(pause)
+            try:
+                return self._collect_url_once(url, slug, name, country, limit)
+            except Exception as exc:
+                if not NET_ERR_RE.search(str(exc)) or attempt == 3:
+                    raise
+        return []
+
+    def _collect_url_once(self, url: str, slug: str | None, name: str, country: str, limit: int) -> list[RawCreative]:
         from playwright.sync_api import sync_playwright
 
         out: list[RawCreative] = []

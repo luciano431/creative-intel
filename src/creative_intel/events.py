@@ -65,12 +65,14 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
     by_name = {c.name.lower(): c for c in configs}
     raws: list[RawCreative] = []
     errors: list[str] = []
+    live = edition.label.startswith("vivo-")
     for c in configs:
         if not c.active or not c.meta_page_id or c.tier not in ("own", "local"):
             continue
         for country in (c.ad_countries or [c.country]):
             try:
-                raws += col.collect_window(c, country, edition.date_from, edition.date_to, per_brand)
+                # En vivo: lo activo hoy de cada marca, sin importar cuándo arrancó
+                raws += col.collect_window(c, country, None if live else edition.date_from, None if live else edition.date_to, per_brand)
             except Exception as exc:
                 errors.append(f"{c.slug}: {exc}")
     keywords = event.keywords[:2]
