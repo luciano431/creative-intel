@@ -578,6 +578,9 @@ def run_cycle(
     try:
         with session_scope() as s:
             summary = pipeline.run_cycle(s, _period(period), mock_ai=mock_ai, skip_collect=skip_collect, sources=source or None, out_dir=out, send_notifications=not no_notify)
+    except pipeline.NoData as exc:
+        rprint(f"[red]Sin datos.[/red] {exc}")
+        raise typer.Exit(1)
     except Exception as exc:
         problem = str(exc) if isinstance(exc, ApiUnavailable) else api_problem(exc)
         if not problem:

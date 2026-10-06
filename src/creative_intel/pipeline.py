@@ -207,12 +207,28 @@ def add_declared_totals(metrics: dict[str, Any], declared: dict[str, dict[str, i
 
 
 # ----------------------------------------------------------------------------- synthesize
+class NoData(RuntimeError):
+    """No hay anuncios de la competencia para el mes: no tiene sentido (ni se paga) escribir un plan."""
+
+
+def _same_universe(prev_metrics: dict[str, Any] | None) -> dict[str, Any] | None:
+    """El mes anterior sirve solo si habla de los mismos competidores (evita comparar con datos de otro cliente)."""
+    if not prev_metrics:
+        return None
+    prev_names = set(((prev_metrics.get("totals") or {}).get("by_competitor") or {}).keys())
+    current = {c.name for c in load_competitors()}
+    return prev_metrics if prev_names & current else None
+
+
 def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthesis:
     taxonomy = load_taxonomy()
     run = get_or_create_run(session, period)
     if not run.metrics:
         analyze(session, period, taxonomy)
     items = items_for(session, run, taxonomy)
+    if not any(it["tier"] != "own" for it in items):
+        raise NoData(f"No hay anuncios de la competencia guardados para {period}, así que no se escribe el plan (no se gastó IA en eso). "
+                     "Volvé a generar el informe SIN tildar «No volver a recolectar».")
     own = [it for it in items if it["tier"] == "own"]
     prev = session.query(Run).filter_by(period=previous_period(period)).one_or_none()
     concepts = run.metrics.get("concepts", [])
@@ -220,7 +236,7 @@ def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthes
         data = mock_synthesis(run.metrics, items, concepts, period)
         model = "mock"
     else:
-        data = synthesize(run.metrics, items, concepts, period, previous_metrics=(prev.metrics if prev else None), own_items=own)
+        data = synthesize(run.metrics, items, concepts, period, previous_metrics=_same_universe(prev.metrics if prev else None), own_items=own)
         model = settings.synth_model
     synth = Synthesis(run_id=run.id, model=model, data=data, status="draft")
     session.add(synth)
@@ -289,7 +305,9 @@ def run_cycle(
         check_api()  # sin crédito o sin clave: avisar ya, no después de 10 minutos de recolección
     if not skip_collect:
         summary["collect"] = collect(session, period, sources=sources)
+        session.commit()  # lo recolectado queda guardado aunque falle un paso posterior
     summary["classify"] = classify(session, period, mock=mock_ai)
+    session.commit()
     aborted = summary["classify"].get("aborted") if isinstance(summary["classify"], dict) else None
     if aborted:
         from .ai.client import ApiUnavailable, api_problem

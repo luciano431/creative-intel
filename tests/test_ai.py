@@ -231,3 +231,28 @@ def test_run_cycle_stops_before_collecting_without_credit(monkeypatch):
     monkeypatch.setattr(pipeline, "collect", lambda *a, **k: pytest.fail("no debería recolectar"))
     with pytest.raises(ai_client.ApiUnavailable):
         pipeline.run_cycle(None, "2026-10")
+
+
+def test_no_synthesis_without_competitor_ads(tmp_path, monkeypatch):
+    from creative_intel import pipeline
+    from creative_intel.db import init_db, session_scope
+
+    url = f"sqlite:///{tmp_path / 'x.db'}"
+    init_db(url)
+    called = []
+    monkeypatch.setattr(pipeline, "synthesize", lambda *a, **k: called.append(1))
+    with session_scope(url) as s:
+        pipeline.sync(s)
+        with pytest.raises(pipeline.NoData):
+            pipeline.synthesize_run(s, "2026-10")
+    assert not called
+
+
+def test_previous_month_of_other_client_is_ignored():
+    from creative_intel import pipeline
+    from creative_intel.config import load_competitors
+
+    name = load_competitors()[0].name
+    assert pipeline._same_universe({"totals": {"by_competitor": {"Otra marca": 5}}}) is None
+    ok = {"totals": {"by_competitor": {name: 5}}}
+    assert pipeline._same_universe(ok) is ok
