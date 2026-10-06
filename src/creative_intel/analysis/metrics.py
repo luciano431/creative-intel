@@ -17,6 +17,7 @@ from collections import Counter, defaultdict
 from typing import Any, Callable, Iterable
 
 from ..config import Taxonomy
+from .signals import versions_of
 
 
 def clean_headline(text: str | None) -> str:
@@ -115,6 +116,8 @@ def creative_to_item(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
         "engagement": dict(creative.engagement or {}),
         "thumbnail_path": creative.thumbnail_path,
         "raw": {k: (creative.raw or {}).get(k) for k in ("screenshot", "variations", "text_in_image", "regions", "first_seen_known")},
+        "versions": versions_of(creative.platform, creative.raw),
+        "months_in_top": len({s.run_id for s in (creative.sightings or [])}) or 1,
         "snapshot_url": creative.snapshot_url,
         "landing_url": creative.landing_url,
         "headline": clean_headline(creative.headline),

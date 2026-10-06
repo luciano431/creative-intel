@@ -179,6 +179,11 @@ def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> 
     prev_items = items_for(session, prev, taxonomy)
     metrics = build_metrics(items, taxonomy, previous_items=prev_items, period=period)
     metrics["concepts"] = group_concepts([it for it in items if it["tier"] != "own"])
+    from .analysis.metrics import start_known
+    from .analysis.signals import build_signals
+
+    metrics["signals"] = build_signals([it for it in items if it["tier"] != "own"], [it for it in prev_items if it["tier"] != "own"],
+                                       metrics["concepts"], start_known)
     add_declared_totals(metrics, (run.stats or {}).get("declared") or {})
     metrics["coverage"] = coverage(items)
     run.metrics = metrics

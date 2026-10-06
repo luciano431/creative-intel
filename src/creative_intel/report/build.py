@@ -79,8 +79,13 @@ def _has_preview(it: dict[str, Any]) -> bool:
 
 
 def top_creatives(items: list[dict[str, Any]], n: int = 10, per_competitor: int = 3) -> list[dict[str, Any]]:
-    """Top por permanencia al aire (señal observable), con tope por competidor para que no lo domine uno solo."""
-    ranked = sorted(items, key=lambda it: (not _has_preview(it), -it["days_active"], it["id"]))
+    """Top por señales observables (meses seguidos en el top, días al aire, versiones), con tope por competidor."""
+    from ..analysis.metrics import start_known
+    from ..analysis.signals import signal_list, signal_rank
+
+    for it in items:
+        it.setdefault("signals", signal_list(it, start_known(it)))
+    ranked = sorted(items, key=lambda it: (not _has_preview(it), *signal_rank(it, start_known(it)), it["id"]))
     out, per = [], {}
     for it in ranked:
         if per.get(it["competitor"], 0) >= per_competitor:
@@ -109,6 +114,9 @@ def build_report_context(
     brand = brand or load_brand()
     taxonomy = taxonomy or load_taxonomy()
     market_items = [it for it in items if it.get("tier") != "own"]
+    track = ((metrics.get("signals") or {}).get("movement") or {}).get("track") or {}
+    for it in market_items:
+        it["track"] = track.get(str(it["id"]), "primera")
     by_id = {it["id"]: it for it in items}
     syn_refs = {r.get("creative_id"): r for r in synthesis.get("reference_creatives", []) or []}
 

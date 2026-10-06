@@ -306,6 +306,19 @@
     </tbody>
   </table></div>
   {% endif %}
+  {% set mov = (metrics.signals or {}).movement or {} %}
+  {% if mov.has_previous and mov.by_competitor %}
+  <h3 style="margin:8px 0 6px">Movimiento del mes</h3>
+  <p class="small muted" style="margin:0 0 10px">Comparado con el mes anterior, entre los anuncios más vistos de cada marca: cuántos entraron, cuántos siguen y cuántos salieron.</p>
+  <div class="tbl" style="margin-bottom:22px"><table>
+    <thead><tr><th>Competidor</th><th>Entraron</th><th>Siguen</th><th>Salieron</th></tr></thead>
+    <tbody>
+    {% for name, r in mov.by_competitor | dictsort %}
+      <tr><td><b>{{ name }}</b></td><td>{{ r.new }}{% if r.first_time %} <span class="small muted">(+{{ r.first_time }} primera medición)</span>{% endif %}</td><td>{{ r.kept }}</td><td>{{ r.dropped }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
   <div class="tbl"><table>
     <thead><tr><th>Competidor</th><th>Analizados (de los activos)</th><th>Mensaje principal</th><th>Cómo engancha</th><th>Formato principal</th><th>Con promoción</th><th>Duración típica</th></tr></thead>
     <tbody>
@@ -417,7 +430,7 @@
 
 <section id="referencias">
   <div class="sec-head"><span class="sec-num">{{ num() }}</span><h2>Creativos de referencia</h2></div>
-  <p class="sec-intro">Los 10 anuncios locales y los 10 globales que más tiempo llevan al aire (máximo 3 por competidor). Son para inspirarnos y adaptar la idea, nunca para copiarlos.</p>
+  <p class="sec-intro">Los anuncios con más señales de que le sirven a quien los paga: más meses seguidos entre los más vistos, más días al aire y más versiones de la misma pieza (máximo 3 por competidor). Son para inspirarnos y adaptar la idea, nunca para copiarlos.</p>
   <div class="seg tabs" data-group="refs">
     <button class="tab on" data-target="ref-local">Top 10 locales</button>
     <button class="tab" data-target="ref-global">Top 10 globales</button>
@@ -430,7 +443,7 @@
       <div class="cr">
         {{ preview(it, True) }}
         <div class="cr-body">
-          <div class="cr-top"><span class="rank">#{{ loop.index }}</span><span class="days">{{ it.days_active }} días al aire</span></div>
+          <div class="cr-top"><span class="rank">#{{ loop.index }}</span><span class="days">{{ it.signals | join(' · ') if it.signals else 'Sin historial todavía' }}</span></div>
           <h4>{{ it.competitor }}</h4>
           {% if it.headline %}<div class="hl">“{{ it.headline[:120] }}{% if it.headline | length > 120 %}…{% endif %}”</div>{% endif %}
           <div class="tags">
