@@ -46,3 +46,25 @@ def test_insights_collector_with_fake_graph_api():
     raws = col.collect(own)
     assert [r.external_id for r in raws] == ["own-11", "own-22"]
     assert raws[0].engagement["performance"]["cost_per_result"] == 10.0 and raws[0].format == "video"
+
+
+def test_several_ad_accounts_are_summed():
+    import httpx
+
+    from creative_intel.collectors.meta_insights import MetaInsightsCollector
+    from creative_intel.config import CompetitorConfig
+
+    seen = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/insights"):
+            acct = req.url.path.split("/")[-2]
+            seen.append(acct)
+            rows = [{"ad_id": acct[-1], "ad_name": "x", "spend": "10", "impressions": "100", "clicks": "1", "ctr": "1", "actions": []}] if acct == "act_2" else []
+            return httpx.Response(200, json={"data": rows})
+        return httpx.Response(200, json={"id": "2", "creative": {}})
+
+    assert MetaInsightsCollector.accounts("act_1, 2") == ["act_1", "act_2"]
+    col = MetaInsightsCollector(token="t", client=httpx.Client(transport=httpx.MockTransport(handler)))
+    raws = col.collect(CompetitorConfig(slug="c", name="C", country="UY", tier="own", meta_ad_account_id="act_1,act_2"))
+    assert seen == ["act_1", "act_2"] and len(raws) == 1

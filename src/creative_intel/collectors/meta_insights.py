@@ -75,12 +75,18 @@ class MetaInsightsCollector:
             raise RuntimeError(f"Meta Marketing API: {msg}")
         return resp.json()
 
+    @staticmethod
+    def accounts(value: str) -> list[str]:
+        """Una o varias cuentas separadas por coma ("act_1, act_2" o solo los números)."""
+        return [a if a.startswith("act_") else f"act_{a}" for a in (x.strip() for x in value.split(",")) if a]
+
     def collect(self, competitor: CompetitorConfig) -> list[RawCreative]:
-        acct = competitor.meta_ad_account_id if competitor.meta_ad_account_id.startswith("act_") else f"act_{competitor.meta_ad_account_id}"
         until = dt.date.today()
         since = until - dt.timedelta(days=self.days)
-        data = self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500,
-                         time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
+        data: list[dict[str, Any]] = []
+        for acct in self.accounts(competitor.meta_ad_account_id):  # varias cuentas: se suman (las sin gasto no aportan)
+            data += self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500,
+                              time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
         top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[: self.limit]
         out: list[RawCreative] = []
         for ins in top:

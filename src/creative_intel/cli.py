@@ -460,7 +460,7 @@ def set_cmd(
     domain: Optional[str] = typer.Option(None, "--domain", help="Dominio para Google (\"\" para borrarlo)"),
     website: Optional[str] = typer.Option(None, "--website", help="Web"),
     countries: Optional[str] = typer.Option(None, "--countries", help="Países donde buscar sus anuncios, ej. ALL o ES,IT"),
-    ad_account: Optional[str] = typer.Option(None, "--ad-account", help="Solo el cliente: cuenta publicitaria para traer sus resultados (act_123...)"),
+    ad_account: Optional[str] = typer.Option(None, "--ad-account", help="Solo el cliente: cuenta(s) publicitaria(s) para traer sus resultados (act_1 o act_1,act_2)"),
 ) -> None:
     """Cambia a mano los datos de un competidor (o del cliente) del cliente actual."""
     from .config import CONFIG_DIR
@@ -478,8 +478,9 @@ def set_cmd(
     if countries is not None:
         fields["ad_countries"] = [c.strip().upper() for c in countries.split(",") if c.strip()]
     if ad_account is not None:
-        acct = ad_account.strip()
-        fields["meta_ad_account_id"] = acct if not acct or acct.startswith("act_") else f"act_{acct}"
+        from .collectors.meta_insights import MetaInsightsCollector
+
+        fields["meta_ad_account_id"] = ", ".join(MetaInsightsCollector.accounts(ad_account))
     if not fields:
         raise typer.BadParameter("Indicá al menos un dato: --name, --meta, --domain, --website, --countries o --ad-account")
     try:
