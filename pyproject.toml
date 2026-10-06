@@ -9,6 +9,7 @@ description = "Radar creativo de Ranker: monitoreo creativo de la competencia en
 requires-python = ">=3.11"
 dependencies = [
   "anthropic>=1.10",
+  "openai>=1.60",
   "pydantic>=2.7",
   "sqlalchemy>=2.0",
   "httpx>=0.27",

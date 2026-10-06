@@ -20,7 +20,7 @@
       <h2>Generar el plan creativo</h2>
       <p class="muted small" style="margin:0 0 14px">Recolecta los anuncios del mes, los clasifica, arma el análisis y deja el informe listo para revisar. Tarda entre 10 y 40 minutos según la cantidad de competidores.</p>
       <div class="field"><label for="period">Mes</label><input type="month" id="period" value="{{ default_period }}"></div>
-      <label class="check"><input type="checkbox" id="ai" {{ 'checked' if has_api_key }}> Clasificar y escribir con IA (Claude)</label>
+      <label class="check"><input type="checkbox" id="ai" {{ 'checked' if has_api_key }}> Clasificar y escribir con IA ({{ ai_name or 'Claude' }})</label>
       {% if not has_api_key %}<p class="small muted" style="margin:4px 0 0 26px">No hay clave de API cargada en <code>.env</code>: se usa la versión sin IA.</p>{% endif %}
       <label class="check" style="margin-top:6px"><input type="checkbox" id="skip"> No volver a recolectar (usar los anuncios ya bajados)</label>
       <div class="row" style="margin-top:16px"><button class="btn" id="go" {{ 'disabled' if running }}>Generar informe</button></div>

@@ -146,7 +146,7 @@ def synthesize(period: Optional[str] = PeriodOpt, mock_ai: bool = typer.Option(F
         problem = api_problem(exc)
         if not problem:
             raise
-        rprint(f"[red]No se pudo usar Claude.[/red] {problem}")
+        rprint(f"[red]No se pudo usar la IA.[/red] {problem}")
         raise typer.Exit(1)
     rprint(f"[green]Síntesis #{synth_id} creada[/green] (modelo {synth_model}, estado {synth_status}).")
     if not mock_ai:
@@ -582,7 +582,7 @@ def run_cycle(
         problem = str(exc) if isinstance(exc, ApiUnavailable) else api_problem(exc)
         if not problem:
             raise
-        rprint(f"[red]No se pudo usar Claude.[/red] {problem}")
+        rprint(f"[red]No se pudo usar la IA.[/red] {problem}")
         raise typer.Exit(1)
     rprint(summary)
     if not mock_ai:
@@ -593,16 +593,16 @@ def run_cycle(
 
 @app.command("check-api")
 def check_api_cmd() -> None:
-    """Confirma que la clave de Claude anda y que la cuenta tiene crédito (cuesta una fracción de centavo)."""
+    """Confirma que la clave de la IA (OpenAI o Claude) anda y que la cuenta tiene saldo (cuesta una fracción de centavo)."""
     from .ai.client import ApiUnavailable, check_api
     from .config import settings
 
     try:
         check_api()
     except ApiUnavailable as exc:
-        rprint(f"[red]No se pudo usar Claude.[/red] {exc}")
+        rprint(f"[red]No se pudo usar la IA.[/red] {exc}")
         raise typer.Exit(1)
-    rprint(f"[green]Claude OK:[/green] la clave anda y hay crédito (modelo {settings.classify_model}).")
+    rprint(f"[green]IA OK ({settings.ai_provider}):[/green] la clave anda y hay saldo. Clasifica con {settings.classify_model} y escribe el plan con {settings.synth_model}.")
 
 
 @app.command()

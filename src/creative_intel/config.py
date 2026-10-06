@@ -21,12 +21,27 @@ DATA_DIR = ROOT / "data" / "clients" / RADAR_CLIENT if RADAR_CLIENT else ROOT / 
 REPORTS_DIR = Path(os.getenv("REPORTS_DIR") or (ROOT / "reports" / RADAR_CLIENT if RADAR_CLIENT else "reports"))
 
 
+def _ai_provider() -> str:
+    """openai | anthropic. Sin AI_PROVIDER: OpenAI si solo hay clave de OpenAI; si no, Anthropic."""
+    explicit = os.getenv("AI_PROVIDER", "").strip().lower()
+    if explicit in ("openai", "anthropic"):
+        return explicit
+    return "openai" if os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY") else "anthropic"
+
+
+AI_PROVIDER = _ai_provider()
+
+
 @dataclass
 class Settings:
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / ('radar.db' if RADAR_CLIENT else 'creative_intel.db')}")
     assets_dir: Path = Path(os.getenv("ASSETS_DIR", DATA_DIR / "assets"))
-    classify_model: str = os.getenv("CLASSIFY_MODEL", "claude-sonnet-5-5")
-    synth_model: str = os.getenv("SYNTH_MODEL", "claude-opus-5-5")
+    ai_provider: str = AI_PROVIDER
+    # Clasificar: modelo barato con visión. Escribir el plan: el modelo más capaz.
+    classify_model: str = (os.getenv("OPENAI_CLASSIFY_MODEL", "gpt-5.4-mini") if AI_PROVIDER == "openai"
+                           else os.getenv("CLASSIFY_MODEL", "claude-sonnet-5-5"))
+    synth_model: str = (os.getenv("OPENAI_SYNTH_MODEL", "gpt-5.4") if AI_PROVIDER == "openai"
+                        else os.getenv("SYNTH_MODEL", "claude-opus-5-5"))
     # Anuncios por marca y por plataforma: en Meta los más vistos (orden por impresiones), en Google los primeros.
     top_ads_per_brand: int = int(os.getenv("TOP_ADS_PER_BRAND", "5"))
     # Tope de gasto de IA por corrida (por cliente). Al llegar, la clasificación se detiene y guarda lo hecho.

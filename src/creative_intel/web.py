@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .clients import PERIOD_RE, ClientEntry, get_client, list_clients, scaffold_client
-from .config import ROOT, load_brand, load_competitors
+from .config import ROOT, load_brand, load_competitors, settings
 
 TEMPLATES = Path(__file__).parent / "web_templates"
 _env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape(["html", "j2"]))
@@ -176,7 +176,8 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
         return render(
             "client.html.j2", c=c, domain_of=domain_of, jobs=[j.as_dict() for j in jobs.recent_for(key)],
             running=jobs.running_for(key), default_period=today.strftime("%Y-%m"),
-            has_api_key=bool(os.getenv("ANTHROPIC_API_KEY") or _dotenv_has_key(root)),
+            has_api_key=bool(os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or _dotenv_has_key(root)),
+            ai_name="OpenAI" if settings.ai_provider == "openai" else "Claude",
             config_text=c.config_path.read_text(encoding="utf-8"),
         )
 
@@ -258,7 +259,7 @@ def _dotenv_has_key(root: Path) -> bool:
     env = root / ".env"
     if not env.exists():
         return False
-    return any(re.match(r"^\s*ANTHROPIC_API_KEY\s*=\s*\S+", line) for line in env.read_text(encoding="utf-8", errors="ignore").splitlines())
+    return any(re.match(r"^\s*(ANTHROPIC|OPENAI)_API_KEY\s*=\s*\S+", line) for line in env.read_text(encoding="utf-8", errors="ignore").splitlines())
 
 
 
