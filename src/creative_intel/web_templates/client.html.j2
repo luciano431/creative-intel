@@ -27,6 +27,21 @@
       <div class="err" id="err-informe"></div>
     </div>
     <div class="card">
+      <h2>Guía de evento</h2>
+      <p class="muted small" style="margin:0 0 14px">Cómo encaró la competencia la edición anterior de una fecha comercial (cuándo arrancó, qué ofertas, cuánta urgencia) y el plan para el cliente: calendario de piezas e ideas con guion.</p>
+      {% if events %}
+      <div class="fields">
+        <div class="field"><label for="ev">Evento</label><select id="ev">{% for k, e in events.items() %}<option value="{{ k }}">{{ e.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="ed">Edición a estudiar</label><select id="ed">{% for k, e in events.items() %}{% for x in e.editions %}<option data-ev="{{ k }}" value="{{ x.label }}"{% if loop.last %} selected{% endif %}>{{ e.name }} {{ x.label }}</option>{% endfor %}{% endfor %}</select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="ev-ai" {{ 'checked' if has_api_key }}> Con IA ({{ ai_name or 'Claude' }})</label>
+      <div class="row" style="margin-top:14px"><button class="btn" id="go-ev" {{ 'disabled' if running }}>Generar guía</button></div>
+      <div class="err" id="err-ev"></div>
+      {% else %}<p class="muted small">No hay eventos cargados en config/events.yaml.</p>{% endif %}
+      {% set evr = c.event_reports() %}
+      {% if evr %}<table style="margin-top:12px"><tbody>{% for r in evr %}<tr><td>{{ r.name }}</td><td style="text-align:right"><a href="{{ r.url }}" target="_blank" rel="noopener">Abrir</a></td></tr>{% endfor %}</tbody></table>{% endif %}
+    </div>
+    <div class="card">
       <h2>Informes</h2>
       {% if periods %}
       <table><tbody>
@@ -122,7 +137,7 @@ function addJob(j) {
   el.innerHTML = '<div class="row"><b></b> <span class="tag st"></span> <span class="small muted el"></span> <a class="small res" target="_blank" rel="noopener" style="display:none">Abrir informe</a></div><pre class="log"></pre>';
   el.querySelector('b').textContent = j.title; el.querySelector('.res').href = j.result_url || '#';
   $('job-list').prepend(el); paint(el, j);
-  document.querySelectorAll('#go, #ids, #disc').forEach(b => b.disabled = true);
+  document.querySelectorAll('#go, #ids, #disc, #go-ev').forEach(b => { if (b) b.disabled = true; });
   $('jobs').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 async function poll() {
@@ -141,6 +156,13 @@ async function start(body, errId) {
   try { addJob(await api('/api/c/' + KEY + '/tareas', body)); } catch (e) { $(errId).textContent = e.message; }
 }
 $('go').addEventListener('click', () => start({kind: 'informe', period: $('period').value, ai: $('ai').checked, skip_collect: $('skip').checked}, 'err-informe'));
+if ($('go-ev')) {
+  const syncEd = () => { const ev = $('ev').value; let first = null;
+    [...$('ed').options].forEach(o => { o.hidden = o.dataset.ev !== ev; if (!o.hidden) first = o; });
+    if ($('ed').selectedOptions[0]?.hidden && first) first.selected = true; };
+  $('ev').addEventListener('change', syncEd); syncEd();
+  $('go-ev').addEventListener('click', () => start({kind: 'evento', event: $('ev').value, edition: $('ed').value, ai: $('ev-ai').checked}, 'err-ev'));
+}
 $('ids').addEventListener('click', () => start({kind: 'ids'}, 'err-comp'));
 $('disc').addEventListener('click', () => start({kind: 'competidores', keywords: $('kw').value, countries: $('ct').value, tier: $('tier').value, top: $('top').value}, 'err-comp'));
 $('save').addEventListener('click', async () => {

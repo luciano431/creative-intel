@@ -255,3 +255,68 @@ def load_client(path: Path | None = None) -> ClientInfo:
         description=c.get("description", ""),
         brief=_brief(c.get("brief")),
     )
+
+
+# ----------------------------------------------------------------------------- fechas comerciales
+
+
+@dataclass
+class EventEdition:
+    label: str
+    date_from: Any
+    date_to: Any
+    start: Any = None
+    end: Any = None
+
+
+@dataclass
+class EventConfig:
+    key: str
+    name: str
+    keywords: list[str]
+    countries: list[str]
+    editions: list[EventEdition]
+    next_start: Any = None
+    next_end: Any = None
+
+    def edition(self, label: str | None = None) -> EventEdition:
+        if not self.editions:
+            raise ValueError(f"El evento {self.name} no tiene ediciones cargadas en events.yaml")
+        if label is None:
+            return self.editions[-1]
+        for e in self.editions:
+            if e.label == label:
+                return e
+        raise ValueError(f"No hay edición «{label}» de {self.name}. Las que hay: {', '.join(e.label for e in self.editions)}")
+
+
+def _date(v: Any):
+    import datetime as _dt
+
+    if v in (None, "", "null"):
+        return None
+    if isinstance(v, _dt.date):
+        return v
+    return _dt.date.fromisoformat(str(v))
+
+
+def load_events(config_dir: Path | None = None) -> dict[str, EventConfig]:
+    """Eventos generales (config/events.yaml) más los del cliente (config/clients/<slug>/events.yaml), que pisan."""
+    raw: dict[str, Any] = {}
+    for path in (ROOT / "config" / "events.yaml", (config_dir or CONFIG_DIR) / "events.yaml"):
+        if path.exists():
+            raw.update((yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("events") or {})
+    out = {}
+    for key, e in raw.items():
+        nxt = e.get("next") or {}
+        out[key] = EventConfig(
+            key=key,
+            name=e.get("name") or key,
+            keywords=[str(k) for k in e.get("keywords") or []],
+            countries=[str(c).upper() for c in e.get("countries") or ["UY"]],
+            editions=[EventEdition(label=str(x["label"]), date_from=_date(x.get("from")), date_to=_date(x.get("to")),
+                                   start=_date(x.get("start")), end=_date(x.get("end"))) for x in e.get("editions") or []],
+            next_start=_date(nxt.get("start")),
+            next_end=_date(nxt.get("end")),
+        )
+    return out

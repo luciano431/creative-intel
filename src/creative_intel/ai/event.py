@@ -1,0 +1,88 @@
+"""Guía de un evento comercial para un cliente: calendario de piezas, oferta e ideas con guion.
+
+Se apoya en lo que hizo el mercado en la edición anterior (analysis/event.py) y en la hoja del cliente.
+"""
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from pydantic import Field
+
+from ..config import settings
+from .client import structured_call
+from .synthesize import ConceptIdea, _compact_items, _Strict
+
+
+class EventFact(_Strict):
+    headline: str = Field(description="Titular corto con el dato (máx. 12 palabras)")
+    detail: str = Field(description="El dato con sus números, en una o dos oraciones. Sin interpretar")
+
+
+class CalendarItem(_Strict):
+    when: str = Field(description="Cuándo, relativo al evento: '10 días antes', 'el día', 'último día', 'extensión'")
+    goal: str = Field(description="Para qué: anticipar, lanzar, empujar, cerrar")
+    format: str = Field(description="Formato de la pieza (video, carrusel, imagen, historia)")
+    message: str = Field(description="Mensaje central, textual")
+    cta: str
+
+
+class EventPlan(_Strict):
+    summary: list[EventFact] = Field(description="3 a 4 hechos de cómo lo encaró el mercado en la edición anterior")
+    offer_recommendation: str = Field(description="Qué oferta conviene comunicar y por qué, citando lo que hizo el mercado y respetando la hoja del cliente")
+    calendar: list[CalendarItem] = Field(description="4 a 8 piezas en orden de salida")
+    ideas: list[ConceptIdea] = Field(description="3 a 5 ideas completas y listas para producir")
+    avoid: list[str] = Field(description="2 a 4 cosas a no hacer, basadas en datos o en la hoja del cliente")
+
+
+EVENT_PROMPT = """Sos el/la director/a de estrategia creativa de Ranker. Armás la guía de {event} para {client} ({industry}, {market}).
+Recibís cómo lo encaró el mercado en la edición anterior (`event_metrics`: cuándo arrancaron los anuncios respecto del día del evento, qué ofertas y qué tan profundas, cuánta urgencia, formatos, quién pautó), los anuncios de esa edición, la hoja del cliente y las fechas de la próxima edición si están.
+
+Reglas:
+1. Castellano claro, voseo, sin jerga en inglés. Solo hechos de los datos: conteos, porcentajes, días. Nada de "probablemente" ni "busca".
+2. El calendario sale del timing real del mercado (si 6 de cada 10 anuncios arrancaron en la previa, la previa importa) y se escribe relativo al evento.
+3. La oferta respeta la hoja del cliente: si no tiene promociones, no inventes descuentos; proponé beneficios que no bajen el precio y marcalos como propuesta.
+4. Las ideas las escribís completas: título, gancho textual, guion por escenas con tiempos (o placa por placa), copy listo, CTA y dirección visual, con el tono de la hoja.
+5. Si los datos son pocos (menos de 10 anuncios), decilo en el resumen y no generalices."""
+
+
+def synthesize_event(event_name: str, metrics: dict[str, Any], items: list[dict[str, Any]], client_info: Any, next_dates: dict[str, Any],
+                     labels: dict[str, str] | None = None) -> dict[str, Any]:
+    payload = {
+        "client": {"name": client_info.name, "industry": client_info.industry, "market": client_info.market},
+        "client_brief": client_info.brief or None,
+        "event": event_name,
+        "next_edition": next_dates,
+        "event_metrics": metrics,
+        "labels": labels or {},
+        "creatives": _compact_items(items, limit=150),
+    }
+    content = [{"type": "text", "text": "Datos del evento (JSON):\n" + json.dumps(payload, ensure_ascii=False, default=str) + "\n\nArmá la guía."}]
+    system = EVENT_PROMPT.format(event=event_name, client=client_info.name, industry=client_info.industry or "sin industria definida",
+                                 market=client_info.market or "mercado local")
+    return structured_call(EventPlan, system, content, model=settings.synth_model, max_tokens=16000, effort="high", stream=True).model_dump()
+
+
+def mock_event_plan(event_name: str, metrics: dict[str, Any], client_name: str) -> dict[str, Any]:
+    """Versión sin IA (para probar el circuito): solo arma el esqueleto con los números."""
+    n = metrics.get("ads", 0)
+    t = metrics.get("timing") or {}
+    ph = t.get("phases") or {}
+    offers = (metrics.get("offers") or {}).get("dist") or []
+    top_offer = offers[0]["value"].replace("_", " ") if offers else "sin ofertas detectadas"
+    summary = [
+        {"headline": f"{n} anuncios en la edición anterior", "detail": f"Arrancaron hasta {t.get('earliest_days_before', 0)} días antes del evento."},
+        {"headline": "Cuándo salieron", "detail": f"Anticipo {ph.get('anticipo', 0)}, previa {ph.get('previa', 0)}, durante {ph.get('durante', 0)}, después {ph.get('despues', 0)}."},
+        {"headline": f"La oferta más usada: {top_offer}", "detail": f"Descuento máximo visto: {(metrics.get('offers') or {}).get('pct_max') or '—'}%."},
+    ]
+    calendar = [
+        {"when": w, "goal": g, "format": f, "message": m, "cta": c}
+        for w, g, f, m, c in (
+            ("10 días antes", "anticipar", "historia", f"Se viene {event_name} en {client_name}", "Activá el recordatorio"),
+            ("2 días antes", "calentar", "carrusel", "Lo que va a estar en oferta", "Mirá la selección"),
+            ("el día", "lanzar", "video", f"Arrancó {event_name}", "Comprá ahora"),
+            ("último día", "cerrar", "imagen", "Últimas horas", "Aprovechá hoy"),
+        )
+    ]
+    return {"summary": summary, "offer_recommendation": f"(Sin IA) La oferta más usada fue {top_offer}.", "calendar": calendar,
+            "ideas": [], "avoid": ["(Sin IA) Correr con IA para obtener ideas con guion."]}

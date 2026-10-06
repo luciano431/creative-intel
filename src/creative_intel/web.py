@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .clients import PERIOD_RE, ClientEntry, get_client, list_clients, scaffold_client
-from .config import ROOT, load_brand, load_competitors, settings
+from .config import ROOT, load_brand, load_competitors, load_events, settings
 
 TEMPLATES = Path(__file__).parent / "web_templates"
 _env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape(["html", "j2"]))
@@ -179,6 +179,7 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
             has_api_key=bool(os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or _dotenv_has_key(root)),
             ai_name="OpenAI" if settings.ai_provider == "openai" else "Claude",
             config_text=c.config_path.read_text(encoding="utf-8"),
+            events=load_events(c.config_path.parent),
         )
 
     @app.post("/api/clientes")
@@ -207,6 +208,23 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
                 run.append("--skip-collect")
             job = jobs.start(c, kind, f"Informe {period}" + (" con IA" if body.get("ai") else " sin IA"),
                              [_radar("init-db"), _radar(*run)], result_url=c.report_url(period))
+        elif kind == "evento":
+            events = load_events(c.config_path.parent)
+            key_ev = str(body.get("event") or "")
+            if key_ev not in events:
+                raise HTTPException(400, "Evento desconocido")
+            args = ["evento", key_ev]
+            edition = str(body.get("edition") or "")
+            if edition:
+                if edition not in {e.label for e in events[key_ev].editions}:
+                    raise HTTPException(400, "Edición desconocida")
+                args += ["--edition", edition]
+            if not body.get("ai"):
+                args.append("--mock-ai")
+            ed = events[key_ev].edition(edition or None)
+            job = jobs.start(c, kind, f"Guía de {events[key_ev].name} ({ed.label})" + (" con IA" if body.get("ai") else " sin IA"),
+                             [_radar("init-db"), _radar(*args)],
+                             result_url=c.report_url("x").rsplit("/x/", 1)[0] + f"/eventos/{key_ev}-{ed.label}/report.html")
         elif kind == "ids":
             job = jobs.start(c, kind, "Completar IDs de Meta y Google", [_radar("init-db"), _radar("fill-ids", "--write")])
         elif kind == "competidores":

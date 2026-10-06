@@ -77,7 +77,8 @@ def upsert_creatives(
         fp = fingerprint(raw)
         creative = session.query(Creative).filter_by(fingerprint=fp).one_or_none()
         declared_first = raw.first_seen
-        declared_last = raw.last_seen or (seen_on if raw.is_active else None)
+        # Finalizado sin fecha de fin: no se inventa duración (queda igual al inicio, "sin dato")
+        declared_last = raw.last_seen or (seen_on if raw.is_active else (raw.first_seen or None))
         if creative is None:
             creative = Creative(
                 fingerprint=fp,

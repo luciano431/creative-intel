@@ -94,3 +94,14 @@ def test_password_protects_pages_reports_and_api(tmp_path, monkeypatch):
     assert client.get("/", headers=bad).status_code == 401
     good = {"Authorization": "Basic " + base64.b64encode("cualquiera:clave-secreta-123".encode()).decode()}
     assert client.get("/", headers=good).status_code == 200
+
+
+def test_event_task_validates_and_starts(site, monkeypatch):
+    client, app, _ = site
+    started = {}
+    monkeypatch.setattr(app.state.jobs, "start", lambda c, kind, title, commands, result_url="": started.update(kind=kind, cmd=commands[-1], url=result_url) or type("J", (), {"as_dict": lambda self: {"ok": 1}})())
+    assert "Guía de evento" in client.get("/c/miseguro").text
+    assert client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "nada"}).status_code == 400
+    r = client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "cyberlunes", "edition": "2025-06"})
+    assert r.status_code == 200 and started["cmd"][-4:] == ["cyberlunes", "--edition", "2025-06", "--mock-ai"]
+    assert started["url"].endswith("/eventos/cyberlunes-2025-06/report.html")

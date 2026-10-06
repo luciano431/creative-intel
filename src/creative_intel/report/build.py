@@ -195,24 +195,29 @@ def build_report_context(
     }
 
 
+def render_assets(items: list[dict[str, Any]], out_dir: str | Path, wanted: set | None = None) -> None:
+    """Copia la imagen de cada anuncio junto al informe y le deja a cada item su ruta relativa."""
+    out = Path(out_dir)
+    assets_out = out / "assets"
+    assets_out.mkdir(parents=True, exist_ok=True)
+    for it in items:
+        if wanted is not None and it["id"] not in wanted:
+            continue
+        raw = it.get("raw") if isinstance(it.get("raw"), dict) else {}
+        for p in (it.get("thumbnail_path"), (raw or {}).get("screenshot")):
+            if p and Path(p).is_file():
+                dest = assets_out / Path(p).name
+                if not dest.exists():
+                    shutil.copy(p, dest)
+                it["thumbnail_rel"] = f"assets/{Path(p).name}"
+                break
+
+
 def render_report(context: dict[str, Any], out_dir: str | Path, copy_assets: bool = True) -> dict[str, Path]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     if copy_assets:
-        assets_out = out / "assets"
-        assets_out.mkdir(exist_ok=True)
-        wanted = context.get("display_ids")
-        for it in context["items"]:
-            if wanted is not None and it["id"] not in wanted:
-                continue
-            raw = it.get("raw") if isinstance(it.get("raw"), dict) else {}
-            for p in (it.get("thumbnail_path"), (raw or {}).get("screenshot")):
-                if p and Path(p).is_file():
-                    dest = assets_out / Path(p).name
-                    if not dest.exists():
-                        shutil.copy(p, dest)
-                    it["thumbnail_rel"] = f"assets/{Path(p).name}"
-                    break
+        render_assets(context["items"], out, context.get("display_ids"))
     env = _env()
     outputs: dict[str, Path] = {}
     for tpl, name in (("report.html.j2", "report.html"), ("report.md.j2", "report.md"), ("basecamp.html.j2", "basecamp.html")):

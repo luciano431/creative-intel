@@ -126,6 +126,14 @@ class ClientEntry:
             return []
         return sorted((d.name for d in self.reports_dir.iterdir() if PERIOD_RE.match(d.name) and (d / "report.html").exists()), reverse=True)
 
+    def event_reports(self) -> list[dict[str, str]]:
+        d = self.reports_dir / "eventos"
+        if not d.is_dir():
+            return []
+        rel = self.reports_dir.relative_to(ROOT / "reports")
+        return [{"name": x.name, "url": "/reports/" + "/".join([*rel.parts, "eventos", x.name, "report.html"])}
+                for x in sorted(d.iterdir(), reverse=True) if (x / "report.html").exists()]
+
     def report_url(self, period: str) -> str:
         rel = self.reports_dir.relative_to(ROOT / "reports")
         return "/reports/" + "/".join([*rel.parts, period, "report.html"])

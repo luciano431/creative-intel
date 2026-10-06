@@ -15,6 +15,9 @@ from ..config import CompetitorConfig, settings
 from .base import RawCreative
 
 START_RE = re.compile(r"(?:Started running on|Comenzó a publicarse el|En circulación desde el)\s+(.+?)(?:\n|$)", re.I)
+# Anuncios finalizados: "3 nov 2025 - 5 nov 2025" / "Nov 3, 2025 - Nov 5, 2025"
+_DATE_PART = r"(\d{1,2}\s+(?:de\s+)?[A-Za-zÁÉÍÓÚáéíóú]{3,10}\.?\s+(?:de\s+)?\d{4}|[A-Za-z]{3,10}\.?\s+\d{1,2},?\s+\d{4})"
+RANGE_RE = re.compile(_DATE_PART + r"\s*[-–]\s*" + _DATE_PART)
 INACTIVE_RE = re.compile(r"^\s*(Inactivo|Inactive|Finalizado)\b", re.I | re.M)
 ID_RE = re.compile(r"(?:Library ID|Identificador de la biblioteca|ID de la biblioteca)[:\s]+(\d+)", re.I)
 MONTHS = {
@@ -53,6 +56,51 @@ class MetaAdLibraryWebCollector:
 
     def supports(self, competitor: CompetitorConfig) -> bool:
         return bool(competitor.meta_page_id)
+
+    @staticmethod
+    def window_params(date_from=None, date_to=None) -> str:
+        """Filtro por fecha de inicio del anuncio (para estudiar ediciones pasadas de un evento)."""
+        out = ""
+        if date_from:
+            out += f"&start_date[min]={date_from.isoformat()}"
+        if date_to:
+            out += f"&start_date[max]={date_to.isoformat()}"
+        return out
+
+    def keyword_url(self, keyword: str, country: str, date_from=None, date_to=None) -> str:
+        from urllib.parse import quote
+
+        return (
+            f"https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country={country}"
+            f"&q={quote(keyword)}&search_type=keyword_unordered&media_type=all"
+            "&sort_data[direction]=desc&sort_data[mode]=total_impressions" + self.window_params(date_from, date_to)
+        )
+
+    def collect_window(self, competitor: CompetitorConfig, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
+        """Los anuncios más vistos de una marca que arrancaron dentro de una ventana de fechas (activos o finalizados)."""
+        url = self.url_for(competitor, country, status="all") + self.window_params(date_from, date_to)
+        return self._collect_url(url, competitor.slug, competitor.name, country, limit)
+
+    def collect_keyword(self, keyword: str, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
+        """Los anuncios más vistos de cualquier anunciante que mencionan una palabra (ej. 'cyberlunes') en una ventana."""
+        return self._collect_url(self.keyword_url(keyword, country, date_from, date_to), None, "", country, limit)
+
+    def _collect_url(self, url: str, slug: str | None, name: str, country: str, limit: int) -> list[RawCreative]:
+        from playwright.sync_api import sync_playwright
+
+        out: list[RawCreative] = []
+        assets = settings.assets_dir / "screenshots"
+        assets.mkdir(parents=True, exist_ok=True)
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=self.headless, executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_PATH") or None)
+            page = browser.new_page(viewport={"width": 1400, "height": 1000}, locale="es-UY")
+            page.goto(url, wait_until="domcontentloaded", timeout=90_000)
+            page.wait_for_timeout(4000)
+            self._scroll(page, rounds=max(2, limit // 4))
+            fake = CompetitorConfig(slug=slug or "mercado", name=name, country=country, tier="local") if slug is not None else None
+            self._take(page, fake, country, out, assets, limit=limit, market=slug is None)
+            browser.close()
+        return out
 
     def url_for(self, competitor: CompetitorConfig, country: str, status: str = "active") -> str:
         return (
@@ -102,7 +150,8 @@ class MetaAdLibraryWebCollector:
             browser.close()
         return out
 
-    def _take(self, page, competitor: CompetitorConfig, country: str, out: list[RawCreative], assets: Path, limit: int | None = None) -> None:
+    def _take(self, page, competitor: CompetitorConfig | None, country: str, out: list[RawCreative], assets: Path, limit: int | None = None,
+              market: bool = False) -> None:
         """Toma hasta `limit` tarjetas nuevas (sin repetir IDs ya tomados) en el orden de la Biblioteca."""
         limit = self.max_cards if limit is None else limit
         cards = page.locator("div[class*='x1plvlek'] >> xpath=ancestor::div[contains(@class,'xh8yej3')][1]")
@@ -122,6 +171,13 @@ class MetaAdLibraryWebCollector:
                 continue
             taken += 1
             start = START_RE.search(text)
+            span = RANGE_RE.search(text)
+            page_name = page_name_of(text)
+            if market:  # búsqueda por palabra: cada tarjeta es de un anunciante distinto
+                from ..discovery import slugify
+
+                competitor = CompetitorConfig(slug="mkt-" + slugify(page_name or "anunciante"), name=page_name or "Anunciante",
+                                              country=country, tier="mercado")
             img_info = card.locator("img").evaluate_all("els => els.map(e => ({src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height}))")
             imgs = [i["src"] for i in sorted(img_info, key=lambda i: -(i["w"] * i["h"])) if i["src"] and i["w"] >= 150 and i["h"] >= 150]
             vids = card.locator("video").evaluate_all("els => els.map(e => e.src || (e.querySelector('source')||{}).src)")
@@ -134,6 +190,8 @@ class MetaAdLibraryWebCollector:
                 except Exception:
                     shot = ""
             parsed = parse_card_text(text, competitor.name)
+            first = parse_human_date(start.group(1)) if start else (parse_human_date(span.group(1)) if span else None)
+            last = parse_human_date(span.group(2)) if span and not start else None
             out.append(
                 RawCreative(
                     competitor_slug=competitor.slug,
@@ -151,9 +209,10 @@ class MetaAdLibraryWebCollector:
                     thumbnail_url=next((u for u in imgs if u), ""),
                     snapshot_url=f"https://www.facebook.com/ads/library/?id={ext_id}",
                     countries=[] if country.upper() == "ALL" else [country],
-                    first_seen=parse_human_date(start.group(1)) if start else None,
+                    first_seen=first,
+                    last_seen=last,
                     is_active=not INACTIVE_RE.search(text),
-                    raw={"card_text": text, "screenshot": shot, "multiple_versions": parsed["multiple_versions"]},
+                    raw={"card_text": text, "screenshot": shot, "multiple_versions": parsed["multiple_versions"], "page_name": page_name},
                 )
             )
 
@@ -211,6 +270,15 @@ def declared_results(text: str) -> int | None:
         return None
     n = int(re.sub(r"[.,]", "", m.group(1)) or 0)
     return n * 1000 if m.group(2) else n
+
+
+def page_name_of(card_text: str) -> str:
+    """Nombre del anunciante: la línea que sigue a "Ver detalles del anuncio" en la tarjeta."""
+    lines = [l.strip() for l in card_text.splitlines() if l.strip()]
+    for i, l in enumerate(lines):
+        if re.match(r"(Ver detalles|See ad details|Ver resumen|See summary)", l, re.I) and i + 1 < len(lines):
+            return lines[i + 1][:120]
+    return ""
 
 
 def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:

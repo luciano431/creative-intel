@@ -1,0 +1,132 @@
+{%- set C = brand.colors -%}
+{%- set m = event_metrics -%}
+{%- macro preview(it) -%}
+  <div class="pv">
+    {%- if it.thumbnail_rel -%}<img src="{{ it.thumbnail_rel }}" alt="Anuncio de {{ it.competitor }}">
+    {%- else -%}<div class="pv-empty">Sin vista previa{% if it.snapshot_url %}<br><a href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver en la biblioteca</a>{% endif %}</div>{%- endif -%}
+    <span class="pv-tag {{ it.platform }}">{{ lbl(it.platform) }}</span>
+  </div>
+{%- endmacro -%}
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de {{ event.name }} para {{ client.name }}</title>
+{% if brand.font_url %}<link rel="stylesheet" href="{{ brand.font_url }}">{% endif %}
+<style>
+{% include "_style.css.j2" %}
+  .phase { display: grid; grid-template-columns: 110px 1fr 48px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
+  .phase .track { background: var(--soft); border-radius: 6px; height: 14px; overflow: hidden; }
+  .phase .fill { background: var(--accent); height: 100%; }
+  .cal { display: grid; grid-template-columns: 140px 1fr; gap: 0; border-left: 3px solid var(--accent); margin-left: 6px; }
+  .cal > div { padding: 10px 14px; border-bottom: 1px dashed var(--line); }
+  .cal .when { font-weight: 700; }
+</style>
+</head>
+<body>
+<header class="cover">
+  <div class="wrap">
+    <div class="brandbar">
+      <a class="logo" href="{{ brand.agency_url or '#' }}">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span><span class="word">{{ brand.agency }}</span><span class="app">Radar creativo</span></span></a>
+      <div class="meta">{{ client.industry }}{% if client.market %} · {{ client.market }}{% endif %}</div>
+    </div>
+    <p class="kicker">Modo evento</p>
+    <h1>Guía de {{ event.name }} para <span>{{ client.name }}</span></h1>
+    <p class="lead">Basada en los anuncios de la edición {{ edition.label }}{% if m.event_start %} (evento: {{ m.event_start }}{% if m.event_end and m.event_end != m.event_start %} al {{ m.event_end }}{% endif %}{% if not m.official_dates %}, día de más anuncios{% endif %}){% endif %}</p>
+    <div class="chips">
+      <span class="chip">{{ m.ads }} anuncios de la edición</span>
+      {% if next_dates.start %}<span class="chip">Próxima edición: {{ next_dates.start }}</span>{% else %}<span class="chip warn">Fecha de la próxima edición sin confirmar</span>{% endif %}
+      <span class="chip">Generado {{ generated_at }}</span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+{% if not m.ads %}
+<section><div class="card">No se encontraron anuncios de esta edición. Revisá las fechas y palabras del evento en events.yaml.</div></section>
+{% else %}
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Cómo lo encaró el mercado</h2></div>
+  <p class="sec-intro">Los hechos de la edición anterior: cuándo salieron los anuncios, con qué oferta y con cuánta urgencia.</p>
+  <div class="grid g3">
+    {% for f in plan.summary %}<div class="card sum"><h3>{{ f.headline }}</h3><div>{{ f.detail }}</div></div>{% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Cuándo arrancan</h2></div>
+  <p class="sec-intro">Anuncios según cuándo empezaron a circular respecto del día del evento. El primero arrancó {{ m.timing.earliest_days_before }} días antes.</p>
+  <div class="card">
+    {% set tot = m.ads or 1 %}
+    {% for key, label in [('anticipo', 'Más de 7 días antes'), ('previa', '1 a 7 días antes'), ('durante', 'Durante'), ('despues', 'Después (extensión)')] %}
+    {% set v = m.timing.phases[key] %}
+    <div class="phase"><span>{{ label }}</span><div class="track"><div class="fill" style="width:{{ (100 * v / tot) | round | int }}%"></div></div><b>{{ v }}</b></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Ofertas y urgencia</h2></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Qué ofrecieron</h3>
+      <table><tbody>
+      {% for d in m.offers.dist %}<tr><td>{{ d.value | replace('_', ' ') | capitalize }}</td><td style="text-align:right">{{ d.count }} de {{ m.ads }}</td></tr>{% else %}<tr><td class="muted">Sin ofertas detectadas en el texto.</td></tr>{% endfor %}
+      </tbody></table>
+      {% if m.offers.with_pct %}<p class="small muted">Descuento: {{ m.offers.with_pct }} anuncios dicen un %; el más común ronda {{ m.offers.pct_median }}% y el máximo {{ m.offers.pct_max }}%.{% if m.offers.cuotas_max %} Cuotas: hasta {{ m.offers.cuotas_max }}.{% endif %}</p>{% endif %}
+    </div>
+    <div class="card">
+      <h3>Urgencia</h3>
+      <table><tbody>
+      {% for d in m.urgency %}<tr><td>{{ d.value | capitalize }}</td><td style="text-align:right">{{ d.count }} de {{ m.ads }}</td></tr>{% else %}<tr><td class="muted">Sin mensajes de urgencia.</td></tr>{% endfor %}
+      </tbody></table>
+      <h3 style="margin-top:14px">Formatos</h3>
+      <p class="small">{% for d in m.formats %}{{ lbl(d.value) }} {{ d.count }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+      {% if m.duration_median is not none %}<p class="small muted">Los anuncios ya finalizados duraron {{ m.duration_median }} días (mediana).</p>{% endif %}
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Quién pautó</h3>
+    <p class="small">{% for a in m.advertisers %}<b>{{ a.name }}</b> {{ a.ads }}{% if a.own %} (cliente){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Anuncios de referencia</h2></div>
+  <p class="sec-intro">Los de la edición anterior con más señales (más días al aire, más versiones). Para inspirarse, no para copiar.</p>
+  <div class="grid g3">
+    {% for it in refs %}
+    <div class="cr">{{ preview(it) }}<div class="cr-body"><div class="cr-top"><span class="tag">{{ lbl(it.format) }}</span><span class="days">{{ it.signals | join(' · ') }}</span></div><h4>{{ it.competitor }}</h4>{% if it.headline %}<div class="hl">“{{ it.headline[:120] }}”</div>{% endif %}{% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}</div></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Plan para {{ client.name }}</h2></div>
+  <div class="card" style="margin-bottom:16px"><h3>Oferta a comunicar</h3>{{ plan.offer_recommendation }}</div>
+  <h3>Calendario de piezas</h3>
+  <div class="cal">
+    {% for c in plan.calendar %}<div class="when">{{ c.when }}</div><div><b>{{ c.goal | capitalize }}</b> · {{ c.format }} — «{{ c.message }}» <span class="muted">({{ c.cta }})</span></div>{% endfor %}
+  </div>
+  {% if plan.ideas %}
+  <h3 style="margin-top:24px">Ideas listas para producir</h3>
+  <div class="grid g2">
+    {% for c in plan.ideas %}
+    <div class="card idea">
+      <h4 style="margin:0 0 6px">{{ c.title }}</h4>
+      <p class="small muted" style="margin:0 0 8px">{{ c.format }} · {{ lbl(c.angle) }}</p>
+      {% if c.hook_line %}<div class="idea-hook"><span class="k">Primeros 3 segundos</span>«{{ c.hook_line }}»</div>{% endif %}
+      {% if c.script %}<div class="k" style="margin:10px 0 4px">Guion</div><ol class="script">{% for b in c.script %}<li>{{ b }}</li>{% endfor %}</ol>{% endif %}
+      {% if c.copy_draft %}<p><b>Copy:</b> {{ c.copy_draft }}</p>{% endif %}
+      <p class="small"><b>CTA:</b> {{ c.cta }} · <b>Visual:</b> {{ c.visual_direction }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if plan.avoid %}<div class="card" style="margin-top:16px"><h3>Qué no hacer</h3><ul>{% for a in plan.avoid %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
+</section>
+{% endif %}
+<section><p class="small muted">Fuente: Biblioteca de anuncios de Meta, anuncios que empezaron a circular entre {{ edition.date_from }} y {{ edition.date_to }} (de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}). Las cifras cuentan anuncios, no inversión.</p></section>
+</main>
+</body>
+</html>

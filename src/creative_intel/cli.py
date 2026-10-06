@@ -622,9 +622,54 @@ def audit(period: Optional[str] = PeriodOpt, only: Optional[str] = typer.Option(
             rprint(f"  · {it['platform']:6} {it['status']:8} {days} · {img} · {text}")
 
 
+@app.command()
+def evento(
+    key: str = typer.Argument(..., help="Evento de events.yaml (ej. cyberlunes, black-friday)"),
+    edition: Optional[str] = typer.Option(None, "--edition", "-e", help="Edición a estudiar (por defecto, la última cargada)"),
+    mock_ai: bool = typer.Option(False, "--mock-ai", help="Sin IA: prueba el circuito sin gastar"),
+    skip_collect: bool = typer.Option(False, "--skip-collect", help="Usar los anuncios del evento ya bajados"),
+) -> None:
+    """Guía de un evento comercial: cómo lo encaró el mercado en la edición anterior y qué hace el cliente."""
+    from .ai.client import ApiUnavailable, api_problem, usage
+    from .config import load_events
+    from .events import run_event
+
+    events = load_events()
+    if key not in events:
+        raise typer.BadParameter(f"No existe «{key}». Los que hay: {', '.join(events) or 'ninguno (ver config/events.yaml)'}")
+    ev = events[key]
+    try:
+        ed = ev.edition(edition)
+        usage.reset()
+        with session_scope() as s:
+            summary = run_event(s, ev, ed, mock_ai=mock_ai, skip_collect=skip_collect)
+    except (pipeline.NoData, ValueError) as exc:
+        rprint(f"[red]{exc}[/red]")
+        raise typer.Exit(1)
+    except Exception as exc:
+        problem = str(exc) if isinstance(exc, ApiUnavailable) else api_problem(exc)
+        if not problem:
+            raise
+        rprint(f"[red]No se pudo usar la IA.[/red] {problem}")
+        raise typer.Exit(1)
+    rprint(summary)
+    if not mock_ai:
+        rprint(usage.summary())
+
+
+@app.command()
+def eventos() -> None:
+    """Lista los eventos cargados y sus ediciones."""
+    from .config import load_events
+
+    for k, ev in load_events().items():
+        eds = ", ".join(f"{e.label} ({e.start or 'pico'})" for e in ev.editions)
+        rprint(f"[bold]{k}[/bold] · {ev.name} · palabras: {', '.join(ev.keywords)} · ediciones: {eds} · próxima: {ev.next_start or 'sin confirmar'}")
+
+
 @app.command("all")
 def run_all(
-    step: str = typer.Argument(..., help="ids = completar IDs · informe = generar el informe del mes · audit = revisar datos"),
+    step: str = typer.Argument(..., help="ids = completar IDs · informe = informe del mes · audit = revisar datos · evento:<clave> = guía de un evento"),
     period: Optional[str] = PeriodOpt,
     only: list[str] = typer.Option([], "--only", help="identificador de cliente (repetible); por defecto, todos"),
 ) -> None:
@@ -636,9 +681,12 @@ def run_all(
     from .clients import list_clients
 
     commands = {"ids": ["fill-ids", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"]}
-    if step not in commands:
-        raise typer.BadParameter("Usá: ids, informe o audit")
-    args = commands[step] + (["--period", period] if period and step != "ids" else [])
+    if step.startswith("evento:"):
+        args = ["evento", step.split(":", 1)[1]]
+    elif step not in commands:
+        raise typer.BadParameter("Usá: ids, informe, audit o evento:<clave> (ej. evento:cyberlunes)")
+    else:
+        args = commands[step] + (["--period", period] if period and step != "ids" else [])
     failed = []
     for c in list_clients():
         if only and c.key not in only:

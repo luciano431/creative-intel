@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# Fechas comerciales para el "modo evento". Cada cliente puede sumar o pisar eventos
+# en config/clients/<cliente>/events.yaml (misma forma).
+#
+# Por cada evento:
+#   keywords   palabras con las que la competencia lo nombra (se buscan en la Biblioteca de Meta)
+#   editions   ediciones pasadas a estudiar: ventana de búsqueda (from/to) y días del evento (start/end).
+#              La ventana arranca antes para ver cuánto se anticipan las marcas.
+#   next       próxima edición (para armar el calendario de piezas). Confirmar fechas con el organizador.
+# ---------------------------------------------------------------------------
+events:
+  cyberlunes:
+    name: CyberLunes
+    countries: [UY]
+    keywords: [cyberlunes, cyber lunes, ciberlunes, cyber monday]
+    editions:
+      - label: 2025-06
+        start: 2025-06-02      # CyberLunes junio 2025: 2 al 4 de junio (CEDU)
+        end: 2025-06-04
+        from: 2025-05-12
+        to: 2025-06-10
+      - label: 2025-11
+        start: null            # edición de fin de año: completar las fechas reales; mientras tanto se toma el pico de anuncios
+        end: null
+        from: 2025-10-15
+        to: 2025-12-05
+    next:
+      start: null              # completar cuando el organizador confirme la fecha
+      end: null
+  black-friday:
+    name: Black Friday
+    countries: [UY]
+    keywords: [black friday, blackfriday, black week, viernes negro]
+    editions:
+      - label: 2025
+        start: 2025-11-28
+        end: 2025-11-28
+        from: 2025-11-07
+        to: 2025-12-03
+    next:
+      start: 2026-11-27
+      end: 2026-11-27
