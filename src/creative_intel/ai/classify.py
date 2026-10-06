@@ -107,7 +107,20 @@ def classify_creative(creative: Any, taxonomy: Taxonomy, model: str | None = Non
         img = _image_block(shot)
         if img:
             content.append(img)
-    content.append({"type": "text", "text": creative_prompt(creative)})
+    frames_note = ""
+    if (creative.format or "") == "video":
+        from ..media.video import FRAME_AT, extract_frames, video_url
+
+        frames = extract_frames(creative.id, video_url(creative.media_urls))
+        for f in frames:
+            img = _image_block(str(f))
+            if img:
+                content.append(img)
+        if frames:
+            frames_note = ("\nLas imágenes después de la portada son cuadros del video en los segundos "
+                           + ", ".join(str(t) for t in FRAME_AT[: len(frames)])
+                           + ": usalos para el gancho (qué se ve y se lee en los primeros 3 segundos).")
+    content.append({"type": "text", "text": creative_prompt(creative) + frames_note})
     result = structured_call(
         schema, _classify_prompt(), content, model=model or settings.classify_model, max_tokens=2000, effort="low", client=client
     )
