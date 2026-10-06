@@ -79,11 +79,16 @@ def collect(
             stats[f"{col.name}"] += len(raws)
             all_raws.extend(raws)
             touched_platforms.update(r.platform for r in raws)
+    declared: dict[str, dict[str, int]] = {k: dict(v) for k, v in ((run.stats or {}).get("declared") or {}).items()}
+    for col in collectors:
+        for slug, n in (getattr(col, "declared", None) or {}).items():
+            declared.setdefault(col.platform, {})[slug] = n
     up = upsert_creatives(session, run, all_raws, seen_on, download_media=download_media)
     comp_ids = [c.id for c in session.query(Competitor).filter(Competitor.slug.in_([c.slug for c in configs])).all()]
     inactive = mark_unseen_inactive(session, run, comp_ids, touched_platforms) if touched_platforms else 0
     run.status = "collected"
-    run.stats = {**(run.stats or {}), "collect": {**dict(stats), **dict(up), "marked_inactive": inactive, "errors": errors, "seen_on": seen_on.isoformat()}}
+    run.stats = {**(run.stats or {}), "declared": declared,
+                 "collect": {**dict(stats), **dict(up), "marked_inactive": inactive, "errors": errors, "seen_on": seen_on.isoformat()}}
     session.flush()
     return run.stats["collect"]
 
@@ -174,10 +179,31 @@ def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> 
     prev_items = items_for(session, prev, taxonomy)
     metrics = build_metrics(items, taxonomy, previous_items=prev_items, period=period)
     metrics["concepts"] = group_concepts([it for it in items if it["tier"] != "own"])
+    add_declared_totals(metrics, (run.stats or {}).get("declared") or {})
     run.metrics = metrics
     run.status = "analyzed"
     session.flush()
     return metrics
+
+
+def add_declared_totals(metrics: dict[str, Any], declared: dict[str, dict[str, int]]) -> None:
+    """Agrega a cada ficha cuántos anuncios activos declaran Meta y Google (además de los analizados)."""
+    by_slug: dict[str, dict[str, int]] = {}
+    for platform, per in declared.items():
+        for slug, n in per.items():
+            by_slug.setdefault(slug, {})[platform] = n
+    market_total = 0
+    for p in metrics.get("competitor_profiles") or []:
+        d = by_slug.get(p.get("slug"), {})
+        p["declared"] = d
+        p["declared_total"] = sum(d.values()) if d else None
+        market_total += p["declared_total"] or 0
+    own = metrics.get("own_profile")
+    if own:
+        d = by_slug.get(own.get("slug") or "", {})
+        own["declared"] = d
+        own["declared_total"] = sum(d.values()) if d else None
+    metrics.setdefault("totals", {})["declared"] = market_total or None
 
 
 # ----------------------------------------------------------------------------- synthesize

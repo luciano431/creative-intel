@@ -170,3 +170,24 @@ def test_google_domain_per_country():
     assert domain_of(g, "ES") == "generali.es" and domain_of(g, "IT") == "generali.it"
     assert domain_of(comps["mapfre-global"], "ES") == "mapfre.es"
     assert domain_of(comps["bse"], "UY") == "bse.com.uy"
+
+
+def test_declared_results_parsing():
+    from creative_intel.collectors.meta_web import declared_results
+
+    assert declared_results("Resultados\n~1.300 resultados\nOrdenar") == 1300
+    assert declared_results("~1,300 results") == 1300
+    assert declared_results("1 resultado") == 1
+    assert declared_results("~2 mil resultados") == 2000
+    assert declared_results("Sin anuncios") is None
+
+
+def test_declared_totals_reach_the_profiles():
+    from creative_intel.pipeline import add_declared_totals
+
+    metrics = {"competitor_profiles": [{"slug": "vinibel"}, {"slug": "metropolitana"}], "own_profile": {"slug": "verona"}, "totals": {}}
+    add_declared_totals(metrics, {"meta": {"vinibel": 37, "verona": 12}, "google": {"vinibel": 34, "metropolitana": 200}})
+    vin, met = metrics["competitor_profiles"]
+    assert vin["declared"] == {"meta": 37, "google": 34} and vin["declared_total"] == 71
+    assert met["declared_total"] == 200 and metrics["totals"]["declared"] == 271
+    assert metrics["own_profile"]["declared_total"] == 12

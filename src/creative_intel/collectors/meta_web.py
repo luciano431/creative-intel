@@ -45,6 +45,7 @@ class MetaAdLibraryWebCollector:
         self.headless = headless
         # Los N anuncios más vistos por marca y país (la Biblioteca se pide ordenada por impresiones)
         self.max_cards = max_cards or settings.top_ads_per_brand
+        self.declared: dict[str, int] = {}  # slug -> anuncios que declara la Biblioteca (suma de países)
         self.screenshots = screenshots
 
     def supports(self, competitor: CompetitorConfig) -> bool:
@@ -72,6 +73,10 @@ class MetaAdLibraryWebCollector:
             for country in competitor.ad_countries:
                 page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
                 page.wait_for_timeout(4000)
+                total = declared_results(page.inner_text("body"))
+                if total is not None:
+                    self.declared[competitor.slug] = self.declared.get(competitor.slug, 0) + total
+                print(f"[meta_web] {competitor.slug} ({country}): ~{total if total is not None else '?'} anuncios activos; se analizan hasta {self.max_cards}")
                 self._scroll(page, rounds=2 if self.max_cards <= 10 else 8)
                 cards = page.locator("div[class*='x1plvlek'] >> xpath=ancestor::div[contains(@class,'xh8yej3')][1]")
                 if cards.count() == 0:
@@ -150,6 +155,18 @@ CTA_LABELS = {
 }
 DOMAIN_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
 TIMESTAMP_RE = re.compile(r"^\s*\d{1,2}:\d{2}(\s*/\s*\d{1,2}:\d{2})?\s*$")
+
+
+RESULTS_RE = re.compile(r"~?\s*([\d][\d.,]*)\s*(mil\s+)?(resultados?|results?)\b", re.I)
+
+
+def declared_results(text: str) -> int | None:
+    """Cantidad de anuncios que declara la Biblioteca ("~1.300 resultados", "~1,300 results", "1 resultado")."""
+    m = RESULTS_RE.search(text or "")
+    if not m:
+        return None
+    n = int(re.sub(r"[.,]", "", m.group(1)) or 0)
+    return n * 1000 if m.group(2) else n
 
 
 def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:

@@ -163,6 +163,7 @@ class GoogleTransparencyWebCollector:
         # Tope de anuncios por marca y país (TOP_ADS_PER_BRAND). Google no informa impresiones:
         # se toman los primeros que muestra. Cada anuncio se abre uno por uno (~5 s c/u).
         self.max_cards = max_cards or settings.top_ads_per_brand
+        self.declared: dict[str, int] = {}  # slug -> anuncios que declara Google (suma de países)
 
     def supports(self, competitor: CompetitorConfig) -> bool:
         return bool(competitor.google_advertiser_id or domain_of(competitor))
@@ -217,6 +218,8 @@ class GoogleTransparencyWebCollector:
                 if debug:
                     self._grid_debug(page, dbg, competitor.slug, country, hrefs, captured)
                 total = _declared_total(page.inner_text("body"))
+                if total is not None:
+                    self.declared[competitor.slug] = self.declared.get(competitor.slug, 0) + total
                 print(f"[google_web] {competitor.slug} ({country}): {len(hrefs)} tarjetas capturadas"
                       + (f" de ~{total} que declara Google" if total is not None else ""))
                 if not hrefs:
