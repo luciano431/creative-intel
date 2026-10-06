@@ -25,9 +25,9 @@ countries:
     local:
     - slug: varela-inmobiliaria
       name: Varela Inmobiliaria
-      website: ''
+      website: https://www.sigaloavarela.com
       meta_page_id: '1627341317525346'
-      google_domain: ''
+      google_domain: sigaloavarela.com
       google_advertiser_id: ''
       products: []
       active: true

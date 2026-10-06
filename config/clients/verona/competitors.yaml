@@ -30,7 +30,7 @@ countries:
       name: Vinibel Uruguay
       website: ''
       meta_page_id: '485649101557927'
-      google_domain: ''
+      google_domain: vinibel.com.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -46,7 +46,7 @@ countries:
       name: Metropolitana
       website: ''
       meta_page_id: '358443427545517'
-      google_domain: ''
+      google_domain: metropolitana.com.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -55,27 +55,27 @@ countries:
       name: Belgotex
       website: ''
       meta_page_id: '117072845026951'
-      google_domain: ''
+      google_domain: belgotex.co.za
       google_advertiser_id: ''
       products: []
       active: true
       ad_countries:
       - ZA
     - slug: hanwha
-      name: Hanwha
-      website: ''
+      name: Headline Flooring
+      website: http://www.headlineflooring.com
       meta_page_id: ''
-      google_domain: ''
+      google_domain: headlineflooring.com
       google_advertiser_id: ''
       products: []
       active: true
       ad_countries:
       - ALL
     - slug: c-and-a
-      name: C&A
-      website: ''
-      meta_page_id: '132673200120037'
-      google_domain: c-and-a.com
+      name: C&A Floorcoverings
+      website: https://www.cnaflooring.com
+      meta_page_id: ''
+      google_domain: cnaflooring.com
       google_advertiser_id: ''
       products: []
       active: true
