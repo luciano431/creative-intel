@@ -353,7 +353,28 @@
     <div class="card"><h3>{{ d.title }}</h3>{{ paired(d.rows, client.name, 'Mercado') }}</div>
     {% endfor %}
   </div>
-  {% else %}
+  {% endif %}
+  {% set op = metrics.own_performance %}
+  {% if op %}
+  <h3 style="margin:28px 0 6px">Lo que le funciona a {{ client.name }}</h3>
+  <p class="small muted" style="margin:0 0 12px">Resultados reales de sus anuncios con más inversión ({{ op.period.since }} a {{ op.period.until }}): {{ op.total.ads }} anuncios, US$ {{ op.total.spend | n }} invertidos, CTR {{ op.total.ctr }}%{% if op.total.cost_per_result %}, {{ op.total.results | int }} {{ op.result_type }} a US$ {{ op.total.cost_per_result }} cada uno{% endif %}.</p>
+  <div class="grid g2">
+    {% for key, title in [('by_family', 'Por mensaje'), ('by_format', 'Por formato')] %}
+    <div class="card"><h3>{{ title }}</h3>
+      <div class="tbl"><table><thead><tr><th></th><th>Anuncios</th><th>Inversión</th><th>CTR</th><th>Costo por {{ op.result_type or 'resultado' }}</th></tr></thead><tbody>
+      {% for r in op[key] %}<tr><td>{{ lbl(r.value) }}</td><td>{{ r.ads }}</td><td>US$ {{ r.spend | n }}</td><td>{{ r.ctr if r.ctr is not none else '—' }}%</td><td>{{ ('US$ ' ~ r.cost_per_result) if r.cost_per_result else '—' }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if op.best %}
+  <div class="card" style="margin-top:16px"><h3>Sus anuncios más eficientes</h3>
+    <ul>{% for b in op.best %}<li>«{{ b.headline or 'Sin título' }}» · {{ lbl(b.angle_family) if b.angle_family else 'sin clasificar' }} · {{ lbl(b.format) }} · US$ {{ b.cost_per_result }} por {{ b.result_type }} · CTR {{ b.ctr }}%</li>{% endfor %}</ul>
+    {% if op.worst %}<h3 style="margin-top:12px">Los menos eficientes</h3><ul>{% for b in op.worst %}<li>«{{ b.headline or 'Sin título' }}» · {{ lbl(b.angle_family) if b.angle_family else 'sin clasificar' }} · US$ {{ b.cost_per_result }} por {{ b.result_type }} · CTR {{ b.ctr }}%</li>{% endfor %}</ul>{% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
+  {% if not has_own %}
   <div class="empty">
     <b>Todavía no estamos midiendo los anuncios de {{ client.name }}.</b><br>
     Para comparar lo que comunica {{ client.name }} contra el mercado, cargá el ID de su página de Facebook (<code>meta_page_id</code>) y su dominio en la configuración del cliente. A partir del próximo ciclo esta sección muestra las diferencias y las pestañas de competidores se comparan directamente contra {{ client.name }}.

@@ -182,6 +182,9 @@ def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> 
     from .analysis.metrics import start_known
     from .analysis.signals import build_signals
 
+    from .analysis.own_performance import own_performance
+
+    metrics["own_performance"] = own_performance(items)
     metrics["signals"] = build_signals([it for it in items if it["tier"] != "own"], [it for it in prev_items if it["tier"] != "own"],
                                        metrics["concepts"], start_known)
     add_declared_totals(metrics, (run.stats or {}).get("declared") or {})

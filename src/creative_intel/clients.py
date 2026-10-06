@@ -45,6 +45,7 @@ countries:
       meta_page_id: ""          # ID de la página en la Biblioteca de anuncios de Meta
       google_domain: ""         # dominio para Google Ads Transparency (ej. misegurook.com)
       google_advertiser_id: ""
+      meta_ad_account_id: ""    # cuenta publicitaria del cliente (act_...) para traer sus resultados reales
       products: []
     competitors:
       local:

@@ -460,6 +460,7 @@ def set_cmd(
     domain: Optional[str] = typer.Option(None, "--domain", help="Dominio para Google (\"\" para borrarlo)"),
     website: Optional[str] = typer.Option(None, "--website", help="Web"),
     countries: Optional[str] = typer.Option(None, "--countries", help="Países donde buscar sus anuncios, ej. ALL o ES,IT"),
+    ad_account: Optional[str] = typer.Option(None, "--ad-account", help="Solo el cliente: cuenta publicitaria para traer sus resultados (act_123...)"),
 ) -> None:
     """Cambia a mano los datos de un competidor (o del cliente) del cliente actual."""
     from .config import CONFIG_DIR
@@ -476,8 +477,11 @@ def set_cmd(
         fields["website"] = website.strip()
     if countries is not None:
         fields["ad_countries"] = [c.strip().upper() for c in countries.split(",") if c.strip()]
+    if ad_account is not None:
+        acct = ad_account.strip()
+        fields["meta_ad_account_id"] = acct if not acct or acct.startswith("act_") else f"act_{acct}"
     if not fields:
-        raise typer.BadParameter("Indicá al menos un dato: --name, --meta, --domain, --website o --countries")
+        raise typer.BadParameter("Indicá al menos un dato: --name, --meta, --domain, --website, --countries o --ad-account")
     try:
         entry = set_fields(CONFIG_DIR / "competitors.yaml", slug, fields)
     except KeyError:
@@ -699,6 +703,27 @@ def run_all(
         if subprocess.run([sys.executable, "-m", "creative_intel.cli", *args], env=env).returncode != 0:
             failed.append(c.name)
     rprint("\n[green]Listo.[/green]" if not failed else f"\n[red]Con error:[/red] {', '.join(failed)}")
+
+
+@app.command("check-meta")
+def check_meta() -> None:
+    """Confirma el token de Meta (META_ACCESS_TOKEN) y lista las cuentas publicitarias a las que tiene acceso."""
+    import httpx
+
+    from .config import settings
+
+    if not settings.meta_access_token:
+        rprint("[red]Falta META_ACCESS_TOKEN en .env.[/red] Se crea en business.facebook.com → Configuración → Usuarios del sistema, "
+               "con permiso ads_read y acceso a las cuentas publicitarias de los clientes.")
+        raise typer.Exit(1)
+    url = f"https://graph.facebook.com/{settings.meta_graph_version}/me/adaccounts"
+    resp = httpx.get(url, params={"access_token": settings.meta_access_token, "fields": "name,account_id,account_status", "limit": 200}, timeout=60)
+    if resp.status_code >= 400:
+        rprint(f"[red]Meta rechazó el token:[/red] {resp.json().get('error', {}).get('message', resp.text)}")
+        raise typer.Exit(1)
+    for a in resp.json().get("data", []):
+        rprint(f"  act_{a['account_id']}  {a.get('name', '')}")
+    rprint("Cargá la del cliente con:  [bold]radar set <slug-del-cliente> --ad-account act_...[/bold]")
 
 
 @app.command("check-api")

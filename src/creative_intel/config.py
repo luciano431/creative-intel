@@ -81,6 +81,7 @@ class CompetitorConfig:
     ad_countries: list[str] = field(default_factory=list)
     products: list[str] = field(default_factory=list)
     active: bool = True
+    meta_ad_account_id: str = ""  # solo el cliente: cuenta publicitaria para traer sus resultados (act_123...)
 
     @property
     def is_own(self) -> bool:
@@ -117,6 +118,7 @@ def _to_competitor(item: dict[str, Any], country: str, tier: str) -> CompetitorC
         ad_countries=list(item.get("ad_countries") or [country]),
         products=list(item.get("products") or []),
         active=bool(item.get("active", True)),
+        meta_ad_account_id=str(item.get("meta_ad_account_id", "") or ""),
     )
 
 
