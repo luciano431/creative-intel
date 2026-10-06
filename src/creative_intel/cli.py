@@ -482,19 +482,55 @@ def set_cmd(
 def web(
     port: int = typer.Option(8080, "--port", help="Puerto"),
     host: str = typer.Option("127.0.0.1", "--host", help="127.0.0.1 = solo esta compu; 0.0.0.0 = toda la red local"),
+    public: bool = typer.Option(False, "--public", help="Link público https (Cloudflare) para entrar desde cualquier lado; pide WEB_PASSWORD"),
     no_open: bool = typer.Option(False, "--no-open", help="No abrir el navegador"),
 ) -> None:
     """Abre la web del Radar: elegir cliente, generar y ver informes, buscar IDs y competidores."""
+    import os
+    import re
+    import shutil
+    import subprocess
     import threading
     import webbrowser
 
     import uvicorn
 
+    password = os.getenv("WEB_PASSWORD", "")
+    if (public or host not in ("127.0.0.1", "localhost")) and len(password) < 10:
+        rprint("[red]Para abrir la web fuera de esta compu hace falta una contraseña de al menos 10 caracteres.[/red]\n"
+               "Cargala en .env con:  [bold]read -s \"P?Contraseña: \" && echo \"WEB_PASSWORD=$P\" >> .env[/bold]")
+        raise typer.Exit(1)
+    tunnel = None
+    if public:
+        exe = shutil.which("cloudflared")
+        if not exe:
+            rprint("[red]Falta cloudflared.[/red] Instalalo una vez con:  [bold]brew install cloudflared[/bold]")
+            raise typer.Exit(1)
+        tunnel = subprocess.Popen([exe, "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+        def watch() -> None:
+            shown = False
+            for line in tunnel.stdout:  # type: ignore[union-attr]
+                m = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
+                if m and not shown:
+                    shown = True
+                    rprint(f"\n[bold green]Link público: {m.group(0)}[/bold green]\n"
+                           "Pide la contraseña de WEB_PASSWORD (el usuario puede ser cualquiera). "
+                           "El link cambia cada vez que lo abrís y deja de andar al cerrar esto o apagar la Mac.\n")
+
+        threading.Thread(target=watch, daemon=True).start()
+        host = "127.0.0.1"
+
     url = f"http://{'127.0.0.1' if host in ('0.0.0.0', '') else host}:{port}"
     console.print(f"[green]Radar creativo en {url}[/green]  (Ctrl+C para cerrar)")
     if not no_open:
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-    uvicorn.run("creative_intel.web:create_app", factory=True, host=host, port=port, log_level="warning")
+    try:
+        uvicorn.run("creative_intel.web:create_app", factory=True, host=host, port=port, log_level="warning")
+    finally:
+        if tunnel:
+            tunnel.terminate()
 
 
 @app.command("debug-html")

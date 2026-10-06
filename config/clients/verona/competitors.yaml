@@ -1,9 +1,23 @@
 client:
   slug: verona
   name: Verona Office & Home
-  industry: Revestimientos e interiorismo
+  industry: Pisos y equipamiento de oficinas (B2B)
   market: Uruguay
-  description: Moquettes, pisos, acústica y cableado para oficinas y hogares
+  description: Pisos técnicos y vinílicos, moquettes, acústica y mobiliario de oficina, con colocación propia, para empresas, proyectos y obras
+  # Hoja del cliente: la IA la respeta al escribir ideas y acciones.
+  brief:
+    tono: Voseo, profesional y seguro. Le habla a empresas (B2B), no al consumidor final.
+    publico: Gerentes, dueños, CEOs, arquitectos, diseñadores, constructoras de edificios y dependencias del Estado; 30 a 65 años
+    vender_mas:
+    - Pisos técnicos
+    - Pisos vinílicos y baldosas vinílicas
+    - Mobiliario de oficina
+    - Proyectos de remodelación de oficinas
+    - Suministro de mobiliario para proyectos
+    - Servicio de colocación de pisos
+    diferencial: Instalación con equipo propio y precio por mayor en proyectos grandes
+    promos: []
+    evitar: Que la marca se vea como económica o de baja calidad. No asociarla a "barato", aunque sus precios tampoco son inaccesibles. Nada de guerra de precios ni descuentos agresivos.
 countries:
 - code: UY
   name: Uruguay
@@ -17,6 +31,9 @@ countries:
     google_domain: verona.com.uy
     google_advertiser_id: ''
     products:
+    - pisos_tecnicos
+    - pisos_vinilicos
+    - baldosas_vinilicas
     - moquettes
     - pisos
     - acustica

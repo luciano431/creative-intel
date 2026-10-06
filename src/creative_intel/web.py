@@ -7,8 +7,10 @@ en un proceso aparte con RADAR_CLIENT del cliente elegido, y la página muestra 
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import os
+import secrets
 import re
 import shutil
 import subprocess
@@ -22,7 +24,7 @@ from typing import Any
 
 import yaml
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -118,9 +120,29 @@ def _radar(*args: str) -> list[str]:
 # ----------------------------------------------------------------------------- app
 
 
-def create_app(root: Path | None = None) -> FastAPI:
+def _password_ok(header: str, password: str) -> bool:
+    if not header.lower().startswith("basic "):
+        return False
+    try:
+        given = base64.b64decode(header[6:]).decode("utf-8").partition(":")[2]
+    except Exception:
+        return False
+    return secrets.compare_digest(given.encode(), password.encode())
+
+
+def create_app(root: Path | None = None, password: str | None = None) -> FastAPI:
     root = root or ROOT
     app = FastAPI(title="Radar creativo de Ranker", docs_url=None, redoc_url=None)
+    password = os.getenv("WEB_PASSWORD", "") if password is None else password
+
+    if password:
+        # Todo (páginas, informes y tareas) pide la contraseña; el usuario puede ser cualquiera.
+        @app.middleware("http")
+        async def require_password(request: Request, call_next):
+            if not _password_ok(request.headers.get("authorization", ""), password):
+                return Response("Se necesita la contraseña del Radar.", status_code=401,
+                                headers={"WWW-Authenticate": 'Basic realm="Radar creativo", charset="UTF-8"'})
+            return await call_next(request)
     jobs = JobManager(root / "data" / "web_jobs")
     app.state.jobs = jobs
     (root / "reports").mkdir(exist_ok=True)

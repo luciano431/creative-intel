@@ -98,6 +98,9 @@ creative_styles:
   - institucional
 
 products:
+- pisos_tecnicos
+- pisos_vinilicos
+- baldosas_vinilicas
 - moquettes
 - pisos
 - acustica
@@ -105,6 +108,8 @@ products:
 - cortinas
 - revestimientos
 - mobiliario_oficina
+- remodelacion
+- colocacion
 - multiproducto
 - marca
 
@@ -198,6 +203,24 @@ labels:
   financiacion: Financiación
   envio: Envío
   instalacion: Instalación
+  pisos_tecnicos: Pisos técnicos
+  pisos_vinilicos: Pisos vinílicos
+  baldosas_vinilicas: Baldosas vinílicas
+  moquettes: Moquettes
+  pisos: Pisos (otros)
+  acustica: Acústica
+  cableado: Cableado
+  cortinas: Cortinas
+  revestimientos: Revestimientos
+  mobiliario_oficina: Mobiliario de oficina
+  remodelacion: Remodelación de oficinas
+  colocacion: Colocación
+  proyectos_realizados: Proyectos realizados
+  clientes_corporativos: Clientes corporativos
+  instalacion_rapida: Instalación rápida
+  sin_obra: Sin obra
+  a_medida: A medida
+  orgullo_del_espacio: Orgullo del espacio
   atencion_whatsapp: Atención por WhatsApp
   a_medida: A medida
   decoracion: Decoración

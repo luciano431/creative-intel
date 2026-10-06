@@ -111,7 +111,8 @@ Cómo escribir (lo lee el cliente, no un analista):
 7. Riesgos: saturación (si 8 de 10 competidores dicen lo mismo, no queremos ser el número 11 sin un giro), con severidad, por qué importa y cómo lo evitamos.
 8. Plan de acción: 4 a 8 acciones ordenadas por prioridad, con responsable, plazo en días, entregable concreto y cómo medimos el resultado.
 9. Cada competidor pesa por igual al hablar de "el mercado": un anunciante con 100 anuncios no define el mercado por sí solo. Usá `market_profile_weighted` y `saturation` para eso.
-10. Si los datos son escasos o la clasificación es parcial, decilo y bajá la certeza; no rellenes."""
+10. Si los datos son escasos o la clasificación es parcial, decilo y bajá la certeza; no rellenes.
+11. Si viene `client_brief` (la hoja del cliente), es ley: escribí con su tono, a su público, empujando lo que quieren vender más y apoyándote en su diferencial. Promociones: usá solo las que figuran ahí; si no hay, no inventes descuentos ni cuotas (podés proponer beneficios que no bajen el precio, como asesoramiento o visita técnica sin cargo, marcados como propuesta). Ninguna idea, oportunidad ni acción puede ir contra lo que dice `evitar`. Lo que hace la competencia es inspiración, no un molde: si su camino choca con la hoja, adaptalo a la marca o descartalo y decí por qué."""
 
 
 def _system_prompt(client: str, industry: str, market: str) -> str:
@@ -164,6 +165,7 @@ def synthesize(
     ci = client_info or load_client()
     payload = {
         "client": {"name": ci.name, "industry": ci.industry, "market": ci.market, "description": ci.description},
+        "client_brief": ci.brief or None,
         "labels": labels or {},
         "period": period,
         "metrics": metrics,

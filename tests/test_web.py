@@ -76,3 +76,21 @@ def test_jobs_run_commands_with_client_env(site, monkeypatch):
         time.sleep(0.05)
     cmd, env = seen[-1]
     assert env is None and cmd[:3] == ["discover", "--keywords", "seguros"] and cmd[-4:] == ["--country", "ES", "--country", "AR"]
+
+
+def test_password_protects_pages_reports_and_api(tmp_path, monkeypatch):
+    import base64
+
+    (tmp_path / "config").mkdir()
+    for f in ("competitors.yaml", "taxonomy.yaml", "brand.yaml"):
+        shutil.copy(ROOT / "config" / f, tmp_path / "config" / f)
+    shutil.copytree(ROOT / "config" / "assets", tmp_path / "config" / "assets")
+    monkeypatch.setattr("creative_intel.clients.ROOT", tmp_path)
+    client = TestClient(web.create_app(tmp_path, password="clave-secreta-123"))
+    assert client.get("/").status_code == 401
+    assert client.get("/reports/x.html").status_code == 401
+    assert client.post("/api/clientes", json={"name": "X", "slug": "x-x"}).status_code == 401
+    bad = {"Authorization": "Basic " + base64.b64encode(b"ranker:otra").decode()}
+    assert client.get("/", headers=bad).status_code == 401
+    good = {"Authorization": "Basic " + base64.b64encode("cualquiera:clave-secreta-123".encode()).decode()}
+    assert client.get("/", headers=good).status_code == 200

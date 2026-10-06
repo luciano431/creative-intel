@@ -188,3 +188,25 @@ def test_meta_asks_for_the_most_seen_ads():
     c = CompetitorConfig(slug="x", name="X", country="UY", tier="local", meta_page_id="123")
     col = MetaAdLibraryWebCollector()
     assert "sort_data[mode]=total_impressions" in col.url_for(c, "UY") and col.max_cards == settings.top_ads_per_brand
+
+
+def test_client_brief_reaches_synthesis_payload(tmp_path, monkeypatch):
+    import importlib
+
+    syn = importlib.import_module("creative_intel.ai.synthesize")
+    from creative_intel.config import load_client
+
+    cfg = tmp_path / "competitors.yaml"
+    cfg.write_text("client:\n  slug: v\n  name: Verona\n  brief:\n    tono: Voseo B2B\n    promos: []\n    evitar: parecer barata\ncountries: []\n", encoding="utf-8")
+    ci = load_client(cfg)
+    assert ci.brief == {"tono": "Voseo B2B", "evitar": "parecer barata"}
+    seen = {}
+
+    def fake_call(model_cls, system, content, **kw):
+        seen["system"], seen["text"] = system, content[0]["text"]
+        raise RuntimeError("stop")
+
+    monkeypatch.setattr(syn, "structured_call", fake_call)
+    with pytest.raises(RuntimeError):
+        syn.synthesize({}, [], [], "2026-10", client_info=ci)
+    assert '"client_brief": {"tono": "Voseo B2B"' in seen["text"] and "client_brief" in seen["system"]

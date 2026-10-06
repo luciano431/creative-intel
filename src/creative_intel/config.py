@@ -216,6 +216,14 @@ class ClientInfo:
     industry: str = ""
     market: str = ""
     description: str = ""
+    # Hoja del cliente (client.brief en competitors.yaml): tono, qué empujar, diferencial, promos, qué evitar, público.
+    brief: dict[str, Any] = field(default_factory=dict)
+
+
+def _brief(raw: Any) -> dict[str, Any]:
+    if isinstance(raw, str):
+        raw = {"notas": raw}
+    return {k: v for k, v in (raw or {}).items() if v not in (None, "", [])}
 
 
 def load_client(path: Path | None = None) -> ClientInfo:
@@ -230,4 +238,5 @@ def load_client(path: Path | None = None) -> ClientInfo:
         industry=c.get("industry", ""),
         market=c.get("market") or first_country.get("name", ""),
         description=c.get("description", ""),
+        brief=_brief(c.get("brief")),
     )

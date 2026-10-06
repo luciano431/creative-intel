@@ -24,6 +24,15 @@ client:
   industry: {industry}
   market: {market}
   description: ""
+  # Hoja del cliente: la IA la respeta al escribir ideas y acciones. Completar lo que se sepa.
+  brief:
+    tono: ""              # cómo habla la marca (voseo, cercano, técnico...)
+    publico: ""           # a quién le hablamos
+    vender_mas: []        # productos o servicios a empujar
+    diferencial: ""
+    promos: []            # promociones posibles; vacío = no inventar descuentos
+    evitar: ""            # lo que NO quieren
+    notas: ""
 
 countries:
   - code: {country}
