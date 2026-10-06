@@ -420,7 +420,7 @@
     <h3 style="margin-top:24px">Sus anuncios que más duran</h3>
     <div class="grid g4">
       {% for it in t.top %}
-      <div class="cr">{{ preview(it) }}<div class="cr-body"><div class="cr-top"><span class="tag">{{ lbl(it.format) }}</span><span class="days">{{ it.days_active }} días</span></div>{% if it.headline %}<div class="hl">“{{ it.headline[:90] }}{% if it.headline | length > 90 %}…{% endif %}”</div>{% endif %}{% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}</div></div>
+      <div class="cr">{{ preview(it) }}<div class="cr-body"><div class="cr-top"><span class="tag">{{ lbl(it.format) }}</span><span class="days">{{ it.signals | join(' · ') if it.signals else '' }}</span></div>{% if it.headline %}<div class="hl">“{{ it.headline[:90] }}{% if it.headline | length > 90 %}…{% endif %}”</div>{% endif %}{% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}</div></div>
       {% endfor %}
     </div>
     {% endif %}
