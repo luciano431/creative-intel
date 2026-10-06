@@ -40,14 +40,6 @@ countries:
       google_advertiser_id: ''
       products: []
       active: true
-    - slug: terrenos-uruguay
-      name: Terrenos Uruguay
-      website: ''
-      meta_page_id: '726175010878687'
-      google_domain: ''
-      google_advertiser_id: ''
-      products: []
-      active: true
     - slug: mannise
       name: Inmobiliaria Mannise   # terrenos en Paysandú
       website: ''
