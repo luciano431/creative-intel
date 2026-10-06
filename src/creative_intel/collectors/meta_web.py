@@ -91,6 +91,14 @@ class MetaAdLibraryWebCollector:
                     self._scroll(page, rounds=3)
                     self._take(page, competitor, country, out, assets, limit=self.max_cards - got)
                     print(f"[meta_web] {competitor.slug} ({country}): {got} activos + {len(out) - before - got} finalizados")
+                if len(out) == before:
+                    # La Biblioteca tiene anuncios pero no se pudo leer ninguna tarjeta: guardar evidencia para corregir
+                    dbg = settings.assets_dir / "debug"
+                    dbg.mkdir(parents=True, exist_ok=True)
+                    page.screenshot(path=str(dbg / f"meta_{competitor.slug}_{country}.png"), full_page=True)
+                    (dbg / f"meta_{competitor.slug}_{country}.html").write_text(page.content(), encoding="utf-8")
+                    print(f"[meta_web] ATENCIÓN: 0 anuncios leídos de {competitor.slug} ({country}) "
+                          f"aunque la Biblioteca declara ~{total if total is not None else '?'}; captura en {dbg}")
             browser.close()
         return out
 

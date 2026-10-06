@@ -42,59 +42,76 @@ countries:
     - revestimientos
     - mobiliario_oficina
   competitors:
+    # Elegidos por volumen de anuncios activos en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: vinibel
-      name: Vinibel Uruguay
+      name: Vinibel Uruguay          # ~37 anuncios activos
       website: ''
       meta_page_id: '485649101557927'
       google_domain: vinibel.com.uy
       google_advertiser_id: ''
       products: []
       active: true
-    - slug: tecnomadera
-      name: Tecnomadera
+    - slug: estilo-house
+      name: Estilo House             # ~20 anuncios activos
       website: ''
-      meta_page_id: ''
+      meta_page_id: '272441869531569'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: revko
+      name: REVKO                    # ~18 anuncios activos
+      website: ''
+      meta_page_id: '586292537911849'
       google_domain: ''
       google_advertiser_id: ''
       products: []
       active: true
     - slug: metropolitana
-      name: Metropolitana
+      name: Metropolitana            # ~11 anuncios activos
       website: ''
       meta_page_id: '358443427545517'
       google_domain: metropolitana.com.uy
       google_advertiser_id: ''
       products: []
       active: true
-    global:
-    - slug: belgotex
-      name: Belgotex
+    - slug: alad
+      name: Alad Alfombras           # ~11 anuncios activos
       website: ''
-      meta_page_id: '117072845026951'
-      google_domain: belgotex.co.za
+      meta_page_id: '1449215451981684'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global:
+    - slug: steelcase
+      name: Steelcase                # mobiliario de oficina, ~77 anuncios activos
+      website: https://www.steelcase.com
+      meta_page_id: '86451021593'
+      google_domain: steelcase.com
       google_advertiser_id: ''
       products: []
       active: true
       ad_countries:
-      - ZA
-    - slug: hanwha
-      name: Headline Flooring
-      website: http://www.headlineflooring.com
-      meta_page_id: ''
-      google_domain: headlineflooring.com
+      - US
+    - slug: interface
+      name: Interface                # pisos para oficinas y proyectos, ~31 anuncios activos
+      website: https://www.interface.com
+      meta_page_id: '124823057545947'
+      google_domain: interface.com
       google_advertiser_id: ''
       products: []
       active: true
       ad_countries:
-      - ALL
-    - slug: c-and-a
-      name: C&A Floorcoverings
-      website: https://www.cnaflooring.com
-      meta_page_id: ''
-      google_domain: cnaflooring.com
+      - US
+    - slug: espattia
+      name: Espattia Dinamika        # México: pisos, alfombras y mobiliario para proyectos (B2B, en español)
+      website: ''
+      meta_page_id: '876148572257747'
+      google_domain: ''
       google_advertiser_id: ''
       products: []
       active: true
       ad_countries:
-      - ALL
+      - MX
