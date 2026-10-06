@@ -135,16 +135,24 @@ def analyze(period: Optional[str] = PeriodOpt) -> None:
 @app.command()
 def synthesize(period: Optional[str] = PeriodOpt, mock_ai: bool = typer.Option(False, "--mock-ai")) -> None:
     """Etapa 2: síntesis estratégica (borrador para validación humana)."""
-    with session_scope() as s:
-        from .ai.client import usage
+    from .ai.client import api_problem, usage
 
-        usage.reset()
-        synth = pipeline.synthesize_run(s, _period(period), mock=mock_ai)
-        rprint(f"[green]Síntesis #{synth.id} creada[/green] (modelo {synth.model}, estado {synth.status}).")
-        if not mock_ai:
-            rprint(usage.summary())
-        for i, p in enumerate(synth.data["executive_summary"], 1):
-            _print_point(i, p)
+    try:
+        with session_scope() as s:
+            usage.reset()
+            synth = pipeline.synthesize_run(s, _period(period), mock=mock_ai)
+            synth_id, synth_model, synth_status, points = synth.id, synth.model, synth.status, synth.data["executive_summary"]
+    except Exception as exc:
+        problem = api_problem(exc)
+        if not problem:
+            raise
+        rprint(f"[red]No se pudo usar Claude.[/red] {problem}")
+        raise typer.Exit(1)
+    rprint(f"[green]Síntesis #{synth_id} creada[/green] (modelo {synth_model}, estado {synth_status}).")
+    if not mock_ai:
+        rprint(usage.summary())
+    for i, p in enumerate(points, 1):
+        _print_point(i, p)
 
 
 @app.command()
@@ -565,13 +573,36 @@ def run_cycle(
     no_notify: bool = typer.Option(False, "--no-notify"),
 ) -> None:
     """Ciclo completo hasta el borrador (collect → classify → analyze → synthesize → report). No publica."""
-    with session_scope() as s:
-        summary = pipeline.run_cycle(s, _period(period), mock_ai=mock_ai, skip_collect=skip_collect, sources=source or None, out_dir=out, send_notifications=not no_notify)
+    from .ai.client import ApiUnavailable, api_problem
+
+    try:
+        with session_scope() as s:
+            summary = pipeline.run_cycle(s, _period(period), mock_ai=mock_ai, skip_collect=skip_collect, sources=source or None, out_dir=out, send_notifications=not no_notify)
+    except Exception as exc:
+        problem = str(exc) if isinstance(exc, ApiUnavailable) else api_problem(exc)
+        if not problem:
+            raise
+        rprint(f"[red]No se pudo usar Claude.[/red] {problem}")
+        raise typer.Exit(1)
     rprint(summary)
     if not mock_ai:
         from .ai.client import usage
 
         rprint(usage.summary())
+
+
+@app.command("check-api")
+def check_api_cmd() -> None:
+    """Confirma que la clave de Claude anda y que la cuenta tiene crédito (cuesta una fracción de centavo)."""
+    from .ai.client import ApiUnavailable, check_api
+    from .config import settings
+
+    try:
+        check_api()
+    except ApiUnavailable as exc:
+        rprint(f"[red]No se pudo usar Claude.[/red] {exc}")
+        raise typer.Exit(1)
+    rprint(f"[green]Claude OK:[/green] la clave anda y hay crédito (modelo {settings.classify_model}).")
 
 
 @app.command()

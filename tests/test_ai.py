@@ -210,3 +210,24 @@ def test_client_brief_reaches_synthesis_payload(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError):
         syn.synthesize({}, [], [], "2026-10", client_info=ci)
     assert '"client_brief": {"tono": "Voseo B2B"' in seen["text"] and "client_brief" in seen["system"]
+
+
+def test_api_problem_explains_credit_and_key_errors():
+    from creative_intel.ai.client import api_problem
+
+    assert "crédito" in api_problem(Exception("Error code: 400 - Your credit balance is too low to access the Anthropic API"))
+    assert "clave" in api_problem(Exception("Could not resolve authentication method"))
+    assert api_problem(Exception("overloaded")) is None
+
+
+def test_run_cycle_stops_before_collecting_without_credit(monkeypatch):
+    from creative_intel import pipeline
+    from creative_intel.ai import client as ai_client
+
+    def no_credit(model=None):
+        raise ai_client.ApiUnavailable("sin crédito")
+
+    monkeypatch.setattr(ai_client, "check_api", no_credit)
+    monkeypatch.setattr(pipeline, "collect", lambda *a, **k: pytest.fail("no debería recolectar"))
+    with pytest.raises(ai_client.ApiUnavailable):
+        pipeline.run_cycle(None, "2026-10")

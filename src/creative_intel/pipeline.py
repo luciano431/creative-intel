@@ -283,9 +283,20 @@ def run_cycle(
 ) -> dict[str, Any]:
     """Todo hasta el borrador. Se detiene ANTES de publicar: ahí entra la validación humana."""
     summary: dict[str, Any] = {"period": period}
+    if not mock_ai:
+        from .ai.client import check_api
+
+        check_api()  # sin crédito o sin clave: avisar ya, no después de 10 minutos de recolección
     if not skip_collect:
         summary["collect"] = collect(session, period, sources=sources)
     summary["classify"] = classify(session, period, mock=mock_ai)
+    aborted = summary["classify"].get("aborted") if isinstance(summary["classify"], dict) else None
+    if aborted:
+        from .ai.client import ApiUnavailable, api_problem
+
+        problem = api_problem(Exception(aborted))
+        if problem:
+            raise ApiUnavailable(problem + " Los anuncios ya recolectados quedan guardados: al reintentar, tildá «No volver a recolectar».")
     metrics = analyze(session, period)
     summary["totals"] = metrics["totals"]
     synthesize_run(session, period, mock=mock_ai)

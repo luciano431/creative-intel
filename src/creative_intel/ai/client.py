@@ -36,6 +36,34 @@ class BudgetExceeded(RuntimeError):
     pass
 
 
+class ApiUnavailable(RuntimeError):
+    """Sin crédito o sin clave válida: fallaría cada pedido, así que se avisa y se frena."""
+
+
+def api_problem(exc: Exception) -> str | None:
+    """Explicación en castellano si el error es de crédito o de clave (se repetiría en cada pedido)."""
+    msg = str(exc).lower()
+    if "credit balance is too low" in msg:
+        return ("La cuenta de Claude no tiene crédito disponible. Revisá en console.anthropic.com → Settings → Billing "
+                "que el saldo esté cargado en la MISMA organización de la clave que está en .env (si recién pagaste, esperá unos minutos).")
+    if any(k in msg for k in ("could not resolve authentication", "invalid x-api-key", "authentication_error")):
+        return "La clave de API de .env no es válida o está vacía. Creá una nueva en console.anthropic.com → API Keys y cargala en .env."
+    if "permission_error" in msg:
+        return "La clave de API no tiene permiso para usar este modelo. Revisá la clave y la organización en console.anthropic.com."
+    return None
+
+
+def check_api(model: str | None = None) -> None:
+    """Pedido mínimo (1 token, una fracción de centavo) para confirmar clave y crédito antes de una corrida larga."""
+    try:
+        get_client().messages.create(model=model or settings.classify_model, max_tokens=1, messages=[{"role": "user", "content": "ok"}])
+    except Exception as exc:
+        problem = api_problem(exc)
+        if problem:
+            raise ApiUnavailable(problem) from exc
+        raise
+
+
 # US$ por millón de tokens: (entrada, salida, lectura de caché, escritura de caché)
 PRICES = {
     "claude-opus-5-5": (4.0, 20.0, 0.20, 5.0),
