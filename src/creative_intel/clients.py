@@ -117,7 +117,9 @@ class ClientEntry:
     def missing_ids(self) -> list[Any]:
         from .collectors.google_web import domain_of
 
-        return [c for c in self.competitors if not c.meta_page_id or not (c.google_advertiser_id or domain_of(c))]
+        # Falta de verdad solo si no hay forma de buscarlo en ninguna plataforma (muchas marcas chicas no tienen web
+        # ni pautan en Google: eso es un dato, no un faltante). Las pausadas no cuentan.
+        return [c for c in self.competitors if getattr(c, "active", True) and not c.meta_page_id and not (c.google_advertiser_id or domain_of(c))]
 
     def periods(self) -> list[str]:
         if not self.reports_dir.is_dir():
