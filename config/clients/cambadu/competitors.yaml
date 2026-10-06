@@ -22,8 +22,8 @@ countries:
     - asesoria
     - convenios
     - eventos
+    meta_ad_account_id: act_117635775050948
   competitors:
-    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: tienda-inglesa
       name: Tienda Inglesa

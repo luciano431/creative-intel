@@ -22,6 +22,7 @@ countries:
     - hogar
     - viaje
     - vida
+    meta_ad_account_id: act_461435457596690
   competitors:
     local:
     - slug: bse

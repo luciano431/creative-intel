@@ -25,11 +25,11 @@ countries:
     - smart_home
     - accesorios
     - movilidad_electrica
+    meta_ad_account_id: act_56673948
   competitors:
-    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: atom-store
-      name: Atom Store Uruguay   # movilidad eléctrica
+      name: Atom Store Uruguay
       website: ''
       meta_page_id: '736712632862505'
       google_domain: atom-store.com.uy
@@ -37,7 +37,7 @@ countries:
       products: []
       active: true
     - slug: tecnobox
-      name: Tecnobox Uruguay   # notebooks y monopatines
+      name: Tecnobox Uruguay
       website: ''
       meta_page_id: '107182277301977'
       google_domain: tecnobox.uy
@@ -53,7 +53,7 @@ countries:
       products: []
       active: true
     - slug: crazy-fitness
-      name: Crazy Fitness Uruguay   # monopatines, bicis y motos eléctricas
+      name: Crazy Fitness Uruguay
       website: ''
       meta_page_id: '115047996924437'
       google_domain: ''
@@ -70,7 +70,7 @@ countries:
       active: true
     global:
     - slug: compra-gamer
-      name: Compra Gamer   # Argentina, tecnología
+      name: Compra Gamer
       website: ''
       meta_page_id: '137109989644482'
       google_domain: compragamer.com
@@ -80,7 +80,7 @@ countries:
       ad_countries:
       - AR
     - slug: cetrogar
-      name: Cetrogar   # Argentina, retail de tecnología
+      name: Cetrogar
       website: ''
       meta_page_id: '102097393168003'
       google_domain: cetrogar.com.ar
@@ -90,7 +90,7 @@ countries:
       ad_countries:
       - AR
     - slug: share-computacion
-      name: Share Computación   # Argentina, notebooks
+      name: Share Computación
       website: ''
       meta_page_id: '310305055970537'
       google_domain: ''

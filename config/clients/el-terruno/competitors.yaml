@@ -21,8 +21,8 @@ countries:
     - lotes_financiados
     - barrio_privado
     - chacras
+    meta_ad_account_id: act_1449187829164380, act_1449765122945845, act_662548046372985
   competitors:
-    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: varela-inmobiliaria
       name: Varela Inmobiliaria
@@ -33,7 +33,7 @@ countries:
       products: []
       active: true
     - slug: echart
-      name: Echart Operadores Inmobiliarios   # terrenos con entrega y cuotas en USD
+      name: Echart Operadores Inmobiliarios
       website: ''
       meta_page_id: '838354926282116'
       google_domain: ''
@@ -41,7 +41,7 @@ countries:
       products: []
       active: true
     - slug: mannise
-      name: Inmobiliaria Mannise   # terrenos en Paysandú
+      name: Inmobiliaria Mannise
       website: ''
       meta_page_id: '1868170416735559'
       google_domain: ''
@@ -57,7 +57,7 @@ countries:
       products: []
       active: true
     - slug: fraccionamiento-del-cerro
-      name: Fraccionamiento Del Cerro   # sin pauta encontrada
+      name: Fraccionamiento Del Cerro
       website: ''
       meta_page_id: ''
       google_domain: ''
@@ -65,7 +65,7 @@ countries:
       products: []
       active: false
     - slug: cerro-nuevo
-      name: Cerro Nuevo   # sin pauta encontrada
+      name: Cerro Nuevo
       website: ''
       meta_page_id: ''
       google_domain: ''
@@ -74,7 +74,7 @@ countries:
       active: false
     global:
     - slug: puerto-reyunos
-      name: Puerto Reyunos   # Argentina, preventa de lotes
+      name: Puerto Reyunos
       website: ''
       meta_page_id: '880272651827446'
       google_domain: ''
@@ -84,7 +84,7 @@ countries:
       ad_countries:
       - AR
     - slug: numa-hills
-      name: Numa Hills   # Argentina, lotes desde USD 10.000 + cuotas
+      name: Numa Hills
       website: ''
       meta_page_id: '950590544799238'
       google_domain: numahills.com
@@ -94,7 +94,7 @@ countries:
       ad_countries:
       - AR
     - slug: desarrollos-vertical
-      name: Desarrollos Vertical   # Argentina, lotes 100% financiados
+      name: Desarrollos Vertical
       website: ''
       meta_page_id: '352695127916054'
       google_domain: ''
@@ -104,7 +104,7 @@ countries:
       ad_countries:
       - AR
     - slug: ibanez
-      name: Ibañez Negocios Inmobiliarios   # Argentina, lotes con financiación
+      name: Ibañez Negocios Inmobiliarios
       website: ''
       meta_page_id: '1557949497774537'
       google_domain: ''
