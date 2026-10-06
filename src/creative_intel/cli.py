@@ -612,10 +612,14 @@ def audit(period: Optional[str] = PeriodOpt, only: Optional[str] = typer.Option(
         flag = "[green]OK[/green]" if c.is_own or (n_meta >= target and n_google >= target) else "[red]faltan datos[/red]"
         rprint(f"\n[bold]{c.name}[/bold] ({c.tier}) · Meta {n_meta}/{target} · Google {n_google}/{target} · {flag}")
         rprint(f"  Meta ID: {c.meta_page_id or '—'} · Google: {c.google_advertiser_id or c.google_domain or c.website or '—'} · países: {', '.join(c.ad_countries)}")
+        from .analysis.metrics import start_known
+
         for it in mine:
-            text = " ".join(((it.get("headline") or "") + " " + (it.get("body_text") or "")).split())[:90] or "(sin texto)"
             img = "con imagen" if it.get("thumbnail_path") else "sin imagen"
-            rprint(f"  · {it['platform']:6} {it['status']:8} {it['days_active']:>4} días · {img} · {text}")
+            text = " ".join(((it.get("headline") or "") + " " + (it.get("body_text") or "")).split())[:90]
+            text = text or ("(el texto está dentro de la imagen)" if it.get("thumbnail_path") else "(sin texto)")
+            days = f"{it['days_active']:>4} días" if start_known(it) else "   ? días"
+            rprint(f"  · {it['platform']:6} {it['status']:8} {days} · {img} · {text}")
 
 
 @app.command("check-api")

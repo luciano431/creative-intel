@@ -32,6 +32,8 @@ def parse_human_date(text: str) -> dt.date | None:
         return None
     day = int(nums[0]) if int(nums[0]) <= 31 else int(nums[1])
     year = int(nums[-1])
+    if not 2004 <= year <= dt.date.today().year + 1:  # año ilegible o mal leído: mejor sin fecha que una fecha falsa
+        return None
     try:
         return dt.date(year, mon, day)
     except ValueError:
@@ -184,6 +186,10 @@ CTA_LABELS = {
     "whatsapp", "enviar mensaje de whatsapp", "llamar ahora", "call now", "suscribirte", "subscribe",
 }
 DOMAIN_RE = re.compile(r"^(https?://)?[a-z0-9.-]+\.[a-z]{2,}(/\S*)?$", re.I)
+# "2 anuncios usan este contenido y texto" (aviso de la Biblioteca, no es copy)
+SHARED_CREATIVE_RE = re.compile(r"^\d+\s+(anuncios? usan? este contenido|ads? uses? this creative)", re.I)
+# Categoría de la página que la Biblioteca muestra junto al nombre: "Furniture, Home Design, Business"
+CATEGORY_LINE_RE = re.compile(r"^[A-ZÁÉÍÓÚ][\w&'/-]*( [A-Za-zÁÉÍÓÚáéíóú&'/-]+){0,3}(, [A-ZÁÉÍÓÚ][\w&'/-]*( [A-Za-zÁÉÍÓÚáéíóú&'/-]+){0,3}){1,4}$")
 TIMESTAMP_RE = re.compile(r"^\s*\d{1,2}:\d{2}(\s*/\s*\d{1,2}:\d{2})?\s*$")
 
 
@@ -218,8 +224,10 @@ def parse_card_text(card_text: str, advertiser_name: str = "") -> dict:
         if re.match(r"(Ver detalles|See ad details)", l, re.I):
             skip_next = True
             continue
-        if UI_NOISE.search(l) or TIMESTAMP_RE.match(l):
+        if UI_NOISE.search(l) or TIMESTAMP_RE.match(l) or SHARED_CREATIVE_RE.match(l):
             continue
+        if not lines and CATEGORY_LINE_RE.match(l):
+            continue  # categoría de la página, antes del texto del anuncio
         if skip_next:
             skip_next = False
             continue

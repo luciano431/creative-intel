@@ -191,3 +191,13 @@ def test_declared_totals_reach_the_profiles():
     assert vin["declared"] == {"meta": 37, "google": 34} and vin["declared_total"] == 71
     assert met["declared_total"] == 200 and metrics["totals"]["declared"] == 271
     assert metrics["own_profile"]["declared_total"] == 12
+
+
+def test_meta_card_drops_page_category_and_shared_notice():
+    from creative_intel.collectors.meta_web import parse_card_text, parse_human_date
+
+    card = "Verona Office & Home\nPatrocinado\nFurniture, Home Design, Business\n¿Qué hay debajo del piso?\nverona.com.uy\nPisos técnicos\nMás información"
+    out = parse_card_text(card, "Verona Office & Home")
+    assert out["body"] == "¿Qué hay debajo del piso?" and out["headline"] == "Pisos técnicos"
+    assert parse_card_text("2 anuncios usan este contenido y texto\nCambiá tu oficina", "X")["body"] == "Cambiá tu oficina"
+    assert parse_human_date("22 sep 22") is None
