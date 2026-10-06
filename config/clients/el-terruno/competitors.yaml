@@ -22,29 +22,102 @@ countries:
     - barrio_privado
     - chacras
   competitors:
+    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: varela-inmobiliaria
       name: Varela Inmobiliaria
-      website: https://www.sigaloavarela.com
+      website: ''
       meta_page_id: '1627341317525346'
       google_domain: sigaloavarela.com
       google_advertiser_id: ''
       products: []
       active: true
+    - slug: echart
+      name: Echart Operadores Inmobiliarios   # terrenos con entrega y cuotas en USD
+      website: ''
+      meta_page_id: '838354926282116'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: terrenos-uruguay
+      name: Terrenos Uruguay
+      website: ''
+      meta_page_id: '726175010878687'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: mannise
+      name: Inmobiliaria Mannise   # terrenos en Paysandú
+      website: ''
+      meta_page_id: '1868170416735559'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: los-naranjos
+      name: Los Naranjos UY
+      website: ''
+      meta_page_id: '1051761271364647'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
     - slug: fraccionamiento-del-cerro
-      name: Fraccionamiento Del Cerro
+      name: Fraccionamiento Del Cerro   # sin pauta encontrada
       website: ''
       meta_page_id: ''
       google_domain: ''
       google_advertiser_id: ''
       products: []
-      active: true
+      active: false
     - slug: cerro-nuevo
-      name: Cerro Nuevo
+      name: Cerro Nuevo   # sin pauta encontrada
       website: ''
       meta_page_id: ''
       google_domain: ''
       google_advertiser_id: ''
       products: []
+      active: false
+    global:
+    - slug: puerto-reyunos
+      name: Puerto Reyunos   # Argentina, preventa de lotes
+      website: ''
+      meta_page_id: '880272651827446'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
       active: true
-    global: []
+      ad_countries:
+      - AR
+    - slug: numa-hills
+      name: Numa Hills   # Argentina, lotes desde USD 10.000 + cuotas
+      website: ''
+      meta_page_id: '950590544799238'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - AR
+    - slug: desarrollos-vertical
+      name: Desarrollos Vertical   # Argentina, lotes 100% financiados
+      website: ''
+      meta_page_id: '352695127916054'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - AR
+    - slug: ibanez
+      name: Ibañez Negocios Inmobiliarios   # Argentina, lotes con financiación
+      website: ''
+      meta_page_id: '1557949497774537'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - AR

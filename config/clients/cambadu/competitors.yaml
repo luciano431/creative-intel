@@ -23,5 +23,46 @@ countries:
     - convenios
     - eventos
   competitors:
-    local: []
+    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
+    local:
+    - slug: tienda-inglesa
+      name: Tienda Inglesa
+      website: ''
+      meta_page_id: ''
+      google_domain: tiendainglesa.com.uy
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: disco
+      name: Disco Uruguay
+      website: ''
+      meta_page_id: ''
+      google_domain: disco.com.uy
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: devoto
+      name: Devoto
+      website: ''
+      meta_page_id: ''
+      google_domain: devoto.com.uy
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: ta-ta
+      name: Ta-Ta
+      website: ''
+      meta_page_id: ''
+      google_domain: tata.com.uy
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: el-dorado
+      name: El Dorado
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
     global: []

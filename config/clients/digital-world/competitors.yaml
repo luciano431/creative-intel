@@ -26,5 +26,76 @@ countries:
     - accesorios
     - movilidad_electrica
   competitors:
-    local: []
-    global: []
+    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
+    local:
+    - slug: atom-store
+      name: Atom Store Uruguay   # movilidad eléctrica
+      website: ''
+      meta_page_id: '736712632862505'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: tecnobox
+      name: Tecnobox Uruguay   # notebooks y monopatines
+      website: ''
+      meta_page_id: '107182277301977'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: zonatecno
+      name: ZonaTecno
+      website: ''
+      meta_page_id: '139087516133801'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: crazy-fitness
+      name: Crazy Fitness Uruguay   # monopatines, bicis y motos eléctricas
+      website: ''
+      meta_page_id: '115047996924437'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: elpreciobarato
+      name: Elpreciobarato
+      website: ''
+      meta_page_id: '115268581666456'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    global:
+    - slug: compra-gamer
+      name: Compra Gamer   # Argentina, tecnología
+      website: ''
+      meta_page_id: '137109989644482'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - AR
+    - slug: cetrogar
+      name: Cetrogar   # Argentina, retail de tecnología
+      website: ''
+      meta_page_id: '102097393168003'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - AR
+    - slug: share-computacion
+      name: Share Computación   # Argentina, notebooks
+      website: ''
+      meta_page_id: '310305055970537'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      ad_countries:
+      - AR

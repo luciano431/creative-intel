@@ -622,6 +622,37 @@ def audit(period: Optional[str] = PeriodOpt, only: Optional[str] = typer.Option(
             rprint(f"  · {it['platform']:6} {it['status']:8} {days} · {img} · {text}")
 
 
+@app.command("all")
+def run_all(
+    step: str = typer.Argument(..., help="ids = completar IDs · informe = generar el informe del mes · audit = revisar datos"),
+    period: Optional[str] = PeriodOpt,
+    only: list[str] = typer.Option([], "--only", help="identificador de cliente (repetible); por defecto, todos"),
+) -> None:
+    """Corre un paso para todos los clientes, uno tras otro (cada uno con su RADAR_CLIENT)."""
+    import os
+    import subprocess
+    import sys
+
+    from .clients import list_clients
+
+    commands = {"ids": ["fill-ids", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"]}
+    if step not in commands:
+        raise typer.BadParameter("Usá: ids, informe o audit")
+    args = commands[step] + (["--period", period] if period and step != "ids" else [])
+    failed = []
+    for c in list_clients():
+        if only and c.key not in only:
+            continue
+        rprint(f"\n[bold]══ {c.name} ══[/bold]")
+        env = {**os.environ}
+        env.pop("RADAR_CLIENT", None)
+        if c.env:
+            env["RADAR_CLIENT"] = c.env
+        if subprocess.run([sys.executable, "-m", "creative_intel.cli", *args], env=env).returncode != 0:
+            failed.append(c.name)
+    rprint("\n[green]Listo.[/green]" if not failed else f"\n[red]Con error:[/red] {', '.join(failed)}")
+
+
 @app.command("check-api")
 def check_api_cmd() -> None:
     """Confirma que la clave de la IA (OpenAI o Claude) anda y que la cuenta tiene saldo (cuesta una fracción de centavo)."""

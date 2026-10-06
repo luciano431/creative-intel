@@ -25,6 +25,7 @@ countries:
     - climatizacion
     - decoracion
   competitors:
+    # Elegidos por volumen de anuncios en la Biblioteca de Meta (oct-2026), para tener banco de datos.
     local:
     - slug: sodimac
       name: Sodimac Homecenter
@@ -39,6 +40,30 @@ countries:
       website: ''
       meta_page_id: '23221995011'
       google_domain: mercadolibre.com.uy
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: victoriana
+      name: Victoriana Muebles   # muebles y deco, Montevideo
+      website: ''
+      meta_page_id: '700577986814941'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: cardalgrill
+      name: Cardalgrill   # parrillas
+      website: ''
+      meta_page_id: '167442769792199'
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+    - slug: herreria-2-manos
+      name: Herrería 2 Manos   # herrería y parrillas
+      website: ''
+      meta_page_id: '2221886364790177'
+      google_domain: ''
       google_advertiser_id: ''
       products: []
       active: true
