@@ -110,7 +110,7 @@ def write_ideas(client_info: Any, context: dict[str, Any], request: str) -> list
                                                response_schema=_Ideas, temperature=1.0, max_output_tokens=16000),
         )
     except Exception as exc:
-        log.warning("Gemini no respondió (%s): las ideas quedan con el modelo del plan", str(exc)[:300])
+        log.warning("Gemini no respondió (%s): las ideas quedan con el modelo del plan", gemini_problem(exc))
         return None
     meta = getattr(resp, "usage_metadata", None)
     if meta is not None:
@@ -142,4 +142,15 @@ def check_gemini() -> str:
     except ImportError:
         return "Falta instalar google-genai (pip install -e .)"
     except Exception as exc:
-        return str(exc)[:300]
+        return gemini_problem(exc)
+
+
+def gemini_problem(exc: Exception) -> str:
+    msg = str(exc)
+    if "RESOURCE_EXHAUSTED" in msg or " 429" in msg or msg.startswith("429"):
+        return ("la cuenta de Google no tiene cupo para este modelo (429). Los modelos Pro no entran en el plan gratis: "
+                "activá la facturación en aistudio.google.com (Get API key > tu proyecto > Set up billing), o usá "
+                "GEMINI_CREATIVE_MODEL=gemini-3-flash-preview en .env, que tiene cupo gratis")
+    if "API_KEY_INVALID" in msg or "API key not valid" in msg:
+        return "la clave GEMINI_API_KEY no es válida (copiala de nuevo desde aistudio.google.com/apikey)"
+    return msg[:300]
