@@ -54,6 +54,29 @@ class _Ideas(BaseModel):
     ideas: list[_Idea]
 
 
+_CLIENT = None
+
+
+def _client():
+    """Un solo cliente de Gemini para toda la corrida (si se crea y se descarta, la librería cierra la conexión
+    antes de mandar el pedido: 'Cannot send a request, as the client has been closed')."""
+    global _CLIENT
+    if _CLIENT is None:
+        from google import genai
+
+        _CLIENT = genai.Client(api_key=gemini_key())
+    return _CLIENT
+
+
+def gemini_key() -> str:
+    """La clave tal cual o, si se pegó con algo más alrededor (comillas, una etiqueta), solo la clave."""
+    import re
+
+    raw = (settings.gemini_api_key or "").strip().strip("'\"")
+    m = re.search(r"AIza[0-9A-Za-z_\-]{30,}", raw)
+    return m.group(0) if m else raw
+
+
 def enabled() -> bool:
     return settings.creative_provider == "gemini" and bool(settings.gemini_api_key)
 
@@ -72,7 +95,6 @@ def write_ideas(client_info: Any, context: dict[str, Any], request: str) -> list
     if not enabled():
         return None
     try:
-        from google import genai
         from google.genai import types
     except ImportError:
         log.warning("Falta google-genai (pip install -e .): las ideas quedan con el modelo del plan")
@@ -81,8 +103,7 @@ def write_ideas(client_info: Any, context: dict[str, Any], request: str) -> list
                                   brief_rules=_brief_rules(client_info.brief))
     prompt = f"Datos (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)}\n\nPedido: {request}"
     try:
-        gclient = genai.Client(api_key=settings.gemini_api_key)
-        resp = gclient.models.generate_content(
+        resp = _client().models.generate_content(
             model=settings.gemini_creative_model,
             contents=prompt,
             config=types.GenerateContentConfig(system_instruction=system, response_mime_type="application/json",
@@ -116,10 +137,7 @@ def check_gemini() -> str:
     if not settings.gemini_api_key:
         return "No hay GEMINI_API_KEY en .env"
     try:
-        from google import genai
-
-        resp = genai.Client(api_key=settings.gemini_api_key).models.generate_content(
-            model=settings.gemini_creative_model, contents="Respondé solo: ok")
+        resp = _client().models.generate_content(model=settings.gemini_creative_model, contents="Respondé solo: ok")
         return "" if (resp.text or "").strip() else "Gemini respondió vacío"
     except ImportError:
         return "Falta instalar google-genai (pip install -e .)"

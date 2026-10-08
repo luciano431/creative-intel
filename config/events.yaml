@@ -29,6 +29,11 @@ events:
         end: 2025-11-05
         from: 2025-10-15
         to: 2025-11-12
+      - label: 2026-06
+        start: 2026-06-01      # 1 al 3 de junio de 2026 (ciberlunes.uy / CEDU; Sodimac, Stadium y Mercado Libre lo confirman)
+        end: 2026-06-03
+        from: 2026-05-11
+        to: 2026-06-10
     next:
       start: null              # completar cuando el organizador confirme la fecha
       end: null
