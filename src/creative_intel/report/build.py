@@ -204,7 +204,8 @@ def render_assets(items: list[dict[str, Any]], out_dir: str | Path, wanted: set 
         if wanted is not None and it["id"] not in wanted:
             continue
         raw = it.get("raw") if isinstance(it.get("raw"), dict) else {}
-        for p in (it.get("thumbnail_path"), (raw or {}).get("screenshot")):
+        # Primero la captura de lo que se ve en el anuncio (imagen y texto coinciden); la imagen bajada, de respaldo
+        for p in ((raw or {}).get("screenshot"), it.get("thumbnail_path")):
             if p and Path(p).is_file():
                 dest = assets_out / Path(p).name
                 if not dest.exists():

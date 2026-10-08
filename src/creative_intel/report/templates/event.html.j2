@@ -103,7 +103,7 @@
   <p class="sec-intro">Los de la edición anterior con más señales (más días al aire, más versiones). Para inspirarse, no para copiar.</p>
   <div class="grid g3">
     {% for it in refs %}
-    <div class="cr">{{ preview(it) }}<div class="cr-body"><div class="cr-top"><span class="tag">{{ lbl(it.format) }}</span><span class="days">{{ it.signals | join(' · ') }}</span></div><h4>{{ it.competitor }}</h4>{% if it.headline %}<div class="hl">“{{ it.headline[:120] }}”</div>{% endif %}{% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}</div></div>
+    <div class="cr">{{ preview(it) }}<div class="cr-body"><div class="cr-top"><span class="tag">{{ lbl(it.format) }}</span><span class="days">{{ it.signals | join(' · ') }}</span></div><h4>{{ it.competitor }}</h4>{% if it.cls and it.cls.product_shown %}<div class="small muted">Producto: {{ it.cls.product_shown }}</div>{% endif %}{% if it.headline %}<div class="hl">“{{ it.headline[:120] }}”</div>{% endif %}{% if it.snapshot_url %}<a class="small" href="{{ it.snapshot_url }}" target="_blank" rel="noopener">Ver anuncio original</a>{% endif %}</div></div>
     {% endfor %}
   </div>
 </section>

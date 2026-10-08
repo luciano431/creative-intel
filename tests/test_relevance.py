@@ -33,3 +33,10 @@ def test_every_client_has_rubro():
         for c in load_competitors(d / "competitors.yaml"):
             if c.generalist:
                 assert c.focus_keywords, (d.name, c.slug)
+
+
+def test_ai_marks_off_topic_for_any_competitor():
+    items = [{"competitor_slug": "victoriana", "tier": "local", "headline": "", "cls": {"product": "otro_rubro"}},
+             {"competitor_slug": "victoriana", "tier": "local", "headline": "", "cls": {"product": "parrillas"}},
+             {"competitor_slug": "adeleste", "tier": "own", "headline": "", "cls": {"product": "otro_rubro"}}]
+    assert [i["cls"]["product"] for i in filter_items(items, [], set())] == ["parrillas", "otro_rubro"]

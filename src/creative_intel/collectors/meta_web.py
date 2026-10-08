@@ -222,8 +222,15 @@ class MetaAdLibraryWebCollector:
 
                 competitor = CompetitorConfig(slug="mkt-" + slugify(page_name or "anunciante"), name=page_name or "Anunciante",
                                               country=country, tier="mercado")
-            img_info = card.locator("img").evaluate_all("els => els.map(e => ({src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height}))")
-            imgs = [i["src"] for i in sorted(img_info, key=lambda i: -(i["w"] * i["h"])) if i["src"] and i["w"] >= 150 and i["h"] >= 150]
+            try:  # que la tarjeta esté en pantalla para que las imágenes tengan su tamaño real
+                card.scroll_into_view_if_needed(timeout=5000)
+                page.wait_for_timeout(300)
+            except Exception:
+                pass
+            img_info = card.locator("img").evaluate_all(
+                "els => els.map(e => { const r = e.getBoundingClientRect();"
+                " return {src: e.src, w: e.naturalWidth || e.width, h: e.naturalHeight || e.height, rw: r.width, rh: r.height}; })")
+            imgs, carousel = pick_images(img_info)
             vids = card.locator("video").evaluate_all("els => els.map(e => e.src || (e.querySelector('source')||{}).src)")
             shot = ""
             if self.screenshots:
@@ -242,7 +249,7 @@ class MetaAdLibraryWebCollector:
                     platform="meta",
                     source="meta_web",
                     external_id=ext_id,
-                    format="video" if any(vids) else "imagen" if any(imgs) else "desconocido",
+                    format="video" if any(vids) else "carousel" if carousel else "imagen" if any(imgs) else "desconocido",
                     placements=["feed"],
                     headline=parsed["headline"],
                     body_text=parsed["body"],
@@ -305,6 +312,23 @@ TIMESTAMP_RE = re.compile(r"^\s*\d{1,2}:\d{2}(\s*/\s*\d{1,2}:\d{2})?\s*$")
 
 
 RESULTS_RE = re.compile(r"~?\s*([\d][\d.,]*)\s*(mil\s+)?(resultados?|results?)\b", re.I)
+
+
+def pick_images(img_info: list[dict]) -> tuple[list[str], bool]:
+    """Imágenes de la pieza en el orden en que se VEN (la primera es la que acompaña al titular).
+
+    Se mide el tamaño en pantalla, no el del archivo: en los anuncios de catálogo y carrusel la Biblioteca carga
+    también las otras placas, y elegir por tamaño de archivo mezclaba la foto de un producto con el texto de otro.
+    Devuelve (urls, es_carrusel).
+    """
+    shown = [i for i in img_info if i.get("src") and (i.get("rw") or 0) >= 120 and (i.get("rh") or 0) >= 120]
+    if shown:
+        top = max(i["rw"] * i["rh"] for i in shown)
+        main = [i for i in shown if i["rw"] * i["rh"] >= 0.6 * top]  # las placas grandes, en orden de aparición
+        rest = [i for i in shown if i not in main]
+        return [i["src"] for i in main + rest], len(main) >= 2
+    big = [i for i in img_info if i.get("src") and i.get("w", 0) >= 150 and i.get("h", 0) >= 150]
+    return [i["src"] for i in big], False
 
 
 def declared_results(text: str) -> int | None:

@@ -38,6 +38,20 @@ def _classify_prompt() -> str:
     return SYSTEM_PROMPT.format(industry=ci.industry or "publicidad digital", market=ci.market or "LATAM")
 
 
+OTHER_PRODUCT = "otro_rubro"  # el anuncio vende algo que el cliente no vende: no entra al análisis
+
+
+def client_scope(taxonomy: Taxonomy) -> str:
+    from ..config import load_client
+
+    ci = load_client()
+    cats = ", ".join(p.replace("_", " ") for p in taxonomy.products if p not in ("multiproducto", "marca"))
+    return (f"\n\nEl cliente es {ci.name}: {ci.description or ci.industry}. Sus categorías: {cats}.\n"
+            f"Mirá la imagen y el texto. Si el producto del anuncio no es de esas categorías (ej. una puerta, una herramienta, "
+            f"un electrodoméstico para un cliente de muebles), `product` = {OTHER_PRODUCT}. Si la imagen y el texto muestran "
+            "productos distintos, manda la imagen.")
+
+
 def build_classification_model(taxonomy: Taxonomy) -> Type[BaseModel]:
     """Modelo Pydantic dinámico: los enums salen de config/taxonomy.yaml."""
 
@@ -45,7 +59,9 @@ def build_classification_model(taxonomy: Taxonomy) -> Type[BaseModel]:
         return Literal[tuple(values)]  # type: ignore[valid-type]
 
     fields: dict[str, Any] = {
-        "product": (lit(taxonomy.products), Field(description="Producto o línea principal que promociona")),
+        "product": (lit(list(taxonomy.products) + [OTHER_PRODUCT]),
+                    Field(description=f"Categoría del cliente a la que corresponde el producto del anuncio; '{OTHER_PRODUCT}' si no es de ninguna")),
+        "product_shown": (str, Field(description="El producto concreto que se ve en la imagen, en 2-5 palabras (ej. 'silla de escritorio')")),
         "format_detected": (lit(taxonomy.formats), Field(description="Formato real del creativo")),
         "placement_guess": (lit(taxonomy.placements), Field(description="Ubicación probable")),
         "hook_type": (lit(taxonomy.hook_types), Field(description="Mecanismo de apertura")),
@@ -98,15 +114,12 @@ def creative_prompt(creative: Any) -> str:
 def classify_creative(creative: Any, taxonomy: Taxonomy, model: str | None = None, client=None) -> dict[str, Any]:
     schema = build_classification_model(taxonomy)
     content: list[dict[str, Any]] = []
-    if creative.thumbnail_path:
-        img = _image_block(creative.thumbnail_path)
+    # Primero la captura de lo que se ve (la imagen que acompaña al texto); la imagen bajada, si no hay captura
+    for path in ((creative.raw or {}).get("screenshot"), creative.thumbnail_path):
+        img = _image_block(path) if path else None
         if img:
             content.append(img)
-    shot = (creative.raw or {}).get("screenshot")
-    if shot and not content:
-        img = _image_block(shot)
-        if img:
-            content.append(img)
+            break
     frames_note = ""
     if (creative.format or "") == "video":
         from ..media.video import FRAME_AT, extract_frames, video_url
@@ -120,7 +133,7 @@ def classify_creative(creative: Any, taxonomy: Taxonomy, model: str | None = Non
             frames_note = ("\nLas imágenes después de la portada son cuadros del video en los segundos "
                            + ", ".join(str(t) for t in FRAME_AT[: len(frames)])
                            + ": usalos para el gancho (qué se ve y se lee en los primeros 3 segundos).")
-    content.append({"type": "text", "text": creative_prompt(creative) + frames_note})
+    content.append({"type": "text", "text": creative_prompt(creative) + frames_note + client_scope(taxonomy)})
     result = structured_call(
         schema, _classify_prompt(), content, model=model or settings.classify_model, max_tokens=2000, effort="low", client=client
     )
@@ -183,6 +196,7 @@ def heuristic_classify(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
     fmt = creative.format if creative.format in taxonomy.formats else "desconocido"
     return {
         "product": product,
+        "product_shown": "",
         "format_detected": fmt,
         "placement_guess": (creative.placements or ["desconocido"])[0] if (creative.placements or ["desconocido"])[0] in taxonomy.placements else "desconocido",
         "hook_type": hook,
