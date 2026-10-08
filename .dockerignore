@@ -1,0 +1,9 @@
+.venv
+.git
+.env
+data
+reports
+**/__pycache__
+.pytest_cache
+*.egg-info
+config/**/*.yaml.bak
