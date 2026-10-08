@@ -47,6 +47,7 @@ Reglas:
 6. `event_metrics.own_results` y `own_daily` son los resultados reales de {client} en esa edición (inversión, resultados, costo por resultado, antes/durante/después). Son lo más importante: el resumen, la oferta y el calendario arrancan de ahí (qué anuncio y qué oferta le dieron el mejor costo por resultado, en qué momento rindió más). Citá los números.
 7. Solo productos de las categorías de {client}; los anuncios de otro rubro ya fueron descartados.
 8. Nunca escribas "resultados" a secas: decí siempre qué son (compras, conversaciones por WhatsApp/Messenger, leads o clics al sitio) y no sumes tipos distintos. Compará costos solo dentro del mismo tipo. No nombres campos ni variables (own_daily, own_results, event_metrics).
+10. `event_metrics.organic`: publicaciones orgánicas de Instagram de {client} y de cada competidor en esa ventana (cantidad, likes y comentarios promedio, interacción sobre seguidores, cuántas nombraron el evento y las de más interacción con su texto). Es el dato de la competencia de esa edición: usalo para comparar qué temas, formatos y mensajes generaron más interacción. Interacción no es venta: decilo así.
 9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado."""
 
 

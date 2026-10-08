@@ -91,6 +91,36 @@
   </div>
 </section>
 
+{% if m.organic %}
+<section>
+  <div class="sec-head"><span class="sec-num">IG</span><h2>Instagram orgánico en esas fechas</h2></div>
+  <p class="sec-intro">Publicaciones (no anuncios) de cada cuenta entre {{ edition.date_from }} y {{ edition.date_to }}. Interacción = likes + comentarios; la tasa la divide por los seguidores para poder comparar cuentas de distinto tamaño.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Publicaciones</th><th>Nombraron el evento</th><th>Likes promedio</th><th>Comentarios promedio</th><th>Interacción / seguidores</th><th>Tipos</th></tr></thead>
+    <tbody>
+    {% for o in m.organic %}
+      <tr><td><b>{{ o.brand }}</b>{% if o.own %} (cliente){% endif %}<br><span class="small muted">@{{ o.username }}</span></td><td>{{ '{:,}'.format(o.followers or 0).replace(',', '.') }}</td><td>{{ o.posts }}</td><td>{{ o.event_posts }}</td><td>{{ o.avg_likes }}</td><td>{{ o.avg_comments }}</td><td>{{ ('%.2f%%' % o.avg_rate) if o.avg_rate is not none else '—' }}</td><td class="small">{% for t, n in o.types.items() %}{{ t }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% for o in m.organic if o.top %}
+  <h3 style="margin:22px 0 8px">Lo que más interacción tuvo de {{ o.brand }}</h3>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+    {% for p in o.top %}
+    <div class="cr">
+      <div class="pv" style="height:220px;aspect-ratio:auto">{% if p.image_rel %}<img src="{{ p.image_rel }}" alt="Publicación de {{ o.brand }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}</div>
+      <div class="cr-body">
+        <div class="cr-top"><span class="tag">{{ p.timestamp[:10] }}</span>{% if p.names_event %}<span class="days">nombra el evento</span>{% endif %}</div>
+        <div><b style="font-size:17px">{{ p.like_count if p.like_count is not none else '—' }}</b> <span class="small muted">likes</span> · <b style="font-size:17px">{{ p.comments_count or 0 }}</b> <span class="small muted">comentarios</span>{% if p.rate is not none %} · <span class="small">{{ p.rate }}% de los seguidores</span>{% endif %}</div>
+        <div class="small">{{ (p.caption or '')[:160] }}{% if (p.caption or '')|length > 160 %}…{% endif %}</div>
+        {% if p.permalink %}<a class="small" href="{{ p.permalink }}" target="_blank" rel="noopener">Ver publicación</a>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
 {% set ms = m.market_search or {} %}
 {% if not m.ads %}
 <section>

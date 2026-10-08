@@ -82,6 +82,30 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
     return raws, daily
 
 
+def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: list[str]) -> dict[str, Any]:
+    """Instagram orgánico de la marca y de los competidores locales en la ventana del evento (sirve también para
+    ediciones pasadas: Instagram guarda las publicaciones)."""
+    from .collectors.ig_organic import InstagramOrganic, summarize
+
+    if not settings.meta_access_token or not any(c.instagram for c in configs):
+        return {}
+    ig = InstagramOrganic()
+    out: dict[str, Any] = {}
+    for c in configs:
+        if not c.active or not c.instagram or c.tier not in ("own", "local"):
+            continue
+        try:
+            prof = ig.profile(c.instagram, since=edition.date_from, until=edition.date_to)
+            out[c.slug] = {"brand": c.name, "own": c.is_own,
+                           **summarize(prof, keywords, assets=settings.assets_dir / "organic")}
+            print(f"[instagram] @{c.instagram}: {out[c.slug]['posts']} publicaciones entre {edition.date_from} y {edition.date_to}")
+        except Exception as exc:
+            errors.append(f"instagram @{c.instagram}: {str(exc)[:200]}")
+            if "permis" in str(exc).lower() or "token" in str(exc).lower() or "vinculada" in str(exc):
+                break  # problema del token: no tiene sentido seguir con las demás cuentas
+    return out
+
+
 def collect_event(session: Session, event: EventConfig, edition: EventEdition, per_brand: int | None = None, market: int = 30,
                   collector: Any = None) -> dict[str, Any]:
     from .collectors.meta_web import MetaAdLibraryWebCollector
@@ -126,6 +150,7 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
                 if known:
                     r.competitor_slug = known.slug
             raws += found
+    organic = _organic(configs, edition, event.keywords, errors) if collector is None else {}
     _register_market_advertisers(session, raws)
     up = upsert_creatives(session, run, raws, dt.date.today(), download_media=True)
     run.status = "collected"
@@ -134,6 +159,8 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
         run.stats = {**run.stats, "own_daily": own_daily}
     if market_search:
         run.stats = {**run.stats, "market_search": market_search}
+    if organic:
+        run.stats = {**run.stats, "organic": organic}
     session.flush()
     return run.stats["collect"]
 
@@ -150,6 +177,8 @@ def _gemini_ideas(plan: dict[str, Any], event: EventConfig, metrics: dict[str, A
         "calendario": plan.get("calendar"),
         "no_hacer": plan.get("avoid"),
         "resultados_propios_edicion": metrics.get("own_results"),
+        "instagram_organico": [{k: o.get(k) for k in ("brand", "own", "followers", "posts", "avg_likes", "avg_comments", "avg_rate", "event_posts", "types", "top")}
+                               for o in metrics.get("organic") or []],
         "resultados_propios_por_momento": (metrics.get("own_daily") or {}).get("phases"),
         "anuncios_del_mercado": _compact_items([it for it in items if it.get("tier") != "own"], limit=40),
         "anuncios_propios": _compact_items([it for it in items if it.get("tier") == "own"], limit=20),
@@ -159,6 +188,23 @@ def _gemini_ideas(plan: dict[str, Any], event: EventConfig, metrics: dict[str, A
     if ideas:
         plan = {**plan, "ideas": [strip_for(i) | {"moment": i.get("for_what", "")} for i in ideas], "ideas_by": "Gemini"}
     return plan
+
+
+def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, Any]]:
+    """Las cuentas ordenadas (el cliente primero) con sus imágenes copiadas junto al informe."""
+    import shutil
+
+    rows = []
+    for slug, o in organic.items():
+        o = {**o, "top": [dict(p) for p in o.get("top") or []]}
+        for p in o["top"]:
+            img = p.get("image")
+            if img and Path(img).is_file():
+                (out / "assets").mkdir(parents=True, exist_ok=True)
+                shutil.copy(img, out / "assets" / Path(img).name)
+                p["image_rel"] = f"assets/{Path(img).name}"
+        rows.append(o)
+    return sorted(rows, key=lambda o: (not o.get("own"), -(o.get("avg_rate") or 0)))
 
 
 def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_ai: bool = False, skip_collect: bool = False,
@@ -204,6 +250,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     metrics["own_results"] = own_results(own_items)
     metrics["own_groups"] = own_results_groups(metrics["own_results"])
     metrics["market_search"] = (run.stats or {}).get("market_search") or {}
+    metrics["organic"] = _organic_for_report((run.stats or {}).get("organic") or {}, out)
     next_dates = {"start": event.next_start.isoformat() if event.next_start else None,
                   "end": event.next_end.isoformat() if event.next_end else None}
     if mock_ai:

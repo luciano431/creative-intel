@@ -461,6 +461,7 @@ def set_cmd(
     website: Optional[str] = typer.Option(None, "--website", help="Web"),
     countries: Optional[str] = typer.Option(None, "--countries", help="Países donde buscar sus anuncios, ej. ALL o ES,IT"),
     ad_account: Optional[str] = typer.Option(None, "--ad-account", help="Solo el cliente: cuenta(s) publicitaria(s) para traer sus resultados (act_1 o act_1,act_2)"),
+    instagram: Optional[str] = typer.Option(None, "--instagram", help="Usuario de Instagram (sin @) para el análisis orgánico"),
 ) -> None:
     """Cambia a mano los datos de un competidor (o del cliente) del cliente actual."""
     from .config import CONFIG_DIR
@@ -481,8 +482,10 @@ def set_cmd(
         from .collectors.meta_insights import MetaInsightsCollector
 
         fields["meta_ad_account_id"] = ", ".join(MetaInsightsCollector.accounts(ad_account))
+    if instagram is not None:
+        fields["instagram"] = instagram.strip().lstrip("@").removeprefix("https://www.instagram.com/").strip("/")
     if not fields:
-        raise typer.BadParameter("Indicá al menos un dato: --name, --meta, --domain, --website, --countries o --ad-account")
+        raise typer.BadParameter("Indicá al menos un dato: --name, --meta, --domain, --website, --countries, --ad-account o --instagram")
     try:
         entry = set_fields(CONFIG_DIR / "competitors.yaml", slug, fields)
     except KeyError:
@@ -768,6 +771,44 @@ def check_api_cmd() -> None:
                    else "[yellow]Gemini anda pero CREATIVE_PROVIDER no es gemini.[/yellow]")
     else:
         rprint(f"Ideas y guiones: {settings.synth_model} (para usar Gemini, agregá GEMINI_API_KEY en .env).")
+
+
+@app.command("fill-ig")
+def fill_ig(write: bool = typer.Option(False, "--write", help="Guardar los usuarios encontrados en competitors.yaml")) -> None:
+    """Busca el Instagram de cada marca en su web (el enlace del encabezado o pie de página)."""
+    from .collectors.ig_organic import handle_from_site
+    from .config import CONFIG_DIR, load_competitors
+    from .discovery import set_fields
+
+    for c in load_competitors():
+        if c.instagram:
+            rprint(f"{c.name}: @{c.instagram} (ya cargado)")
+            continue
+        site = c.website or c.google_domain or next(iter(c.google_domains.values()), "")
+        h = handle_from_site(site) if site else ""
+        rprint(f"{c.name}: {'@' + h if h else '[yellow]no encontrado[/yellow]'}{'' if site else ' (sin web cargada)'}")
+        if h and write:
+            set_fields(CONFIG_DIR / "competitors.yaml", c.slug, {"instagram": h})
+    if not write:
+        rprint("\nRevisalos y corré [bold]radar fill-ig --write[/bold] para guardarlos. Los que falten: radar set <marca> --instagram usuario")
+
+
+@app.command("check-ig")
+def check_ig(username: Optional[str] = typer.Argument(None, help="Cuenta pública a probar (por defecto, la del cliente)")) -> None:
+    """Prueba el acceso a Instagram orgánico (Business Discovery) con el token de Meta."""
+    from .collectors.ig_organic import InstagramOrganic
+    from .config import load_competitors
+
+    own = next((c for c in load_competitors() if c.is_own), None)
+    username = username or (own.instagram if own else "")
+    if not username:
+        raise typer.BadParameter("Indicá una cuenta: radar check-ig usuario")
+    try:
+        prof = InstagramOrganic().profile(username, max_pages=1)
+    except Exception as exc:
+        rprint(f"[red]No se pudo leer Instagram:[/red] {exc}")
+        raise typer.Exit(1)
+    rprint(f"[green]Instagram OK:[/green] @{prof.get('username')} · {prof.get('followers_count')} seguidores · {len(prof['posts'])} publicaciones leídas")
 
 
 @app.command()

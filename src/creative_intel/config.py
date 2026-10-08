@@ -52,6 +52,9 @@ class Settings:
     max_ai_usd_per_run: float = float(os.getenv("MAX_AI_USD_PER_RUN", "2.00"))
     anthropic_fallbacks: str = os.getenv("ANTHROPIC_FALLBACKS", "default")
     meta_access_token: str = os.getenv("META_ACCESS_TOKEN", "")
+    # Cuenta de Instagram profesional (de cualquier cliente o de Ranker) desde la que se consultan las cuentas públicas.
+    # Vacío: se usa la primera que tenga el token.
+    instagram_business_id: str = os.getenv("INSTAGRAM_BUSINESS_ID", "")
     meta_graph_version: str = os.getenv("META_GRAPH_VERSION", "v21.0")
     serpapi_key: str = os.getenv("SERPAPI_KEY", "")
     basecamp_account_id: str = os.getenv("BASECAMP_ACCOUNT_ID", "")
@@ -87,6 +90,7 @@ class CompetitorConfig:
     active: bool = True
     meta_ad_account_id: str = ""  # solo el cliente: cuenta publicitaria para traer sus resultados (act_123...)
     # Marca que vende de todo (Sodimac, Mercado Libre): solo se toman sus anuncios del rubro del cliente
+    instagram: str = ""  # usuario de Instagram (sin @) para el análisis orgánico
     generalist: bool = False
     focus_keywords: list[str] = field(default_factory=list)  # se completa con client.focus_keywords si es generalista
 
@@ -137,6 +141,7 @@ def _to_competitor(item: dict[str, Any], country: str, tier: str) -> CompetitorC
         active=bool(item.get("active", True)),
         meta_ad_account_id=str(item.get("meta_ad_account_id", "") or ""),
         generalist=bool(item.get("generalist", False)),
+        instagram=str(item.get("instagram", "") or "").strip().lstrip("@"),
     )
 
 
