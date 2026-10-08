@@ -97,6 +97,10 @@ PRICES = {
     "claude-haiku-4-5": (1.0, 5.0, 0.10, 1.25),
     # OpenAI (precios públicos a oct-2026; la caché de OpenAI no cobra escritura)
     "gpt-5.4-mini": (0.75, 4.50, 0.075, 0.0),
+    # Gemini (ideas y guiones)
+    "gemini-3.1-pro": (2.0, 12.0, 0.20, 0.0),
+    "gemini-3-pro": (2.0, 12.0, 0.20, 0.0),
+    "gemini-3-flash": (0.50, 3.0, 0.05, 0.0),
     "gpt-5.4-nano": (0.20, 1.25, 0.02, 0.0),
     "gpt-5.4": (2.50, 15.0, 0.25, 0.0),
     "gpt-5-mini": (0.25, 2.0, 0.025, 0.0),

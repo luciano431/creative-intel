@@ -42,6 +42,10 @@ class Settings:
                            else os.getenv("CLASSIFY_MODEL", "claude-sonnet-5-5"))
     synth_model: str = (os.getenv("OPENAI_SYNTH_MODEL", "gpt-5.4") if AI_PROVIDER == "openai"
                         else os.getenv("SYNTH_MODEL", "claude-opus-5-5"))
+    # Ideas y guiones: Gemini si hay GEMINI_API_KEY (CREATIVE_PROVIDER=gemini); si no, el mismo modelo del plan
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+    creative_provider: str = os.getenv("CREATIVE_PROVIDER", "gemini" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "")
+    gemini_creative_model: str = os.getenv("GEMINI_CREATIVE_MODEL", "gemini-3.1-pro-preview")
     # Anuncios por marca y por plataforma: en Meta los más vistos (orden por impresiones), en Google los primeros.
     top_ads_per_brand: int = int(os.getenv("TOP_ADS_PER_BRAND", "5"))
     # Tope de gasto de IA por corrida (por cliente). Al llegar, la clasificación se detiene y guarda lo hecho.

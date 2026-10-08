@@ -149,7 +149,7 @@
     {% for c in plan.ideas %}
     <div class="card idea">
       <h4 style="margin:0 0 6px">{{ c.title }}</h4>
-      <p class="small muted" style="margin:0 0 8px">{{ c.format }} · {{ lbl(c.angle) }}</p>
+      <p class="small muted" style="margin:0 0 8px">{% if c.moment %}{{ c.moment }} · {% endif %}{{ c.format }} · {{ lbl(c.angle) }}</p>
       {% if c.hook_line %}<div class="idea-hook"><span class="k">Primeros 3 segundos</span>«{{ c.hook_line }}»</div>{% endif %}
       {% if c.script %}<div class="k" style="margin:10px 0 4px">Guion</div><ol class="script">{% for b in c.script %}<li>{{ b }}</li>{% endfor %}</ol>{% endif %}
       {% if c.copy_draft %}<p><b>Copy:</b> {{ c.copy_draft }}</p>{% endif %}
@@ -161,7 +161,7 @@
   {% if plan.avoid %}<div class="card" style="margin-top:16px"><h3>Qué no hacer</h3><ul>{% for a in plan.avoid %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
 </section>
 {% endif %}
-<section><p class="small muted">Fuente: Biblioteca de anuncios de Meta, anuncios que empezaron a circular entre {{ edition.date_from }} y {{ edition.date_to }} (de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}). Las cifras cuentan anuncios, no inversión.</p></section>
+<section><p class="small muted">Fuentes: Biblioteca de anuncios de Meta{% if not live %} y Centro de transparencia de Google (anuncios que se mostraron entre {{ edition.date_from }} y {{ edition.date_to }}){% endif %}, de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}; resultados de {{ client.name }}: su cuenta publicitaria de Meta. Las cifras del mercado cuentan anuncios, no inversión.{% if plan.ideas_by %} Ideas y guiones: {{ plan.ideas_by }}.{% endif %}</p></section>
 </main>
 </body>
 </html>

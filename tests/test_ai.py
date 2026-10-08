@@ -256,3 +256,24 @@ def test_previous_month_of_other_client_is_ignored():
     assert pipeline._same_universe({"totals": {"by_competitor": {"Otra marca": 5}}}) is None
     ok = {"totals": {"by_competitor": {name: 5}}}
     assert pipeline._same_universe(ok) is ok
+
+
+def test_gemini_concepts_replace_ideas_by_title(monkeypatch):
+    from creative_intel import pipeline
+
+    idea = dict(title="Asado en el fondo", format="video", hook_type="demostracion", angle="parrilla_y_reuniones",
+                hook_line="Se ve la parrilla prendida", script=["0–3 s · Se ve: brasas"], copy_draft="Parrilla de hierro", cta="Comprá",
+                visual_direction="Fondo de casa, tarde")
+    monkeypatch.setattr("creative_intel.ai.creative.write_ideas", lambda ci, ctx, req: [{**idea, "for_what": "Parrillas a medida"}])
+    data = {"white_space": [{"title": "Parrillas a medida", "concepts": []}], "recommendations": [{"title": "Otra", "concepts": [{"title": "x"}]}]}
+    out = pipeline.gemini_concepts(data, {}, [], [])
+    assert out["white_space"][0]["concepts"][0]["title"] == "Asado en el fondo" and "for_what" not in out["white_space"][0]["concepts"][0]
+    assert out["recommendations"][0]["concepts"] == [{"title": "x"}] and out["ideas_by"] == "Gemini"
+
+
+def test_gemini_disabled_without_key(monkeypatch):
+    from creative_intel.ai import creative
+    from creative_intel.config import settings
+
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    assert creative.write_ideas(None, {}, "x") is None

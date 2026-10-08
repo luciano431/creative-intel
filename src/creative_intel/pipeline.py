@@ -259,6 +259,38 @@ def _same_universe(prev_metrics: dict[str, Any] | None) -> dict[str, Any] | None
     return prev_metrics if prev_names & current else None
 
 
+def gemini_concepts(data: dict[str, Any], metrics: dict[str, Any], items: list[dict[str, Any]], own: list[dict[str, Any]]) -> dict[str, Any]:
+    """Las ideas y guiones de cada oportunidad los escribe Gemini (si está configurado) sobre lo que ya decidió el plan."""
+    from .ai.creative import strip_for, write_ideas
+    from .ai.synthesize import _compact_items
+    from .config import load_client
+
+    opps = [("white_space", i, o) for i, o in enumerate(data.get("white_space") or [])] + \
+           [("recommendations", i, o) for i, o in enumerate(data.get("recommendations") or [])]
+    if not opps:
+        return data
+    context = {
+        "oportunidades": [{"titulo": o["title"], "por_que": o.get("rationale"), "quien_lo_hace": o.get("who_does_it"),
+                           "evidencia": o.get("evidence")} for _, _, o in opps],
+        "lo_que_le_funciona_al_cliente": metrics.get("own_performance"),
+        "anuncios_propios": _compact_items(own, limit=20),
+        "anuncios_del_mercado": _compact_items([it for it in items if it.get("tier") != "own"], limit=40),
+    }
+    ideas = write_ideas(load_client(), context, "Escribí 2 ideas por oportunidad (for_what = el título de la oportunidad, copiado tal cual).")
+    if not ideas:
+        return data
+    by_title: dict[str, list[dict[str, Any]]] = {}
+    for idea in ideas:
+        by_title.setdefault(idea.get("for_what", "").strip().lower(), []).append(strip_for(idea))
+    data = {**data, "ideas_by": "Gemini"}
+    for key, i, o in opps:
+        mine = by_title.get(o["title"].strip().lower())
+        if mine:
+            data[key] = [dict(x) for x in data[key]]
+            data[key][i] = {**o, "concepts": mine}
+    return data
+
+
 def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthesis:
     taxonomy = load_taxonomy()
     run = get_or_create_run(session, period)
@@ -276,6 +308,7 @@ def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthes
         model = "mock"
     else:
         data = synthesize(run.metrics, items, concepts, period, previous_metrics=_same_universe(prev.metrics if prev else None), own_items=own)
+        data = gemini_concepts(data, run.metrics, items, own)
         model = settings.synth_model
     synth = Synthesis(run_id=run.id, model=model, data=data, status="draft")
     session.add(synth)

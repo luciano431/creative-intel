@@ -43,7 +43,9 @@ Reglas:
 2. El calendario sale del timing real del mercado (si 6 de cada 10 anuncios arrancaron en la previa, la previa importa) y se escribe relativo al evento.
 3. La oferta respeta la hoja del cliente: si no tiene promociones, no inventes descuentos; proponé beneficios que no bajen el precio y marcalos como propuesta.
 4. Las ideas las escribís completas: título, gancho textual, guion por escenas con tiempos (o placa por placa), copy listo, CTA y dirección visual, con el tono de la hoja.
-5. Si los datos son pocos (menos de 10 anuncios), decilo en el resumen y no generalices."""
+5. Si los datos son pocos (menos de 10 anuncios), decilo en el resumen y no generalices.
+6. `event_metrics.own_results` y `own_daily` son los resultados reales de {client} en esa edición (inversión, resultados, costo por resultado, antes/durante/después). Son lo más importante: el resumen, la oferta y el calendario arrancan de ahí (qué anuncio y qué oferta le dieron el mejor costo por resultado, en qué momento rindió más). Citá los números.
+7. Solo productos de las categorías de {client}; los anuncios de otro rubro ya fueron descartados."""
 
 
 def synthesize_event(event_name: str, metrics: dict[str, Any], items: list[dict[str, Any]], client_info: Any, next_dates: dict[str, Any],
@@ -57,7 +59,10 @@ def synthesize_event(event_name: str, metrics: dict[str, Any], items: list[dict[
         "labels": labels or {},
         "creatives": _compact_items(items, limit=150),
     }
-    content = [{"type": "text", "text": "Datos del evento (JSON):\n" + json.dumps(payload, ensure_ascii=False, default=str) + "\n\nArmá la guía."}]
+    from .creative import enabled
+
+    ask = "Armá la guía." + (" Dejá `ideas` como lista vacía: las ideas y guiones los escribe otro equipo con tu guía." if enabled() else "")
+    content = [{"type": "text", "text": "Datos del evento (JSON):\n" + json.dumps(payload, ensure_ascii=False, default=str) + "\n\n" + ask}]
     system = EVENT_PROMPT.format(event=event_name, client=client_info.name, industry=client_info.industry or "sin industria definida",
                                  market=client_info.market or "mercado local")
     return structured_call(EventPlan, system, content, model=settings.synth_model, max_tokens=16000, effort="high", stream=True).model_dump()

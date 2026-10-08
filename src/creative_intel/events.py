@@ -132,6 +132,29 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
     return run.stats["collect"]
 
 
+def _gemini_ideas(plan: dict[str, Any], event: EventConfig, metrics: dict[str, Any], items: list[dict[str, Any]], client: Any) -> dict[str, Any]:
+    """Las ideas y guiones los escribe Gemini (si está configurado) sobre los hechos ya armados."""
+    from .ai.creative import strip_for, write_ideas
+    from .ai.synthesize import _compact_items
+
+    context = {
+        "evento": event.name,
+        "hechos": plan.get("summary"),
+        "oferta_recomendada": plan.get("offer_recommendation"),
+        "calendario": plan.get("calendar"),
+        "no_hacer": plan.get("avoid"),
+        "resultados_propios_edicion": metrics.get("own_results"),
+        "resultados_propios_por_momento": (metrics.get("own_daily") or {}).get("phases"),
+        "anuncios_del_mercado": _compact_items([it for it in items if it.get("tier") != "own"], limit=40),
+        "anuncios_propios": _compact_items([it for it in items if it.get("tier") == "own"], limit=20),
+    }
+    ideas = write_ideas(client, context, f"Escribí 4 ideas para {event.name}, una para cada momento clave del calendario "
+                                         "(for_what = el momento). Cada una con un producto distinto de la marca.")
+    if ideas:
+        plan = {**plan, "ideas": [strip_for(i) | {"moment": i.get("for_what", "")} for i in ideas], "ideas_by": "Gemini"}
+    return plan
+
+
 def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_ai: bool = False, skip_collect: bool = False,
               out_dir: str | Path | None = None) -> dict[str, Any]:
     from . import pipeline
@@ -174,6 +197,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     else:
         labels = {k: taxonomy.label(k) for k in taxonomy.labels} if getattr(taxonomy, "labels", None) else {}
         plan = synthesize_event(event.name, metrics, items, client, next_dates, labels=labels)
+        plan = _gemini_ideas(plan, event, metrics, items, client)
     run.metrics = {"event": metrics, "plan": plan}
     run.status = "draft"
     session.flush()

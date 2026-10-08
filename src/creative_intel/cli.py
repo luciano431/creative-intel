@@ -757,6 +757,17 @@ def check_api_cmd() -> None:
         rprint(f"[red]No se pudo usar la IA.[/red] {exc}")
         raise typer.Exit(1)
     rprint(f"[green]IA OK ({settings.ai_provider}):[/green] la clave anda y hay saldo. Clasifica con {settings.classify_model} y escribe el plan con {settings.synth_model}.")
+    from .ai.creative import check_gemini, enabled
+
+    if settings.gemini_api_key:
+        problem = check_gemini()
+        if problem:
+            rprint(f"[red]Gemini no anda:[/red] {problem}. Las ideas las va a escribir {settings.synth_model}.")
+        else:
+            rprint(f"[green]Gemini OK:[/green] ideas y guiones con {settings.gemini_creative_model}." if enabled()
+                   else "[yellow]Gemini anda pero CREATIVE_PROVIDER no es gemini.[/yellow]")
+    else:
+        rprint(f"Ideas y guiones: {settings.synth_model} (para usar Gemini, agregá GEMINI_API_KEY en .env).")
 
 
 @app.command()
