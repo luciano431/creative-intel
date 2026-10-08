@@ -695,7 +695,7 @@ def eventos() -> None:
 
 @app.command("all")
 def run_all(
-    step: str = typer.Argument(..., help="ids = completar IDs · informe = informe del mes · audit = revisar datos · evento:<clave> = guía de un evento"),
+    step: str = typer.Argument(..., help="ids = completar IDs · informe = informe del mes · audit = revisar datos · evento:<clave> = guía de un evento · vivo:<clave> = archivar lo que está activo del evento (gratis)"),
     period: Optional[str] = PeriodOpt,
     only: list[str] = typer.Option([], "--only", help="identificador de cliente (repetible); por defecto, todos"),
 ) -> None:
@@ -709,8 +709,10 @@ def run_all(
     commands = {"ids": ["fill-ids", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"]}
     if step.startswith("evento:"):
         args = ["evento", step.split(":", 1)[1]]
+    elif step.startswith("vivo:"):  # archivo del evento en curso, sin IA (gratis): correrlo cada 2-3 días antes y durante
+        args = ["evento", step.split(":", 1)[1], "--live", "--mock-ai"]
     elif step not in commands:
-        raise typer.BadParameter("Usá: ids, informe, audit o evento:<clave> (ej. evento:cyberlunes)")
+        raise typer.BadParameter("Usá: ids, informe, audit, evento:<clave> o vivo:<clave> (ej. vivo:cyberlunes)")
     else:
         args = commands[step] + (["--period", period] if period and step != "ids" else [])
     failed = []
