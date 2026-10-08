@@ -11,6 +11,7 @@ ignorando la grilla de "más anuncios de este anunciante" que aparece debajo.
 from __future__ import annotations
 
 import os
+from typing import Any
 import re
 from urllib.parse import urlparse
 
@@ -163,8 +164,11 @@ class GoogleTransparencyWebCollector:
     name = "google_web"
     platform = "google"
 
-    def __init__(self, headless: bool = True, max_cards: int | None = None):
+    def __init__(self, headless: bool = True, max_cards: int | None = None, event_keywords: list[str] | None = None):
         self.headless = headless
+        # Ediciones pasadas: un anuncio que nombra el evento cuenta si se mostró después del inicio de la ventana
+        self.event_keywords = event_keywords or []
+        self.window_stats: dict[str, dict[str, Any]] = {}  # slug -> {name, checked, found, declared}
         # Tope de anuncios por marca y país (TOP_ADS_PER_BRAND). Google no informa impresiones:
         # se toman los primeros que muestra. Cada anuncio se abre uno por uno (~5 s c/u).
         self.max_cards = max_cards or settings.top_ads_per_brand
@@ -279,7 +283,10 @@ class GoogleTransparencyWebCollector:
                         continue
                     if detail["removed"] or not (detail["headline"] or detail["body"] or detail["media"]):
                         continue  # sin contenido analizable: se busca el siguiente
-                    if window and not (detail["last_seen"] and window[0] <= detail["last_seen"] <= window[1]):
+                    in_window = bool(detail["last_seen"] and window and window[0] <= detail["last_seen"] <= window[1])
+                    names_event = bool(window and self.event_keywords and detail["last_seen"] and detail["last_seen"] >= window[0]
+                                       and matches(" ".join([detail["headline"] or "", detail["body"] or ""]), self.event_keywords))
+                    if window and not (in_window or names_event):
                         outside += 1
                         continue  # no consta que haya estado al aire en la ventana
                     if focus and not matches(" ".join([detail["headline"] or "", detail["body"] or "", detail.get("description") or ""]), focus):
@@ -310,6 +317,9 @@ class GoogleTransparencyWebCollector:
                         )
                     )
                 if window:
+                    st = self.window_stats.setdefault(competitor.slug, {"name": competitor.name, "checked": 0, "found": 0, "declared": total})
+                    st["checked"] += useful + outside
+                    st["found"] += useful
                     print(f"[google_web] {competitor.slug} ({country}) {window[0]}..{window[1]}: {useful} anuncios al aire en la ventana"
                           f" ({outside} revisados eran de otras fechas)")
             browser.close()

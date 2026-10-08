@@ -45,7 +45,9 @@ Reglas:
 4. Las ideas las escribís completas: título, gancho textual, guion por escenas con tiempos (o placa por placa), copy listo, CTA y dirección visual, con el tono de la hoja.
 5. Si los datos son pocos (menos de 10 anuncios), decilo en el resumen y no generalices.
 6. `event_metrics.own_results` y `own_daily` son los resultados reales de {client} en esa edición (inversión, resultados, costo por resultado, antes/durante/después). Son lo más importante: el resumen, la oferta y el calendario arrancan de ahí (qué anuncio y qué oferta le dieron el mejor costo por resultado, en qué momento rindió más). Citá los números.
-7. Solo productos de las categorías de {client}; los anuncios de otro rubro ya fueron descartados."""
+7. Solo productos de las categorías de {client}; los anuncios de otro rubro ya fueron descartados.
+8. Nunca escribas "resultados" a secas: decí siempre qué son (compras, conversaciones por WhatsApp/Messenger, leads o clics al sitio) y no sumes tipos distintos. Compará costos solo dentro del mismo tipo. No nombres campos ni variables (own_daily, own_results, event_metrics).
+9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado."""
 
 
 def synthesize_event(event_name: str, metrics: dict[str, Any], items: list[dict[str, Any]], client_info: Any, next_dates: dict[str, Any],

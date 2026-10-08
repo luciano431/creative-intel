@@ -81,14 +81,15 @@ def test_live_edition_uses_next_dates_only_when_close():
 def test_own_daily_summary_splits_before_during_after():
     from creative_intel.analysis.event import own_daily_summary, own_results
 
-    days = [{"date": f"2026-05-{d:02d}", "spend": 10.0, "impressions": 100, "clicks": 5, "results": r, "result_type": "compras"}
+    days = [{"date": f"2026-05-{d:02d}", "spend": 10.0, "impressions": 100, "clicks": 5, "by_type": {"compras": r, "conversaciones": 3}}
             for d, r in ((20, 1), (21, 1), (25, 6), (26, 4), (28, 2))]
     out = own_daily_summary(days, dt.date(2026, 5, 25), dt.date(2026, 5, 26))
     ph = out["phases"]
-    assert ph["antes"]["days"] == 2 and ph["durante"]["results"] == 10 and ph["durante"]["cost_per_result"] == 2.0
-    assert ph["despues"]["spend_per_day"] == 10.0 and out["result_type"] == "compras"
+    assert out["types"] == ["compras", "conversaciones"]
+    assert ph["antes"]["days"] == 2 and ph["durante"]["per_type"]["compras"] == {"total": 10, "per_day": 5.0, "cost": 2.0}
+    assert ph["durante"]["per_type"]["conversaciones"]["total"] == 6 and ph["despues"]["spend_per_day"] == 10.0
     rows = own_results([{"id": 1, "tier": "own", "headline": "A", "format": "imagen", "cls": {},
-                         "engagement": {"performance": {"spend": 20, "results": 2, "cost_per_result": 10, "ctr": 1.2}}},
+                         "engagement": {"performance": {"spend": 20, "results": 2, "result_type": "compras", "cost_per_result": 10, "ctr": 1.2}}},
                         {"id": 2, "tier": "own", "headline": "B", "format": "video", "cls": {"offer": "20% off"},
-                         "engagement": {"performance": {"spend": 30, "results": 6, "cost_per_result": 5, "ctr": 2.0}}}])
+                         "engagement": {"performance": {"spend": 30, "results": 6, "result_type": "compras", "cost_per_result": 5, "ctr": 2.0}}}])
     assert [r["headline"] for r in rows] == ["B", "A"]

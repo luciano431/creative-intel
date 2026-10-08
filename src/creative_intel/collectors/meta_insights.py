@@ -37,6 +37,25 @@ def pick_result(actions: list[dict[str, Any]] | None) -> tuple[str, float]:
     return "", 0.0
 
 
+# Cada tipo de resultado por separado (nunca se suman entre sí)
+RESULT_TYPES = {
+    "compras": ("purchase", "offsite_conversion.fb_pixel_purchase"),
+    "conversaciones": ("onsite_conversion.messaging_conversation_started_7d",),
+    "leads": ("lead", "offsite_conversion.fb_pixel_lead", "onsite_conversion.lead_grouped"),
+    "clics al sitio": ("link_click",),
+}
+
+
+def results_by_type(actions: list[dict[str, Any]] | None) -> dict[str, float]:
+    by = {a.get("action_type"): float(a.get("value") or 0) for a in actions or []}
+    out = {}
+    for label, keys in RESULT_TYPES.items():
+        v = next((by[k] for k in keys if by.get(k)), 0.0)
+        if v:
+            out[label] = v
+    return out
+
+
 def performance_row(ins: dict[str, Any]) -> dict[str, Any]:
     spend = float(ins.get("spend") or 0)
     label, results = pick_result(ins.get("actions"))
@@ -51,6 +70,7 @@ def performance_row(ins: dict[str, Any]) -> dict[str, Any]:
         "results": results,
         "cost_per_result": round(spend / results, 2) if results else None,
         "roas": round(revenue / spend, 2) if revenue and spend else None,
+        "by_type": results_by_type(ins.get("actions")),
     }
 
 
@@ -94,13 +114,12 @@ class MetaInsightsCollector:
                              limit=500, time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
             for r in rows:
                 perf = performance_row(r)
-                d = days.setdefault(r["date_start"], {"date": r["date_start"], "spend": 0.0, "impressions": 0, "clicks": 0, "results": 0.0,
-                                                      "result_type": perf["result_type"]})
+                d = days.setdefault(r["date_start"], {"date": r["date_start"], "spend": 0.0, "impressions": 0, "clicks": 0, "by_type": {}})
                 d["spend"] = round(d["spend"] + perf["spend"], 2)
                 d["impressions"] += perf["impressions"]
                 d["clicks"] += perf["clicks"]
-                d["results"] += perf["results"]
-                d["result_type"] = d["result_type"] or perf["result_type"]
+                for k, v in perf["by_type"].items():
+                    d["by_type"][k] = d["by_type"].get(k, 0) + v
         return [days[k] for k in sorted(days)]
 
     def collect(self, competitor: CompetitorConfig, since: dt.date | None = None, until: dt.date | None = None,
@@ -115,7 +134,10 @@ class MetaInsightsCollector:
         top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[: limit or self.limit]
         out: list[RawCreative] = []
         for ins in top:
-            ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS)
+            try:  # vista previa grande (sin esto Meta devuelve una miniatura de 64 px)
+                ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS.replace("creative{", "creative.thumbnail_width(600).thumbnail_height(600){"))
+            except RuntimeError:
+                ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS)
             cr = ad.get("creative") or {}
             perf = performance_row(ins)
             perf["period"] = {"since": since.isoformat(), "until": until.isoformat()}
@@ -126,14 +148,16 @@ class MetaInsightsCollector:
                 # En una ventana pasada se guarda aparte: los resultados son los de esas fechas
                 external_id=f"own-{ins['ad_id']}" + (f"-{since.isoformat()}" if window else ""),
                 format="video" if cr.get("video_id") or cr.get("object_type") == "VIDEO" else "imagen",
-                headline=cr.get("title") or ins.get("ad_name") or "",
-                body_text=cr.get("body") or "",
+                # Catálogo: el título es una plantilla ({{product.name}}); se usa el nombre del anuncio
+                headline=(cr.get("title") if cr.get("title") and "{{" not in cr.get("title") else
+                          ("Catálogo · " if "{{" in (cr.get("title") or "") else "") + (ins.get("ad_name") or "")),
+                body_text="" if "{{" in (cr.get("body") or "") else (cr.get("body") or ""),
                 thumbnail_url=cr.get("image_url") or cr.get("thumbnail_url") or "",
                 snapshot_url="",
                 countries=list(competitor.ad_countries or [competitor.country]),
                 engagement={"performance": perf},
                 first_seen=dt.date.fromisoformat(ad["created_time"][:10]) if ad.get("created_time") else None,
                 is_active=ad.get("effective_status") == "ACTIVE",
-                raw={"ad_name": ins.get("ad_name"), "performance": perf},
+                raw={"ad_name": ins.get("ad_name"), "performance": perf, "catalog": "{{" in (cr.get("title") or "") + (cr.get("body") or "")},
             ))
         return out

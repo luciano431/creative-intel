@@ -35,32 +35,83 @@
     <h1>Guía de {{ event.name }} para <span>{{ client.name }}</span></h1>
     <p class="lead">{% if live %}Edición en curso: anuncios activos que arrancaron entre {{ edition.date_from }} y {{ edition.date_to }}{% else %}Basada en los anuncios de la edición {{ edition.label }}{% endif %}{% if m.event_start %} (evento: {{ m.event_start }}{% if m.event_end and m.event_end != m.event_start %} al {{ m.event_end }}{% endif %}{% if not m.official_dates %}, día de más anuncios{% endif %}){% endif %}</p>
     <div class="chips">
-      <span class="chip">{{ m.ads }} anuncios de la edición</span>
+      {% if m.own_ads %}<span class="chip">{{ m.own_ads }} anuncios de {{ client.name }} con resultados</span>{% endif %}
+      <span class="chip">{{ m.ads }} anuncios de la competencia</span>
       {% if next_dates.start %}<span class="chip">Próxima edición: {{ next_dates.start }}</span>{% else %}<span class="chip warn">Fecha de la próxima edición sin confirmar</span>{% endif %}
       <span class="chip">Generado {{ generated_at }}</span>
     </div>
   </div>
 </header>
 <main class="wrap">
-{% if not m.ads %}
+{% if not m.ads and not m.own_ads %}
 <section><div class="card">No se encontraron anuncios de esta edición. Revisá las fechas y palabras del evento en events.yaml.</div></section>
 {% else %}
+{% set od = m.own_daily or {} %}
+{% if od.phases or m.own_groups %}
 <section>
-  <div class="sec-head"><span class="sec-num">01</span><h2>Cómo lo encaró el mercado</h2></div>
-  <p class="sec-intro">Los hechos {{ 'de lo que está activo ahora' if live else 'de la edición anterior' }}: cuándo salieron los anuncios, con qué oferta y con cuánta urgencia.</p>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Lo que le funcionó a {{ client.name }}</h2></div>
+  <p class="sec-intro">Datos reales de la cuenta publicitaria de {{ client.name }} en Meta, del {{ edition.date_from }} al {{ edition.date_to }}. Cada tipo de resultado va por separado: compras, conversaciones (WhatsApp / Messenger), leads y clics al sitio no se suman entre sí.</p>
+  {% if od.phases %}
+  <h3 style="margin:8px 0 6px">Antes, durante y después del evento</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Momento</th><th>Días</th><th>Inversión por día</th>{% for t in od.types %}<th>{{ t | capitalize }} por día</th><th>Costo por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}[t] }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for key, name in [('antes','Antes'),('durante','Durante el evento'),('despues','Después'),('sin_fechas','Ventana completa')] %}{% set p = od.phases.get(key) %}{% if p %}
+      <tr><td><b>{{ name }}</b></td><td>{{ p.days }}</td><td>US$ {{ '%.2f' % p.spend_per_day }}</td>{% for t in od.types %}{% set x = p.per_type[t] %}<td>{{ x.per_day }}</td><td>{{ ('US$ %.2f' % x.cost) if x.cost else '—' }}</td>{% endfor %}</tr>
+    {% endif %}{% endfor %}
+    </tbody>
+  </table></div>
+  <p class="small muted">{{ od.note }}</p>
+  {% endif %}
+  {% for g in m.own_groups %}
+  <h3 style="margin:22px 0 8px">Anuncios que buscaban {{ g.type }} <span class="small muted">(del menor costo por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}.get(g.type, 'resultado') }} al mayor)</span></h3>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+    {% for r in g.rows[:6] %}
+    <div class="cr">
+      <div class="pv" style="height:240px;aspect-ratio:auto">{% if r.thumbnail_rel %}<img src="{{ r.thumbnail_rel }}" alt="{{ r.headline }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}</div>
+      <div class="cr-body">
+        <div class="cr-top"><span class="tag">{{ lbl(r.format) }}</span>{% if loop.first and g.rows|length > 1 %}<span class="days">el mejor costo</span>{% endif %}</div>
+        <h4>{{ r.headline[:70] or '(sin texto)' }}</h4>
+        <div class="small muted">{% if r.product %}Producto: {{ r.product }}{% endif %}{% if r.offer %} · Oferta: {{ r.offer }}{% endif %}</div>
+        <div style="margin-top:8px"><b style="font-size:18px">{{ ('US$ %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</b> <span class="small muted">por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}.get(r.result_type, 'resultado') }}</span></div>
+        <div style="height:6px;background:var(--line);border-radius:3px;margin:6px 0"><div style="height:6px;width:{{ r.bar }}%;background:{{ C.accent if C and C.accent else '#F26B38' }};border-radius:3px"></div></div>
+        <div class="small">{{ r.results|round(0)|int }} {{ r.result_type }} · US$ {{ '%.2f' % (r.spend or 0) }} invertidos · CTR {{ r.ctr }}%{% if r.roas %} · ROAS {{ r.roas }}{% endif %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Lo más importante</h2></div>
+  <p class="sec-intro">Los hechos {{ 'de lo que está activo ahora' if live else 'de la edición anterior' }}, con sus números.</p>
   <div class="grid g3">
     {% for f in plan.summary %}<div class="card sum"><h3>{{ f.headline }}</h3><div>{{ f.detail }}</div></div>{% endfor %}
   </div>
 </section>
 
+{% set ms = m.market_search or {} %}
+{% if not m.ads %}
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>La competencia en esas fechas</h2></div>
+  <div class="card">
+    <p>No se encontró ningún anuncio de la competencia {{ 'activo' if live else 'que se haya mostrado en esas fechas' }}.{% if not live %} Meta no guarda los anuncios terminados fuera de Europa; Google sí, pero para Uruguay solo dice el último día en que se mostró cada anuncio.{% endif %}</p>
+    {% if ms %}<div class="tbl"><table><thead><tr><th>Marca</th><th>Anuncios revisados en Google</th><th>Mostrados en esas fechas</th></tr></thead><tbody>
+    {% for slug, st in ms.items() %}<tr><td>{{ st.name }}</td><td>{{ st.checked }}{% if st.declared %} de ~{{ st.declared }}{% endif %}</td><td>{{ st.found }}</td></tr>{% endfor %}
+    </tbody></table></div>{% endif %}
+    <p class="small muted">Para la próxima edición: corré el modo en vivo (--live) en los días previos y durante el evento; el Radar guarda su propio archivo de lo que hace la competencia.</p>
+  </div>
+</section>
+{% else %}
 {% if live and not m.official_dates %}
 <section>
-  <div class="sec-head"><span class="sec-num">02</span><h2>Cuándo arrancan</h2></div>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Cuándo arrancó la competencia</h2></div>
   <div class="card">Todavía no está cargada la fecha de esta edición. Cuando se confirme, cargala en <code>events.yaml</code> (next: start/end) y esta sección muestra cuántos días antes arranca cada marca.</div>
 </section>
 {% else %}
 <section>
-  <div class="sec-head"><span class="sec-num">02</span><h2>Cuándo arrancan</h2></div>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Cuándo arrancó la competencia</h2></div>
   <p class="sec-intro">Anuncios según cuándo empezaron a circular respecto del día del evento. El primero arrancó {{ m.timing.earliest_days_before }} días antes.</p>
   <div class="card">
     {% set tot = m.ads or 1 %}
@@ -73,7 +124,7 @@
 {% endif %}
 
 <section>
-  <div class="sec-head"><span class="sec-num">03</span><h2>Ofertas y urgencia</h2></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Ofertas y urgencia de la competencia</h2></div>
   <div class="grid g2">
     <div class="card">
       <h3>Qué ofrecieron</h3>
@@ -97,37 +148,11 @@
     <p class="small">{% for a in m.advertisers %}<b>{{ a.name }}</b> {{ a.ads }}{% if a.own %} (cliente){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
   </div>
 </section>
-
-{% set od = m.own_daily or {} %}
-{% if od.phases or m.own_results %}
-<section>
-  <div class="sec-head"><span class="sec-num">★</span><h2>Lo que le dio resultado a {{ client.name }} en esa edición</h2></div>
-  <p class="sec-intro">Datos de la cuenta publicitaria de {{ client.name }} en Meta{% if od.result_type %} · resultado = {{ od.result_type }}{% endif %}.</p>
-  {% if od.phases %}
-  <div class="tbl"><table>
-    <thead><tr><th>Momento</th><th>Días</th><th>Inversión/día</th><th>Resultados/día</th><th>Costo por resultado</th></tr></thead>
-    <tbody>
-    {% for key, name in [('antes','Antes del evento'),('durante','Durante'),('despues','Después'),('sin_fechas','Ventana completa')] %}{% set p = od.phases.get(key) %}{% if p %}
-      <tr><td><b>{{ name }}</b></td><td>{{ p.days }}</td><td>US$ {{ '%.2f' % p.spend_per_day }}</td><td>{{ p.results_per_day }}</td><td>{{ ('US$ %.2f' % p.cost_per_result) if p.cost_per_result else '—' }}</td></tr>
-    {% endif %}{% endfor %}
-    </tbody>
-  </table></div>
-  {% endif %}
-  {% if m.own_results %}
-  <div class="tbl" style="margin-top:16px"><table>
-    <thead><tr><th>Anuncio</th><th>Producto</th><th>Oferta</th><th>Inversión</th><th>Resultados</th><th>Costo por resultado</th><th>CTR</th></tr></thead>
-    <tbody>
-    {% for r in m.own_results[:10] %}
-      <tr><td>{{ r.headline[:70] or '(sin texto)' }}</td><td>{{ r.product }}</td><td>{{ r.offer or '—' }}</td><td>US$ {{ '%.2f' % (r.spend or 0) }}</td><td>{{ r.results|round(0)|int }} {{ r.result_type }}</td><td>{{ ('US$ %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</td><td>{{ r.ctr }}%</td></tr>
-    {% endfor %}
-    </tbody>
-  </table></div>
-  {% endif %}
-</section>
 {% endif %}
 
+{% if refs %}
 <section>
-  <div class="sec-head"><span class="sec-num">04</span><h2>Anuncios de referencia</h2></div>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Anuncios de referencia de la competencia</h2></div>
   <p class="sec-intro">Los de la edición anterior con más señales (más días al aire, más versiones). Para inspirarse, no para copiar.</p>
   <div class="grid g3">
     {% for it in refs %}
@@ -135,9 +160,10 @@
     {% endfor %}
   </div>
 </section>
+{% endif %}
 
 <section>
-  <div class="sec-head"><span class="sec-num">05</span><h2>Plan para {{ client.name }}</h2></div>
+  <div class="sec-head"><span class="sec-num">{{ '06' if m.ads else '04' }}</span><h2>Plan para {{ client.name }}</h2></div>
   <div class="card" style="margin-bottom:16px"><h3>Oferta a comunicar</h3>{{ plan.offer_recommendation }}</div>
   <h3>Calendario de piezas</h3>
   <div class="cal">

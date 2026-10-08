@@ -53,12 +53,13 @@ def _register_market_advertisers(session: Session, raws: list[RawCreative]) -> N
     session.flush()
 
 
-def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, errors: list[str]) -> tuple[list[RawCreative], list[dict[str, Any]]]:
+def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, errors: list[str],
+                          event_keywords: list[str] | None = None, search: dict | None = None) -> tuple[list[RawCreative], list[dict[str, Any]]]:
     from .collectors.google_web import GoogleTransparencyWebCollector
     from .collectors.meta_insights import MetaInsightsCollector
 
     raws: list[RawCreative] = []
-    google = GoogleTransparencyWebCollector()
+    google = GoogleTransparencyWebCollector(event_keywords=event_keywords)
     for c in configs:
         if not c.active or c.tier not in ("own", "local") or not google.supports(c):
             continue
@@ -67,6 +68,8 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
                 raws += google.collect_window(c, country, edition.date_from, edition.date_to, per_brand)
             except Exception as exc:
                 errors.append(f"google {c.slug}: {exc}")
+    if search is not None:
+        search.update(google.window_stats)
     daily: list[dict[str, Any]] = []
     own = next((c for c in configs if c.is_own), None)
     insights = MetaInsightsCollector()
@@ -102,10 +105,11 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
             except Exception as exc:
                 errors.append(f"{c.slug}: {exc}")
     own_daily: list[dict[str, Any]] = []
+    market_search: dict[str, Any] = {}
     if not live and collector is None:
         # Edición pasada: Meta ya no muestra esos anuncios (fuera de la UE), pero Google guarda el historial
         # y la cuenta publicitaria del cliente tiene sus resultados reales de esas fechas.
-        extra, own_daily = _past_edition_sources(configs, edition, per_brand, errors)
+        extra, own_daily = _past_edition_sources(configs, edition, per_brand, errors, event.keywords, market_search)
         raws += extra
     keywords = event.keywords[:2]
     focus = load_client().focus_keywords  # del mercado, solo los que venden lo mismo que el cliente
@@ -128,6 +132,8 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
     run.stats = {**(run.stats or {}), "collect": {"ads": len(raws), **dict(up), "errors": errors}}
     if own_daily:
         run.stats = {**run.stats, "own_daily": own_daily}
+    if market_search:
+        run.stats = {**run.stats, "market_search": market_search}
     session.flush()
     return run.stats["collect"]
 
@@ -160,7 +166,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     from . import pipeline
     from .ai.client import check_api
     from .ai.event import mock_event_plan, synthesize_event
-    from .analysis.event import analyze_event, own_daily_summary, own_results
+    from .analysis.event import analyze_event, own_daily_summary, own_results, own_results_groups
     from .analysis.metrics import start_known
     from .analysis.signals import signal_list
     from .config import REPORTS_DIR, load_brand
@@ -187,9 +193,17 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
                               + ("" if edition.label.startswith("vivo-") else NO_ADS_HELP))
     for it in items:
         it["signals"] = signal_list(it, start_known(it))
-    metrics = analyze_event(items, edition.start, edition.end, own_name=client.name)
+    out = Path(out_dir or Path(REPORTS_DIR) / "eventos" / f"{event.key}-{edition.label}")
+    own_items = [it for it in items if it.get("tier") == "own"]
+    market_items = [it for it in items if it.get("tier") != "own"]
+    render_assets(own_items, out)  # vista previa de los anuncios propios
+    # "Cómo lo encaró el mercado" se calcula SOLO con la competencia; lo del cliente va aparte, con sus resultados
+    metrics = analyze_event(market_items, edition.start, edition.end, own_name=client.name)
+    metrics["own_ads"] = len(own_items)
     metrics["own_daily"] = own_daily_summary((run.stats or {}).get("own_daily") or [], edition.start, edition.end)
-    metrics["own_results"] = own_results(items)
+    metrics["own_results"] = own_results(own_items)
+    metrics["own_groups"] = own_results_groups(metrics["own_results"])
+    metrics["market_search"] = (run.stats or {}).get("market_search") or {}
     next_dates = {"start": event.next_start.isoformat() if event.next_start else None,
                   "end": event.next_end.isoformat() if event.next_end else None}
     if mock_ai:
@@ -202,7 +216,6 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     run.status = "draft"
     session.flush()
 
-    out = Path(out_dir or Path(REPORTS_DIR) / "eventos" / f"{event.key}-{edition.label}")
     refs = top_creatives([it for it in items if it.get("tier") != "own"], n=9, per_competitor=2)
     render_assets(refs, out)
     brand = load_brand()

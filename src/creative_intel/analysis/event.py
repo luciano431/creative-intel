@@ -115,37 +115,68 @@ def analyze_event(items: list[dict[str, Any]], start: dt.date | None, end: dt.da
     return out
 
 
+TYPE_ORDER = ["compras", "conversaciones", "leads", "clics al sitio"]
+
+
+def _types(d: dict[str, Any]) -> dict[str, float]:
+    if "by_type" in d:
+        return d["by_type"] or {}
+    return {d["result_type"]: d.get("results", 0)} if d.get("result_type") else {}  # datos viejos
+
+
 def own_daily_summary(daily: list[dict[str, Any]], start: dt.date | None, end: dt.date | None) -> dict[str, Any]:
-    """Inversión y resultados del cliente antes, durante y después del evento (cuenta publicitaria propia)."""
+    """Inversión y cada tipo de resultado del cliente (compras, conversaciones, leads, clics) antes, durante y después.
+
+    Los tipos nunca se suman entre sí: cada uno tiene su promedio por día y su costo.
+    """
     if not daily:
         return {}
     phases: dict[str, dict[str, Any]] = {}
     for d in daily:
         day = dt.date.fromisoformat(d["date"])
         key = "sin_fechas" if not start else "antes" if day < start else "durante" if day <= (end or start) else "despues"
-        p = phases.setdefault(key, {"days": 0, "spend": 0.0, "results": 0.0, "clicks": 0, "impressions": 0})
+        p = phases.setdefault(key, {"days": 0, "spend": 0.0, "types": {}})
         p["days"] += 1
         p["spend"] = round(p["spend"] + d["spend"], 2)
-        p["results"] += d["results"]
-        p["clicks"] += d["clicks"]
-        p["impressions"] += d["impressions"]
+        for k, v in _types(d).items():
+            p["types"][k] = p["types"].get(k, 0) + v
+    present = [t for t in TYPE_ORDER if any(p["types"].get(t) for p in phases.values())]
     for p in phases.values():
         p["spend_per_day"] = round(p["spend"] / p["days"], 2) if p["days"] else 0
-        p["results_per_day"] = round(p["results"] / p["days"], 1) if p["days"] else 0
-        p["cost_per_result"] = round(p["spend"] / p["results"], 2) if p["results"] else None
-    result_type = next((d["result_type"] for d in daily if d.get("result_type")), "")
-    return {"result_type": result_type, "phases": phases, "days": daily}
+        p["per_type"] = {t: {"total": round(p["types"].get(t, 0)), "per_day": round(p["types"].get(t, 0) / p["days"], 1) if p["days"] else 0,
+                             "cost": round(p["spend"] / p["types"][t], 2) if p["types"].get(t) else None} for t in present}
+    return {"types": present, "phases": phases, "days": daily,
+            "note": "El costo de cada tipo divide toda la inversión del día por ese tipo de resultado (la cuenta tiene campañas con distintos objetivos)."}
 
 
 def own_results(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Los anuncios propios de la edición con sus resultados reales, del mejor costo por resultado al peor."""
+    """Los anuncios propios de la edición con sus resultados reales, agrupados por tipo de resultado
+    (compras, conversaciones, leads, clics) y, dentro de cada grupo, del mejor costo al peor."""
     rows = []
     for it in items:
         perf = (it.get("engagement") or {}).get("performance")
         if it.get("tier") != "own" or not perf:
             continue
-        rows.append({"id": it["id"], "headline": it.get("headline") or "", "format": it.get("format"),
-                     "product": (it.get("cls") or {}).get("product_shown") or (it.get("cls") or {}).get("product") or "",
-                     "offer": (it.get("cls") or {}).get("offer"), **{k: perf.get(k) for k in
-                     ("spend", "results", "result_type", "cost_per_result", "ctr", "roas")}})
-    return sorted(rows, key=lambda r: (r["cost_per_result"] is None, r["cost_per_result"] or 0, -(r["spend"] or 0)))
+        cls = it.get("cls") or {}
+        head = it.get("headline") or ""
+        if "{{" in head:
+            head = "Anuncio de catálogo"
+        rows.append({"id": it["id"], "headline": head, "format": it.get("format"), "thumbnail_rel": it.get("thumbnail_rel"),
+                     "product": cls.get("product_shown") or cls.get("product") or "", "offer": cls.get("offer"),
+                     **{k: perf.get(k) for k in ("spend", "results", "result_type", "cost_per_result", "ctr", "roas")}})
+    rank = {t: i for i, t in enumerate(TYPE_ORDER)}
+    return sorted(rows, key=lambda r: (rank.get(r["result_type"] or "", 9), r["cost_per_result"] is None, r["cost_per_result"] or 0))
+
+
+def own_results_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Los anuncios propios por tipo de resultado, con la barra relativa al costo más alto del grupo."""
+    groups: list[dict[str, Any]] = []
+    for t in TYPE_ORDER + [""]:
+        g = [dict(r) for r in rows if (r["result_type"] or "") == t]
+        if not g:
+            continue
+        top = max((r["cost_per_result"] or 0) for r in g) or 1
+        for r in g:
+            r["bar"] = round(100 * (r["cost_per_result"] or 0) / top)
+        groups.append({"type": t or "sin resultado medido", "rows": g})
+    return groups
