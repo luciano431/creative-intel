@@ -499,6 +499,8 @@ def web(
     port: int = typer.Option(8080, "--port", help="Puerto"),
     host: str = typer.Option("127.0.0.1", "--host", help="127.0.0.1 = solo esta compu; 0.0.0.0 = toda la red local"),
     public: bool = typer.Option(False, "--public", help="Link público https (Cloudflare) para entrar desde cualquier lado; pide WEB_PASSWORD"),
+    funnel: bool = typer.Option(False, "--funnel", help="Dirección FIJA y gratis con Tailscale Funnel (https://<mac>.<red>.ts.net)"),
+    tunnel_name: Optional[str] = typer.Option(None, "--tunnel", help="Dirección FIJA con un túnel de Cloudflare ya creado (dominio propio)"),
     no_open: bool = typer.Option(False, "--no-open", help="No abrir el navegador"),
 ) -> None:
     """Abre la web del Radar: elegir cliente, generar y ver informes, buscar IDs y competidores."""
@@ -512,11 +514,31 @@ def web(
     import uvicorn
 
     password = os.getenv("WEB_PASSWORD", "")
-    if (public or host not in ("127.0.0.1", "localhost")) and len(password) < 10:
+    if (public or funnel or tunnel_name or host not in ("127.0.0.1", "localhost")) and len(password) < 10:
         rprint("[red]Para abrir la web fuera de esta compu hace falta una contraseña de al menos 10 caracteres.[/red]\n"
                "Cargala en .env con:  [bold]read -s \"P?Contraseña: \" && echo \"WEB_PASSWORD=$P\" >> .env[/bold]")
         raise typer.Exit(1)
     tunnel = None
+    if funnel:
+        ts = _tailscale()
+        if not ts:
+            rprint("[red]Falta Tailscale.[/red] Instalá la app desde tailscale.com/download (gratis), abrila e iniciá sesión.")
+            raise typer.Exit(1)
+        r = subprocess.run([ts, "funnel", "--bg", str(port)], capture_output=True, text=True)
+        if r.returncode != 0:
+            rprint(f"[red]Tailscale Funnel no arrancó:[/red] {(r.stderr or r.stdout).strip()[:500]}")
+            raise typer.Exit(1)
+        out = subprocess.run([ts, "funnel", "status"], capture_output=True, text=True).stdout
+        m = re.search(r"https://[\w.-]+\.ts\.net", out + r.stdout)
+        rprint(f"\n[bold green]Dirección fija: {m.group(0) if m else '(ver: tailscale funnel status)'}[/bold green]\n"
+               "Es siempre la misma. Pide la contraseña de WEB_PASSWORD. Anda mientras la Mac esté prendida.\n")
+    if tunnel_name:
+        exe = shutil.which("cloudflared")
+        if not exe:
+            rprint("[red]Falta cloudflared.[/red] Instalalo una vez con:  [bold]brew install cloudflared[/bold]")
+            raise typer.Exit(1)
+        tunnel = subprocess.Popen([exe, "tunnel", "--no-autoupdate", "run", "--url", f"http://127.0.0.1:{port}", tunnel_name])
+        rprint(f"[green]Túnel de Cloudflare «{tunnel_name}» activo[/green] (la dirección es la que configuraste con cloudflared tunnel route dns).")
     if public:
         exe = shutil.which("cloudflared")
         if not exe:
@@ -547,6 +569,75 @@ def web(
     finally:
         if tunnel:
             tunnel.terminate()
+
+
+def _tailscale() -> str:
+    import shutil
+
+    app_cli = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+    return shutil.which("tailscale") or (app_cli if Path(app_cli).exists() else "")
+
+
+LAUNCH_LABEL = "com.ranker.radar"
+
+
+@app.command("servicio")
+def servicio(
+    accion: str = typer.Argument(..., help="instalar | quitar | estado"),
+    funnel: bool = typer.Option(True, "--funnel/--sin-funnel", help="Publicar con Tailscale Funnel (dirección fija)"),
+    tunnel_name: Optional[str] = typer.Option(None, "--tunnel", help="En vez de Tailscale: túnel de Cloudflare con dominio propio"),
+    port: int = typer.Option(8080, "--port"),
+) -> None:
+    """Deja la web del Radar prendida sola en esta Mac: arranca al iniciar sesión, se reinicia si se cae y no deja
+    que la Mac se duerma mientras está enchufada."""
+    import os
+    import subprocess
+    import sys
+
+    from .config import ROOT
+
+    plist = Path.home() / "Library" / "LaunchAgents" / f"{LAUNCH_LABEL}.plist"
+    if accion == "estado":
+        r = subprocess.run(["launchctl", "list", LAUNCH_LABEL], capture_output=True, text=True)
+        rprint("[green]Prendido[/green]" if r.returncode == 0 else "[yellow]No está instalado[/yellow]")
+        rprint(f"Registro: {ROOT / 'data' / 'web.log'}")
+        return
+    if accion == "quitar":
+        subprocess.run(["launchctl", "unload", str(plist)], capture_output=True)
+        plist.unlink(missing_ok=True)
+        rprint("Listo: la web ya no arranca sola.")
+        return
+    if accion != "instalar":
+        raise typer.BadParameter("Usá: instalar, quitar o estado")
+    if len(os.getenv("WEB_PASSWORD", "")) < 10:
+        rprint("[red]Primero cargá WEB_PASSWORD (mínimo 10 caracteres) en .env.[/red]")
+        raise typer.Exit(1)
+    radar_bin = str(Path(sys.executable).parent / "radar")
+    args = [radar_bin, "web", "--no-open", "--port", str(port)] + (["--tunnel", tunnel_name] if tunnel_name else ["--funnel"] if funnel else [])
+    log = ROOT / "data" / "web.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    prog = "".join(f"<string>{a}</string>" for a in ["/usr/bin/caffeinate", "-s", *args])
+    plist.parent.mkdir(parents=True, exist_ok=True)
+    plist.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>{LAUNCH_LABEL}</string>
+  <key>ProgramArguments</key><array>{prog}</array>
+  <key>WorkingDirectory</key><string>{ROOT}</string>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>{Path(sys.executable).parent}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>{log}</string>
+  <key>StandardErrorPath</key><string>{log}</string>
+</dict></plist>
+""", encoding="utf-8")
+    subprocess.run(["launchctl", "unload", str(plist)], capture_output=True)
+    r = subprocess.run(["launchctl", "load", str(plist)], capture_output=True, text=True)
+    if r.returncode != 0:
+        rprint(f"[red]No se pudo instalar:[/red] {r.stderr.strip()}")
+        raise typer.Exit(1)
+    rprint("[green]Listo:[/green] la web queda prendida mientras la Mac esté prendida y enchufada (también después de reiniciarla).\n"
+           f"La dirección y los errores quedan en {log}  (ver con: tail -20 {log})")
 
 
 @app.command("debug-html")
