@@ -142,7 +142,9 @@ def classify(session: Session, period: str, mock: bool = False, reclassify: bool
             stats["otro_rubro"] += 1  # de otro rubro: no se analiza ni se paga
             continue
         latest = creative.latest_classification
-        if latest and not reclassify and not (retry_failed and _is_fallback(latest)):
+        # Lo clasificado sin IA (corridas de prueba) se vuelve a clasificar cuando se corre con IA
+        redo_mock = not mock and latest is not None and latest.model == "heuristic"
+        if latest and not reclassify and not redo_mock and not (retry_failed and _is_fallback(latest)):
             stats["skipped"] += 1
             continue
         try:
