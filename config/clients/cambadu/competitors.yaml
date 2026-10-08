@@ -4,6 +4,9 @@ client:
   industry: Gremial de almacenes y supermercados
   market: Uruguay
   description: Gremial que asesora y respalda a almaceneros, autoservicios y supermercados
+  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
+  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
+  focus_keywords: ['almacen', 'autoservicio', 'supermercado', 'comercio', 'comerciante', 'minorista', 'gremial', 'capacitac', '=pyme', '=pymes']
 countries:
 - code: UY
   name: Uruguay

@@ -4,6 +4,9 @@ client:
   industry: Seguros
   market: Uruguay
   description: Aseguradora 100% digital
+  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
+  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
+  focus_keywords: ['seguro', 'asegur', 'poliza', 'cobertura', 'siniestro', 'auxilio mecanico', 'asistencia en viaje']
 countries:
 - code: UY
   name: Uruguay

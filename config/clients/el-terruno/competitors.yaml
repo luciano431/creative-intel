@@ -4,6 +4,9 @@ client:
   industry: Venta de terrenos
   market: Uruguay
   description: Desarrollos de terrenos y lotes financiados (Lotes El Palmar, Las Piedras, cerca de Montevideo)
+  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
+  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
+  focus_keywords: ['terreno', '=lote', '=lotes', 'loteo', 'chacra', 'barrio privado', 'barrio cerrado', 'fraccionamiento', 'solares', '=solar', 'padron']
 countries:
 - code: UY
   name: Uruguay
@@ -25,6 +28,7 @@ countries:
   competitors:
     local:
     - slug: varela-inmobiliaria
+      generalist: true
       name: Varela Inmobiliaria
       website: ''
       meta_page_id: '1627341317525346'
@@ -33,6 +37,7 @@ countries:
       products: []
       active: true
     - slug: echart
+      generalist: true
       name: Echart Operadores Inmobiliarios
       website: ''
       meta_page_id: '838354926282116'
@@ -41,6 +46,7 @@ countries:
       products: []
       active: true
     - slug: mannise
+      generalist: true
       name: Inmobiliaria Mannise
       website: ''
       meta_page_id: '1868170416735559'
@@ -104,6 +110,7 @@ countries:
       ad_countries:
       - AR
     - slug: ibanez
+      generalist: true
       name: Ibañez Negocios Inmobiliarios
       website: ''
       meta_page_id: '1557949497774537'

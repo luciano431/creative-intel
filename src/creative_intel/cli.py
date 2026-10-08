@@ -615,7 +615,7 @@ def audit(period: Optional[str] = PeriodOpt, only: Optional[str] = typer.Option(
         n_meta = sum(it["platform"] == "meta" for it in mine)
         n_google = sum(it["platform"] == "google" for it in mine)
         flag = "[green]OK[/green]" if c.is_own or (n_meta >= target and n_google >= target) else "[red]faltan datos[/red]"
-        rprint(f"\n[bold]{c.name}[/bold] ({c.tier}) · Meta {n_meta}/{target} · Google {n_google}/{target} · {flag}")
+        rprint(f"\n[bold]{c.name}[/bold] ({c.tier}{', solo rubro del cliente' if c.generalist else ''}) · Meta {n_meta}/{target} · Google {n_google}/{target} · {flag}")
         rprint(f"  Meta ID: {c.meta_page_id or '—'} · Google: {c.google_advertiser_id or c.google_domain or c.website or '—'} · países: {', '.join(c.ad_countries)}")
         from .analysis.metrics import start_known
 

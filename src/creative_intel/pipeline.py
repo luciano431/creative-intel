@@ -133,7 +133,14 @@ def classify(session: Session, period: str, mock: bool = False, reclassify: bool
     stats: Counter = Counter()
     model_name = "heuristic" if mock else settings.classify_model
     usage.reset()
+    from .relevance import client_filter, matches
+
+    focus, generalists = client_filter()
     for creative in run_creatives(session, run):
+        if focus and (creative.competitor.tier == "mercado" or creative.competitor.slug in generalists) and not matches(
+                " ".join([creative.headline or "", creative.body_text or "", creative.description or ""]), focus):
+            stats["otro_rubro"] += 1  # de otro rubro: no se analiza ni se paga
+            continue
         latest = creative.latest_classification
         if latest and not reclassify and not (retry_failed and _is_fallback(latest)):
             stats["skipped"] += 1
@@ -168,7 +175,11 @@ def classify(session: Session, period: str, mock: bool = False, reclassify: bool
 def items_for(session: Session, run: Run | None, taxonomy: Taxonomy) -> list[dict[str, Any]]:
     if run is None:
         return []
-    return [creative_to_item(c, taxonomy) for c in run_creatives(session, run)]
+    from .relevance import client_filter, filter_items
+
+    items = [creative_to_item(c, taxonomy) for c in run_creatives(session, run)]
+    # Solo lo del rubro del cliente (generalistas y anunciantes encontrados por palabra clave)
+    return filter_items(items, *client_filter())
 
 
 def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> dict[str, Any]:
@@ -205,7 +216,7 @@ def coverage(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if c.is_own or not c.active:
             continue
         out.append({
-            "name": c.name, "tier": c.tier, "target": settings.top_ads_per_brand,
+            "name": c.name, "tier": c.tier, "target": settings.top_ads_per_brand, "rubro_only": c.generalist,
             "meta": counts[(c.name, "meta")], "google": counts[(c.name, "google")],
             "has_meta": bool(c.meta_page_id), "has_google": bool(c.google_advertiser_id or c.google_domain or getattr(c, "google_domains", None) or c.website),
         })

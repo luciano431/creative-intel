@@ -107,7 +107,7 @@
     <tbody>
     {% for c in metrics.coverage %}
       <tr>
-        <td><b>{{ c.name }}</b></td>
+        <td><b>{{ c.name }}</b>{% if c.rubro_only %}<br><span class="small muted">solo anuncios del rubro de {{ client.name }}</span>{% endif %}</td>
         <td>{{ 'Local' if c.tier == 'local' else 'Global' }}</td>
         <td>{{ c.meta }} / {{ c.target }}{% if not c.has_meta %} <span class="small muted">(sin página cargada)</span>{% endif %}</td>
         <td>{{ c.google }} / {{ c.target }}{% if not c.has_google %} <span class="small muted">(sin dominio cargado)</span>{% endif %}</td>

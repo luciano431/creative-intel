@@ -82,6 +82,9 @@ class CompetitorConfig:
     products: list[str] = field(default_factory=list)
     active: bool = True
     meta_ad_account_id: str = ""  # solo el cliente: cuenta publicitaria para traer sus resultados (act_123...)
+    # Marca que vende de todo (Sodimac, Mercado Libre): solo se toman sus anuncios del rubro del cliente
+    generalist: bool = False
+    focus_keywords: list[str] = field(default_factory=list)  # se completa con client.focus_keywords si es generalista
 
     @property
     def is_own(self) -> bool:
@@ -93,6 +96,7 @@ def load_competitors(path: Path | None = None) -> list[CompetitorConfig]:
     path = path or CONFIG_DIR / "competitors.yaml"
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     out: list[CompetitorConfig] = []
+    focus = _keywords((data.get("client") or {}).get("focus_keywords"))
     for country in data.get("countries", []):
         code = country["code"]
         own = country.get("own")
@@ -100,8 +104,17 @@ def load_competitors(path: Path | None = None) -> list[CompetitorConfig]:
             out.append(_to_competitor(own, code, "own"))
         for tier in ("local", "global"):
             for item in (country.get("competitors") or {}).get(tier, []) or []:
-                out.append(_to_competitor(item, code, tier))
+                c = _to_competitor(item, code, tier)
+                if c.generalist:
+                    c.focus_keywords = list(focus)
+                out.append(c)
     return out
+
+
+def _keywords(raw: Any) -> list[str]:
+    if isinstance(raw, str):
+        raw = raw.split(",")
+    return [str(k).strip() for k in (raw or []) if str(k).strip()]
 
 
 def _to_competitor(item: dict[str, Any], country: str, tier: str) -> CompetitorConfig:
@@ -119,6 +132,7 @@ def _to_competitor(item: dict[str, Any], country: str, tier: str) -> CompetitorC
         products=list(item.get("products") or []),
         active=bool(item.get("active", True)),
         meta_ad_account_id=str(item.get("meta_ad_account_id", "") or ""),
+        generalist=bool(item.get("generalist", False)),
     )
 
 
@@ -235,6 +249,8 @@ class ClientInfo:
     description: str = ""
     # Hoja del cliente (client.brief en competitors.yaml): tono, qué empujar, diferencial, promos, qué evitar, público.
     brief: dict[str, Any] = field(default_factory=dict)
+    # Rubro del cliente: de generalistas y anunciantes por palabra clave solo cuentan los anuncios que lo mencionan
+    focus_keywords: list[str] = field(default_factory=list)
 
 
 def _brief(raw: Any) -> dict[str, Any]:
@@ -256,6 +272,7 @@ def load_client(path: Path | None = None) -> ClientInfo:
         market=c.get("market") or first_country.get("name", ""),
         description=c.get("description", ""),
         brief=_brief(c.get("brief")),
+        focus_keywords=_keywords(c.get("focus_keywords")),
     )
 
 

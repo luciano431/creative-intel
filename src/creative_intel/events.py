@@ -76,10 +76,12 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
             except Exception as exc:
                 errors.append(f"{c.slug}: {exc}")
     keywords = event.keywords[:2]
+    focus = load_client().focus_keywords  # del mercado, solo los que venden lo mismo que el cliente
     for country in event.countries:
         for kw in keywords:
             try:
-                found = col.collect_keyword(kw, country, edition.date_from, edition.date_to, max(5, market // max(1, len(keywords))))
+                found = col.collect_keyword(kw, country, edition.date_from, edition.date_to, max(5, market // max(1, len(keywords))),
+                                            **({"focus": focus} if focus else {}))
             except Exception as exc:
                 errors.append(f"«{kw}» {country}: {exc}")
                 continue

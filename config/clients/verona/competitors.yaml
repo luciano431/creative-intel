@@ -20,6 +20,9 @@ client:
     promos: []
     evitar: Que la marca se vea como económica o de baja calidad. No asociarla a "barato", aunque sus precios tampoco son
       inaccesibles. Nada de guerra de precios ni descuentos agresivos.
+  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
+  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
+  focus_keywords: ['=piso', '=pisos', 'vinil', 'baldosa', 'moquet', 'alfombra', 'acustic', 'cableado', 'cortina', 'revestimiento', 'oficina', 'escritorio', 'silla', 'mobiliario', 'equipamiento', 'mueble', 'remodel', '=obra', '=obras', 'arquitect', 'proyecto', 'coloca', 'parquet', 'laminado', 'porcelanato']
 countries:
 - code: UY
   name: Uruguay
@@ -55,6 +58,7 @@ countries:
       products: []
       active: true
     - slug: estilo-house
+      generalist: true
       name: Estilo House
       website: ''
       meta_page_id: '272441869531569'
@@ -79,6 +83,7 @@ countries:
       products: []
       active: true
     - slug: alad
+      generalist: true
       name: Alad Alfombras
       website: ''
       meta_page_id: '1449215451981684'

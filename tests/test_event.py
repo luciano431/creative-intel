@@ -51,9 +51,9 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
             return [RawCreative(competitor_slug=c.slug, platform="meta", source="meta_web", external_id="w1", headline="CyberLunes 40% off",
                                 first_seen=dt.date(2025, 5, 30), last_seen=dt.date(2025, 6, 3), is_active=False, countries=["UY"])]
 
-        def collect_keyword(self, kw, country, a, b, limit):
+        def collect_keyword(self, kw, country, a, b, limit, focus=None):
             return [RawCreative(competitor_slug="mkt-tienda-x", platform="meta", source="meta_web", external_id=f"k-{kw}",
-                                headline="Solo hoy: 12 cuotas sin interés", first_seen=dt.date(2025, 6, 2), is_active=False,
+                                headline="Solo hoy: seguro de celular en 12 cuotas sin interés", first_seen=dt.date(2025, 6, 2), is_active=False,
                                 countries=["UY"], raw={"page_name": "Tienda X"})]
 
     ev = EventConfig(key="cyberlunes", name="CyberLunes", keywords=["cyberlunes"], countries=["UY"],

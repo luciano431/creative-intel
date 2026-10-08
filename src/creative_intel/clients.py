@@ -33,6 +33,9 @@ client:
     promos: []            # promociones posibles; vacío = no inventar descuentos
     evitar: ""            # lo que NO quieren
     notas: ""
+  # Rubro: de las marcas con "generalist: true" (Sodimac, Mercado Libre...) y de lo encontrado por palabra clave
+  # solo se toman los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
+  focus_keywords: []
 
 countries:
   - code: {country}

@@ -14,6 +14,7 @@ import os
 import re
 from urllib.parse import urlparse
 
+from ..relevance import matches
 from ..config import CompetitorConfig, settings
 from .base import RawCreative
 
@@ -212,14 +213,16 @@ class GoogleTransparencyWebCollector:
                 captured.clear()
                 page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
                 page.wait_for_timeout(5000)
-                hrefs = self._load_grid(page, captured)
+                focus = competitor.focus_keywords
+                hrefs = self._load_grid(page, captured, want=self.max_cards * (6 if focus else 1))
                 # Links armados desde las respuestas de la API interna (cubren tarjetas sin <a>)
                 region = region_param(country)
                 for adv, cr in captured:
                     if not any(cr in h for h in hrefs):
                         hrefs.append(f"/advertiser/{adv}/creative/{cr}?region={region}")
                 # Se recorren más candidatos de los necesarios: los quitados por Google o vacíos no cuentan
-                hrefs = hrefs[: self.max_cards * 3]
+                # (marcas generalistas: muchos más, porque solo sirven los del rubro del cliente)
+                hrefs = hrefs[: self.max_cards * (8 if focus else 3)]
                 if debug:
                     self._grid_debug(page, dbg, competitor.slug, country, hrefs, captured)
                 total = _declared_total(page.inner_text("body"))
@@ -260,6 +263,8 @@ class GoogleTransparencyWebCollector:
                         continue
                     if detail["removed"] or not (detail["headline"] or detail["body"] or detail["media"]):
                         continue  # sin contenido analizable: se busca el siguiente
+                    if focus and not matches(" ".join([detail["headline"] or "", detail["body"] or "", detail.get("description") or ""]), focus):
+                        continue  # generalista: anuncio de otro rubro
                     useful += 1
                     out.append(
                         RawCreative(
@@ -309,11 +314,12 @@ class GoogleTransparencyWebCollector:
             + "\n\n===== CONTENEDORES CON SCROLL =====\n" + "\n".join(info["scrollers"])
             + "\n\n===== ELEMENTOS CUSTOM =====\n" + ", ".join(f"{k}:{v}" for k, v in sorted(info["tags"].items())), encoding="utf-8")
 
-    def _load_grid(self, page, captured=None) -> list[str]:
+    def _load_grid(self, page, captured=None, want: int | None = None) -> list[str]:
         """Carga la grilla completa: scroll sobre la grilla (no la esquina de la ventana),
         scrollIntoView de la última tarjeta y clic en "Ver más" si aparece. Corta cuando
         ni los links del DOM ni los IDs capturados de la API crecen, o al llegar a max_cards."""
         captured = captured if captured is not None else []
+        want = want or self.max_cards
 
         def current() -> list[str]:
             out: list[str] = []
@@ -326,7 +332,7 @@ class GoogleTransparencyWebCollector:
         size = len(hrefs) + len(captured)
         stale = 0
         for _ in range(60):
-            if size >= self.max_cards:
+            if size >= want:
                 break
             try:
                 page.mouse.move(700, 600)

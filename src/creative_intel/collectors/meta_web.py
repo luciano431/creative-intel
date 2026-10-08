@@ -86,13 +86,18 @@ class MetaAdLibraryWebCollector:
             url = self.url_for(competitor, country, status="active")
         else:
             url = self.url_for(competitor, country, status="all") + self.window_params(date_from, date_to)
-        return self._collect_url(url, competitor.slug, competitor.name, country, limit)
+        return self._collect_url(url, competitor.slug, competitor.name, country, limit, keywords=competitor.focus_keywords)
 
-    def collect_keyword(self, keyword: str, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
-        """Los anuncios más vistos de cualquier anunciante que mencionan una palabra (ej. 'cyberlunes') en una ventana."""
-        return self._collect_url(self.keyword_url(keyword, country, date_from, date_to), None, "", country, limit)
+    def collect_keyword(self, keyword: str, country: str, date_from, date_to, limit: int,
+                        focus: list[str] | None = None) -> list[RawCreative]:
+        """Los anuncios más vistos de cualquier anunciante que mencionan una palabra (ej. 'cyberlunes') en una ventana.
 
-    def _collect_url(self, url: str, slug: str | None, name: str, country: str, limit: int) -> list[RawCreative]:
+        Con `focus`, solo los que además hablan del rubro del cliente.
+        """
+        return self._collect_url(self.keyword_url(keyword, country, date_from, date_to), None, "", country, limit, keywords=focus)
+
+    def _collect_url(self, url: str, slug: str | None, name: str, country: str, limit: int,
+                     keywords: list[str] | None = None) -> list[RawCreative]:
         """Con reintentos si se corta internet (sin conexión, DNS): 15 s, 45 s y 2 min."""
         import time
 
@@ -101,13 +106,14 @@ class MetaAdLibraryWebCollector:
                 print(f"[meta_web] sin conexión; reintento {attempt}/3 de {name or 'búsqueda'} en {pause}s")
                 time.sleep(pause)
             try:
-                return self._collect_url_once(url, slug, name, country, limit)
+                return self._collect_url_once(url, slug, name, country, limit, keywords)
             except Exception as exc:
                 if not NET_ERR_RE.search(str(exc)) or attempt == 3:
                     raise
         return []
 
-    def _collect_url_once(self, url: str, slug: str | None, name: str, country: str, limit: int) -> list[RawCreative]:
+    def _collect_url_once(self, url: str, slug: str | None, name: str, country: str, limit: int,
+                          keywords: list[str] | None = None) -> list[RawCreative]:
         from playwright.sync_api import sync_playwright
 
         out: list[RawCreative] = []
@@ -118,9 +124,10 @@ class MetaAdLibraryWebCollector:
             page = browser.new_page(viewport={"width": 1400, "height": 1000}, locale="es-UY")
             page.goto(url, wait_until="domcontentloaded", timeout=90_000)
             page.wait_for_timeout(4000)
-            self._scroll(page, rounds=max(2, limit // 4))
+            # Con filtro de rubro hay que mirar más tarjetas para encontrar las que sirven
+            self._scroll(page, rounds=max(2, limit // 4) * (4 if keywords else 1))
             fake = CompetitorConfig(slug=slug or "mercado", name=name, country=country, tier="local") if slug is not None else None
-            self._take(page, fake, country, out, assets, limit=limit, market=slug is None)
+            self._take(page, fake, country, out, assets, limit=limit, market=slug is None, keywords=keywords)
             print(f"[meta_web] {name or 'búsqueda por palabra'} ({country}): {len(out)} anuncios en la ventana")
             if not out and os.getenv("CREATIVE_INTEL_DEBUG"):
                 dbg = settings.assets_dir / "debug"
@@ -155,19 +162,21 @@ class MetaAdLibraryWebCollector:
                 total = declared_results(page.inner_text("body"))
                 if total is not None:
                     self.declared[competitor.slug] = self.declared.get(competitor.slug, 0) + total
-                print(f"[meta_web] {competitor.slug} ({country}): ~{total if total is not None else '?'} anuncios activos; se analizan hasta {self.max_cards}")
-                self._scroll(page, rounds=2 if self.max_cards <= 10 else 8)
+                focus = competitor.focus_keywords
+                print(f"[meta_web] {competitor.slug} ({country}): ~{total if total is not None else '?'} anuncios activos; se analizan hasta {self.max_cards}"
+                      + (" (solo del rubro del cliente)" if focus else ""))
+                self._scroll(page, rounds=12 if focus else (2 if self.max_cards <= 10 else 8))
                 before = len(out)
-                self._take(page, competitor, country, out, assets)
+                self._take(page, competitor, country, out, assets, keywords=focus)
                 got = len(out) - before
                 if got < self.max_cards:
                     # Menos de N activos: se completa con los más vistos ya finalizados (siguen siendo datos reales)
                     page.goto(self.url_for(competitor, country, status="all"), wait_until="domcontentloaded", timeout=90_000)
                     page.wait_for_timeout(4000)
-                    self._scroll(page, rounds=3)
-                    self._take(page, competitor, country, out, assets, limit=self.max_cards - got)
+                    self._scroll(page, rounds=12 if focus else 3)
+                    self._take(page, competitor, country, out, assets, limit=self.max_cards - got, keywords=focus)
                     print(f"[meta_web] {competitor.slug} ({country}): {got} activos + {len(out) - before - got} finalizados")
-                if len(out) == before:
+                if len(out) == before and not focus:
                     # La Biblioteca tiene anuncios pero no se pudo leer ninguna tarjeta: guardar evidencia para corregir
                     dbg = settings.assets_dir / "debug"
                     dbg.mkdir(parents=True, exist_ok=True)
@@ -179,8 +188,13 @@ class MetaAdLibraryWebCollector:
         return out
 
     def _take(self, page, competitor: CompetitorConfig | None, country: str, out: list[RawCreative], assets: Path, limit: int | None = None,
-              market: bool = False) -> None:
-        """Toma hasta `limit` tarjetas nuevas (sin repetir IDs ya tomados) en el orden de la Biblioteca."""
+              market: bool = False, keywords: list[str] | None = None) -> None:
+        """Toma hasta `limit` tarjetas nuevas (sin repetir IDs ya tomados) en el orden de la Biblioteca.
+
+        Con `keywords` (rubro del cliente) se saltean las tarjetas que no lo mencionan.
+        """
+        from ..relevance import matches
+
         limit = self.max_cards if limit is None else limit
         cards = page.locator("div[class*='x1plvlek'] >> xpath=ancestor::div[contains(@class,'xh8yej3')][1]")
         if cards.count() == 0:
@@ -196,6 +210,8 @@ class MetaAdLibraryWebCollector:
                 continue
             ext_id = (ID_RE.search(text) or [None, ""])[1] if ID_RE.search(text) else ""
             if not ext_id or any(r.external_id == ext_id for r in out):
+                continue
+            if keywords and not matches(text, keywords):
                 continue
             taken += 1
             start = START_RE.search(text)

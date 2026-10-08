@@ -4,6 +4,9 @@ client:
   industry: Ecommerce de tecnología
   market: Uruguay
   description: 'Ecommerce de tecnología: notebooks, celulares, gaming, accesorios y movilidad eléctrica'
+  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
+  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
+  focus_keywords: ['notebook', 'laptop', 'celular', 'smartphone', 'iphone', 'galaxy', 'motorola', 'xiaomi', 'tablet', 'ipad', 'gaming', 'gamer', 'consola', 'playstation', '=ps5', 'xbox', 'nintendo', 'auricular', 'parlante', '=audio', 'smartwatch', 'smart watch', 'reloj intel', 'smart home', 'alexa', 'monitor', 'teclado', '=mouse', '=pc', 'computador', 'tecnolog', 'cargador', 'monopatin', 'scooter', 'electric', 'movilidad']
 countries:
 - code: UY
   name: Uruguay
@@ -53,6 +56,7 @@ countries:
       products: []
       active: true
     - slug: crazy-fitness
+      generalist: true
       name: Crazy Fitness Uruguay
       website: ''
       meta_page_id: '115047996924437'
@@ -61,6 +65,7 @@ countries:
       products: []
       active: true
     - slug: elpreciobarato
+      generalist: true
       name: Elpreciobarato
       website: ''
       meta_page_id: '115268581666456'
@@ -80,6 +85,7 @@ countries:
       ad_countries:
       - AR
     - slug: cetrogar
+      generalist: true
       name: Cetrogar
       website: ''
       meta_page_id: '102097393168003'
