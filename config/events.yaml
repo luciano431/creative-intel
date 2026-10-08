@@ -50,3 +50,96 @@ events:
     next:
       start: 2026-11-27
       end: 2026-11-27
+  # ---- Calendario comercial de Uruguay ----
+  # Ventana de cada edición: 3 semanas antes (anticipo) a 1 semana después.
+  dia-de-la-madre:
+    name: Día de la Madre
+    countries: [UY]
+    keywords: [día de la madre, dia de la madre, para mamá, regalo para mamá]
+    editions:
+      - label: 2026-05
+        start: 2026-05-10      # segundo domingo de mayo
+        end: 2026-05-10
+        from: 2026-04-19
+        to: 2026-05-17
+    next:
+      start: 2027-05-09
+      end: 2027-05-09
+  dia-del-padre:
+    name: Día del Padre
+    countries: [UY]
+    keywords: [día del padre, dia del padre, para papá, regalo para papá]
+    editions:
+      - label: 2026-07
+        start: 2026-07-12      # segundo domingo de julio (Uruguay)
+        end: 2026-07-12
+        from: 2026-06-21
+        to: 2026-07-19
+    next:
+      start: 2027-07-11
+      end: 2027-07-11
+  dia-del-nino:
+    name: Día del Niño
+    countries: [UY]
+    keywords: [día del niño, dia del niño, dia del nino, regalo para niños]
+    editions:
+      - label: 2026-08
+        start: 2026-08-09      # segundo domingo de agosto (Uruguay)
+        end: 2026-08-09
+        from: 2026-07-19
+        to: 2026-08-16
+    next:
+      start: 2027-08-08
+      end: 2027-08-08
+  navidad:
+    name: Navidad
+    countries: [UY]
+    keywords: [navidad, navideño, regalos de navidad, papá noel]
+    editions:
+      - label: 2025-12
+        start: 2025-12-24
+        end: 2025-12-25
+        from: 2025-11-30
+        to: 2025-12-31
+    next:
+      start: 2026-12-24
+      end: 2026-12-25
+  reyes:
+    name: Día de Reyes
+    countries: [UY]
+    keywords: [reyes, día de reyes, dia de reyes, reyes magos]
+    editions:
+      - label: 2026-01
+        start: 2026-01-06
+        end: 2026-01-06
+        from: 2025-12-26
+        to: 2026-01-10
+    next:
+      start: 2027-01-06
+      end: 2027-01-06
+  san-valentin:
+    name: San Valentín
+    countries: [UY]
+    keywords: [san valentín, san valentin, día de los enamorados, dia de los enamorados, enamorados]
+    editions:
+      - label: 2026-02
+        start: 2026-02-14
+        end: 2026-02-14
+        from: 2026-01-24
+        to: 2026-02-18
+    next:
+      start: 2027-02-14
+      end: 2027-02-14
+  vuelta-a-clases:
+    name: Vuelta a clases
+    countries: [UY]
+    keywords: [vuelta a clases, vuelta al cole, útiles escolares, utiles escolares, inicio de clases]
+    editions:
+      - label: 2026-03
+        start: 2026-03-02      # inicio de clases en primaria pública (aprox.: confirmar cada año)
+        end: 2026-03-02
+        from: 2026-02-09
+        to: 2026-03-09
+    next:
+      start: 2027-03-01
+      end: 2027-03-01

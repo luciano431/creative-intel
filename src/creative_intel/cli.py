@@ -698,6 +698,9 @@ def run_all(
     step: str = typer.Argument(..., help="ids = completar IDs · informe = informe del mes · audit = revisar datos · evento:<clave> = guía de un evento · vivo:<clave> = archivar lo que está activo del evento (gratis)"),
     period: Optional[str] = PeriodOpt,
     only: list[str] = typer.Option([], "--only", help="identificador de cliente (repetible); por defecto, todos"),
+    edition: Optional[str] = typer.Option(None, "--edition", help="evento: edición a estudiar"),
+    live: bool = typer.Option(False, "--live", help="evento: edición en curso"),
+    mock_ai: bool = typer.Option(False, "--mock-ai", help="evento o informe: sin IA"),
 ) -> None:
     """Corre un paso para todos los clientes, uno tras otro (cada uno con su RADAR_CLIENT)."""
     import os
@@ -708,13 +711,14 @@ def run_all(
 
     commands = {"ids": ["fill-ids", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"]}
     if step.startswith("evento:"):
-        args = ["evento", step.split(":", 1)[1]]
+        args = ["evento", step.split(":", 1)[1]] + (["--live"] if live else ["--edition", edition] if edition else []) \
+            + (["--mock-ai"] if mock_ai else [])
     elif step.startswith("vivo:"):  # archivo del evento en curso, sin IA (gratis): correrlo cada 2-3 días antes y durante
         args = ["evento", step.split(":", 1)[1], "--live", "--mock-ai"]
     elif step not in commands:
         raise typer.BadParameter("Usá: ids, informe, audit, evento:<clave> o vivo:<clave> (ej. vivo:cyberlunes)")
     else:
-        args = commands[step] + (["--period", period] if period and step != "ids" else [])
+        args = commands[step] + (["--period", period] if period and step != "ids" else []) + (["--mock-ai"] if mock_ai and step == "informe" else [])
     failed = []
     for c in list_clients():
         if only and c.key not in only:
@@ -724,6 +728,8 @@ def run_all(
         env.pop("RADAR_CLIENT", None)
         if c.env:
             env["RADAR_CLIENT"] = c.env
+        if args[0] == "evento":  # base de datos del cliente lista (primera vez)
+            subprocess.run([sys.executable, "-m", "creative_intel.cli", "init-db"], env=env)
         if subprocess.run([sys.executable, "-m", "creative_intel.cli", *args], env=env).returncode != 0:
             failed.append(c.name)
     rprint("\n[green]Listo.[/green]" if not failed else f"\n[red]Con error:[/red] {', '.join(failed)}")

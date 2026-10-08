@@ -66,6 +66,8 @@
 <header class="top"><div class="in">
   <a class="logo" href="/">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span><span class="w">{{ brand.agency }}</span><span class="a">Radar creativo</span></span></a>
   <span class="sp"></span>
+  <a class="btn ghost" href="/">Clientes</a>
+  <a class="btn ghost" href="/eventos">Eventos</a>
   {% block topactions %}<a class="btn ghost" href="/nuevo">+ Nuevo cliente</a>{% endblock %}
 </div></header>
 <main>{% block main %}{% endblock %}</main>

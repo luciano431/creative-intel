@@ -1,0 +1,115 @@
+{% extends "base.html.j2" %}
+{% block title %}Eventos{% endblock %}
+{% block main %}
+<h1>Guías de fechas especiales</h1>
+<p class="muted" style="margin:0 0 20px">Elegí la fecha, la edición y los clientes: el Radar arma una guía por cliente con sus resultados reales, lo que hizo la competencia y el plan de piezas.</p>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="fields">
+    <div class="field">
+      <label for="ev">Fecha especial</label>
+      <select id="ev">
+        {% for e in events %}<option value="{{ e.key }}">{{ e.name }}{% if e.days is not none and e.days >= 0 %} · faltan {{ e.days }} días{% elif not e.next %} · próxima sin confirmar{% endif %}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="ed">Edición</label>
+      <select id="ed">
+        {% for e in events %}
+        <option value="vivo" data-ev="{{ e.key }}">En curso: lo que está activo hoy (archivar para el año que viene)</option>
+        {% for x in e.editions %}<option value="{{ x.label }}" data-ev="{{ e.key }}">Edición anterior {{ x.label }}{% if x.start %} ({{ x.start }}{% if x.end and x.end != x.start %} al {{ x.end }}{% endif %}){% endif %}: resultados del cliente + competencia</option>{% endfor %}
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <p class="small muted" id="ed-help" style="margin:0 0 12px"></p>
+
+  <label>Clientes</label>
+  <div class="row" style="margin-bottom:12px">
+    {% for c in clients %}<label class="check"><input type="checkbox" class="cl" value="{{ c.key }}" checked> {{ c.name }}</label>{% endfor %}
+  </div>
+  <label class="check" style="margin-bottom:14px"><input type="checkbox" id="ai"> Con IA (resumen, oferta, calendario e ideas con guion · ≈ US$ 0,30 por cliente)</label>
+  <div class="row">
+    <button class="btn" id="go" {% if running %}disabled{% endif %}>Generar guías</button>
+    <span class="small muted">Corre un cliente tras otro; puede tardar varios minutos por cliente.</span>
+  </div>
+  <div class="err" id="err"></div>
+</div>
+
+<div id="jobs" {% if not jobs %}style="display:none"{% endif %}>
+  <h2>Guías en proceso</h2>
+  <div id="job-list">
+    {% for j in jobs %}
+    <div class="job card" data-id="{{ j.id }}" data-status="{{ j.status }}" style="margin-top:12px">
+      <div class="row"><b>{{ j.title }}</b> <span class="tag st"></span> <span class="small muted el"></span></div>
+      <div class="row small links" style="margin-top:6px"></div>
+      <pre class="log"></pre>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<h2 style="margin-top:28px">Guías ya generadas</h2>
+<div class="grid">
+  {% for c in clients %}{% set reps = reports[c.key] %}
+  <div class="card">
+    <h3>{{ c.name }}</h3>
+    {% if reps %}<ul class="small" style="margin:0;padding-left:18px">{% for r in reps[:8] %}<li><a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.name }}</a></li>{% endfor %}</ul>
+    {% else %}<p class="small muted" style="margin:0">Todavía ninguna.</p>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+const JOBS = {{ jobs | tojson }};
+const HELP = {
+  vivo: 'Guarda los anuncios activos hoy de cada marca y del mercado. Corré esta opción cada 2 o 3 días antes y durante la fecha: así el año que viene hay contra qué comparar.',
+  past: 'Usa los resultados reales del cliente en esas fechas (Meta), lo que Google guarda de la competencia y, si está configurado, Instagram orgánico.'
+};
+function syncEd() {
+  const ev = $('ev').value; let first = null;
+  [...$('ed').options].forEach(o => { o.hidden = o.dataset.ev !== ev; if (!o.hidden && !first) first = o; });
+  if (!$('ed').selectedOptions[0] || $('ed').selectedOptions[0].hidden) first.selected = true;
+  $('ed-help').textContent = $('ed').value === 'vivo' ? HELP.vivo : HELP.past;
+}
+$('ev').addEventListener('change', syncEd); $('ed').addEventListener('change', syncEd); syncEd();
+
+const TAG = {pendiente: 'run', corriendo: 'run', listo: 'ok', error: 'warn'};
+function paint(el, j) {
+  el.dataset.status = j.status;
+  const st = el.querySelector('.st'); st.textContent = j.status; st.className = 'tag st ' + (TAG[j.status] || '');
+  el.querySelector('.el').textContent = Math.floor(j.elapsed / 60) + ' min ' + (j.elapsed % 60) + ' s';
+  const pre = el.querySelector('pre'); pre.textContent = j.log || '…'; pre.scrollTop = pre.scrollHeight;
+  const links = el.querySelector('.links'); links.innerHTML = '';
+  if (j.status !== 'pendiente') (j.links || []).forEach(l => {
+    const a = document.createElement('a'); a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Guía de ' + l.name;
+    links.appendChild(a);
+  });
+}
+function addJob(j) {
+  $('jobs').style.display = '';
+  const el = document.createElement('div'); el.className = 'job card'; el.dataset.id = j.id; el.style.marginTop = '12px';
+  el.innerHTML = '<div class="row"><b></b> <span class="tag st"></span> <span class="small muted el"></span></div><div class="row small links" style="margin-top:6px"></div><pre class="log"></pre>';
+  el.querySelector('b').textContent = j.title;
+  $('job-list').prepend(el); paint(el, j); $('go').disabled = true;
+}
+document.querySelectorAll('.job').forEach(el => { const j = JOBS.find(x => x.id === el.dataset.id); if (j) paint(el, j); });
+async function poll() {
+  for (const el of document.querySelectorAll('.job')) {
+    if (!['pendiente', 'corriendo'].includes(el.dataset.status)) continue;
+    try { const j = await (await fetch('/api/tareas/' + el.dataset.id)).json(); paint(el, j);
+          if (!['pendiente', 'corriendo'].includes(j.status)) $('go').disabled = false; } catch (e) {}
+  }
+}
+setInterval(poll, 3000);
+$('go').addEventListener('click', async () => {
+  $('err').textContent = '';
+  const clients = [...document.querySelectorAll('.cl:checked')].map(x => x.value);
+  try { addJob(await api('/api/eventos', {event: $('ev').value, edition: $('ed').value, clients, ai: $('ai').checked})); }
+  catch (e) { $('err').textContent = e.message; }
+});
+</script>
+{% endblock %}

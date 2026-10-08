@@ -52,6 +52,7 @@ class Job:
     started: float = field(default_factory=time.time)
     finished: float | None = None
     result_url: str = ""
+    links: list[dict[str, str]] = field(default_factory=list)  # tareas de varios clientes: un informe por cliente
 
     def tail(self, lines: int = 40) -> str:
         try:
@@ -63,7 +64,10 @@ class Job:
     def as_dict(self) -> dict[str, Any]:
         return {"id": self.id, "client": self.client, "kind": self.kind, "title": self.title, "status": self.status,
                 "started": self.started, "finished": self.finished, "elapsed": int((self.finished or time.time()) - self.started),
-                "log": self.tail(), "result_url": self.result_url}
+                "log": self.tail(), "result_url": self.result_url, "links": self.links}
+
+
+GLOBAL = "_todos"  # tareas que recorren varios clientes (guías de evento)
 
 
 class JobManager:
@@ -78,17 +82,21 @@ class JobManager:
     def recent_for(self, client: str, n: int = 5) -> list[Job]:
         return sorted((j for j in self.jobs.values() if j.client == client), key=lambda j: -j.started)[:n]
 
-    def start(self, client: ClientEntry, kind: str, title: str, commands: list[list[str]], result_url: str = "") -> Job:
+    def start(self, client: ClientEntry | None, kind: str, title: str, commands: list[list[str]], result_url: str = "",
+              links: list[dict[str, str]] | None = None) -> Job:
+        """client=None: tarea de varios clientes (cada comando elige su cliente)."""
+        key = client.key if client else GLOBAL
         with self.lock:
-            if self.running_for(client.key):
-                raise HTTPException(409, "Ya hay una tarea corriendo para este cliente; esperá a que termine.")
+            if self.running_for(key):
+                raise HTTPException(409, "Ya hay una tarea corriendo para este cliente; esperá a que termine."
+                                    if client else "Ya hay una guía de evento generándose; esperá a que termine.")
             self.log_dir.mkdir(parents=True, exist_ok=True)
             jid = uuid.uuid4().hex[:10]
             env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "COLUMNS": "160", "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8"}
             env.pop("RADAR_CLIENT", None)
-            if client.env:
+            if client and client.env:
                 env["RADAR_CLIENT"] = client.env
-            job = Job(jid, client.key, kind, title, commands, env, self.log_dir / f"{jid}.log", result_url=result_url)
+            job = Job(jid, key, kind, title, commands, env, self.log_dir / f"{jid}.log", result_url=result_url, links=links or [])
             self.jobs[jid] = job
         threading.Thread(target=self._run, args=(job,), daemon=True).start()
         return job
@@ -162,6 +170,55 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
     def index() -> HTMLResponse:
         clients = list_clients(root)
         return render("index.html.j2", clients=clients, running={c.key: jobs.running_for(c.key) for c in clients})
+
+    @app.get("/eventos", response_class=HTMLResponse)
+    def events_page() -> HTMLResponse:
+        from .events import live_edition
+
+        events = load_events(root / "config")
+        today = dt.date.today()
+        rows = []
+        for ev in events.values():
+            nxt = ev.next_start
+            rows.append({"key": ev.key, "name": ev.name, "next": nxt.isoformat() if nxt else "",
+                         "days": (nxt - today).days if nxt else None, "live": live_edition(ev, today).label,
+                         "editions": [{"label": e.label, "start": e.start.isoformat() if e.start else "",
+                                       "end": e.end.isoformat() if e.end else ""} for e in reversed(ev.editions)]})
+        rows.sort(key=lambda r: (r["days"] is None or r["days"] < 0, r["days"] if r["days"] is not None else 9999))
+        clients = list_clients(root)
+        reports = {c.key: c.event_reports() for c in clients}
+        return render("events.html.j2", events=rows, clients=clients, reports=reports,
+                      jobs=[j.as_dict() for j in jobs.recent_for(GLOBAL)], running=jobs.running_for(GLOBAL))
+
+    @app.post("/api/eventos")
+    async def start_events(request: Request) -> JSONResponse:
+        from .events import live_edition
+
+        body = await request.json()
+        events = load_events(root / "config")
+        key_ev = str(body.get("event") or "")
+        if key_ev not in events:
+            raise HTTPException(400, "Elegí un evento")
+        ev = events[key_ev]
+        edition = str(body.get("edition") or "vivo")
+        if edition == "vivo":
+            label, flags = live_edition(ev).label, ["--live"]
+        elif edition in {e.label for e in ev.editions}:
+            label, flags = edition, ["--edition", edition]
+        else:
+            raise HTTPException(400, "Edición desconocida")
+        all_clients = {c.key: c for c in list_clients(root)}
+        chosen = [k for k in body.get("clients") or [] if k in all_clients]
+        if not chosen:
+            raise HTTPException(400, "Elegí al menos un cliente")
+        ai = bool(body.get("ai"))
+        cmd = _radar("all", f"evento:{key_ev}", *[x for k in chosen for x in ("--only", k)], *flags, *([] if ai else ["--mock-ai"]))
+        links = [{"name": all_clients[k].name,
+                  "url": all_clients[k].report_url("x").rsplit("/x/", 1)[0] + f"/eventos/{key_ev}-{label}/report.html"} for k in chosen]
+        title = f"{ev.name} ({'en curso' if edition == 'vivo' else label}) · {len(chosen)} cliente{'s' if len(chosen) > 1 else ''}" \
+                + (" · con IA" if ai else " · sin IA")
+        job = jobs.start(None, "evento", title, [cmd], links=links)
+        return JSONResponse(job.as_dict())
 
     @app.get("/nuevo", response_class=HTMLResponse)
     def new_form() -> HTMLResponse:

@@ -107,3 +107,21 @@ def test_event_task_validates_and_starts(site, monkeypatch):
     assert started["url"].endswith("/eventos/cyberlunes-2025-06/report.html")
     r = client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "cyberlunes", "edition": "vivo", "ai": True})
     assert r.status_code == 200 and "--live" in started["cmd"] and "--mock-ai" not in started["cmd"]
+
+
+def test_events_page_and_multi_client_job(site, monkeypatch):
+    client, app, root = site
+    shutil.copy(ROOT / "config" / "events.yaml", root / "config" / "events.yaml")
+    page = client.get("/eventos")
+    assert page.status_code == 200 and "Black Friday" in page.text and "Día de la Madre" in page.text and "miSeguroOk" in page.text
+    started = []
+    monkeypatch.setattr(app.state.jobs, "start", lambda c, kind, title, cmds, result_url="", links=None:
+                        started.append((c, title, cmds, links)) or web.Job("j1", web.GLOBAL, kind, title, cmds, {}, root / "x.log", links=links))
+    r = client.post("/api/eventos", json={"event": "black-friday", "edition": "2025", "clients": ["miseguro"], "ai": False})
+    assert r.status_code == 200
+    c, title, cmds, links = started[0]
+    assert c is None and "Black Friday (2025)" in title
+    assert cmds[0][3:] == ["all", "evento:black-friday", "--only", "miseguro", "--edition", "2025", "--mock-ai"]
+    assert links[0]["url"].endswith("/eventos/black-friday-2025/report.html")
+    assert client.post("/api/eventos", json={"event": "black-friday", "edition": "2025", "clients": []}).status_code == 400
+    assert client.post("/api/eventos", json={"event": "nada", "clients": ["miseguro"]}).status_code == 400
