@@ -113,3 +113,39 @@ def analyze_event(items: list[dict[str, Any]], start: dt.date | None, end: dt.da
         "own_ads": advertisers.get(own_name, 0) if own_name else 0,
     })
     return out
+
+
+def own_daily_summary(daily: list[dict[str, Any]], start: dt.date | None, end: dt.date | None) -> dict[str, Any]:
+    """Inversión y resultados del cliente antes, durante y después del evento (cuenta publicitaria propia)."""
+    if not daily:
+        return {}
+    phases: dict[str, dict[str, Any]] = {}
+    for d in daily:
+        day = dt.date.fromisoformat(d["date"])
+        key = "sin_fechas" if not start else "antes" if day < start else "durante" if day <= (end or start) else "despues"
+        p = phases.setdefault(key, {"days": 0, "spend": 0.0, "results": 0.0, "clicks": 0, "impressions": 0})
+        p["days"] += 1
+        p["spend"] = round(p["spend"] + d["spend"], 2)
+        p["results"] += d["results"]
+        p["clicks"] += d["clicks"]
+        p["impressions"] += d["impressions"]
+    for p in phases.values():
+        p["spend_per_day"] = round(p["spend"] / p["days"], 2) if p["days"] else 0
+        p["results_per_day"] = round(p["results"] / p["days"], 1) if p["days"] else 0
+        p["cost_per_result"] = round(p["spend"] / p["results"], 2) if p["results"] else None
+    result_type = next((d["result_type"] for d in daily if d.get("result_type")), "")
+    return {"result_type": result_type, "phases": phases, "days": daily}
+
+
+def own_results(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Los anuncios propios de la edición con sus resultados reales, del mejor costo por resultado al peor."""
+    rows = []
+    for it in items:
+        perf = (it.get("engagement") or {}).get("performance")
+        if it.get("tier") != "own" or not perf:
+            continue
+        rows.append({"id": it["id"], "headline": it.get("headline") or "", "format": it.get("format"),
+                     "product": (it.get("cls") or {}).get("product_shown") or (it.get("cls") or {}).get("product") or "",
+                     "offer": (it.get("cls") or {}).get("offer"), **{k: perf.get(k) for k in
+                     ("spend", "results", "result_type", "cost_per_result", "ctr", "roas")}})
+    return sorted(rows, key=lambda r: (r["cost_per_result"] is None, r["cost_per_result"] or 0, -(r["spend"] or 0)))

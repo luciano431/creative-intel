@@ -80,14 +80,39 @@ class MetaInsightsCollector:
         """Una o varias cuentas separadas por coma ("act_1, act_2" o solo los números)."""
         return [a if a.startswith("act_") else f"act_{a}" for a in (x.strip() for x in value.split(",")) if a]
 
-    def collect(self, competitor: CompetitorConfig) -> list[RawCreative]:
-        until = dt.date.today()
-        since = until - dt.timedelta(days=self.days)
+    def collect_window(self, competitor: CompetitorConfig, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
+        """Los anuncios propios con más inversión dentro de una ventana pasada (ej. el CyberLunes anterior), con sus resultados."""
+        if not self.supports(competitor) or date_from is None or date_to is None:
+            return []
+        return self.collect(competitor, since=date_from, until=date_to, limit=limit)
+
+    def daily(self, competitor: CompetitorConfig, since: dt.date, until: dt.date) -> list[dict[str, Any]]:
+        """Inversión y resultados del cliente día por día (todas sus cuentas sumadas)."""
+        days: dict[str, dict[str, Any]] = {}
+        for acct in self.accounts(competitor.meta_ad_account_id):
+            rows = self._get(f"{acct}/insights", level="account", fields="spend,impressions,clicks,actions,action_values", time_increment=1,
+                             limit=500, time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
+            for r in rows:
+                perf = performance_row(r)
+                d = days.setdefault(r["date_start"], {"date": r["date_start"], "spend": 0.0, "impressions": 0, "clicks": 0, "results": 0.0,
+                                                      "result_type": perf["result_type"]})
+                d["spend"] = round(d["spend"] + perf["spend"], 2)
+                d["impressions"] += perf["impressions"]
+                d["clicks"] += perf["clicks"]
+                d["results"] += perf["results"]
+                d["result_type"] = d["result_type"] or perf["result_type"]
+        return [days[k] for k in sorted(days)]
+
+    def collect(self, competitor: CompetitorConfig, since: dt.date | None = None, until: dt.date | None = None,
+                limit: int | None = None) -> list[RawCreative]:
+        window = since is not None
+        until = until or dt.date.today()
+        since = since or until - dt.timedelta(days=self.days)
         data: list[dict[str, Any]] = []
         for acct in self.accounts(competitor.meta_ad_account_id):  # varias cuentas: se suman (las sin gasto no aportan)
             data += self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500,
                               time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
-        top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[: self.limit]
+        top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[: limit or self.limit]
         out: list[RawCreative] = []
         for ins in top:
             ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS)
@@ -98,7 +123,8 @@ class MetaInsightsCollector:
                 competitor_slug=competitor.slug,
                 platform="meta",
                 source="meta_insights",
-                external_id=f"own-{ins['ad_id']}",
+                # En una ventana pasada se guarda aparte: los resultados son los de esas fechas
+                external_id=f"own-{ins['ad_id']}" + (f"-{since.isoformat()}" if window else ""),
                 format="video" if cr.get("video_id") or cr.get("object_type") == "VIDEO" else "imagen",
                 headline=cr.get("title") or ins.get("ad_name") or "",
                 body_text=cr.get("body") or "",

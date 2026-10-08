@@ -634,8 +634,13 @@ def evento(
     mock_ai: bool = typer.Option(False, "--mock-ai", help="Sin IA: prueba el circuito sin gastar"),
     skip_collect: bool = typer.Option(False, "--skip-collect", help="Usar los anuncios del evento ya bajados"),
     live: bool = typer.Option(False, "--live", help="Edición en curso: lo que está activo ahora (correrlo varias veces antes y durante el evento)"),
+    inicio: Optional[str] = typer.Option(None, "--inicio", help="Primer día de una edición pasada que no esté cargada (AAAA-MM-DD)"),
+    fin: Optional[str] = typer.Option(None, "--fin", help="Último día de esa edición (AAAA-MM-DD; por defecto, igual al inicio)"),
 ) -> None:
-    """Guía de un evento comercial: cómo lo encara el mercado (edición en curso o archivada) y qué hace el cliente."""
+    """Guía de un evento comercial: cómo lo encara el mercado (edición en curso o archivada) y qué hace el cliente.
+
+    Edición pasada: lo que Google guarda de cada marca en esas fechas y los resultados reales del cliente (Meta).
+    """
     from .ai.client import ApiUnavailable, api_problem, usage
     from .config import load_events
     from .events import run_event
@@ -647,7 +652,17 @@ def evento(
     try:
         from .events import live_edition
 
-        ed = live_edition(ev) if live else ev.edition(edition)
+        if inicio:
+            import datetime as _dt
+
+            from .config import EventEdition
+
+            d0 = _dt.date.fromisoformat(inicio)
+            d1 = _dt.date.fromisoformat(fin) if fin else d0
+            # Ventana: 3 semanas antes (anticipo) a 1 semana después (extensiones)
+            ed = EventEdition(label=f"{d0:%Y-%m}", date_from=d0 - _dt.timedelta(days=21), date_to=d1 + _dt.timedelta(days=7), start=d0, end=d1)
+        else:
+            ed = live_edition(ev) if live else ev.edition(edition)
         usage.reset()
         with session_scope() as s:
             summary = run_event(s, ev, ed, mock_ai=mock_ai, skip_collect=skip_collect)

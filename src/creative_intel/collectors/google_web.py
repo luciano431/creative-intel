@@ -173,13 +173,26 @@ class GoogleTransparencyWebCollector:
     def supports(self, competitor: CompetitorConfig) -> bool:
         return bool(competitor.google_advertiser_id or domain_of(competitor))
 
-    def url_for(self, competitor: CompetitorConfig, country: str) -> str:
+    def url_for(self, competitor: CompetitorConfig, country: str, window=None) -> str:
         region = region_param(country)
+        # Rango de fechas (ediciones pasadas de un evento). Si Google lo ignora, igual se filtra por la fecha
+        # "se mostró por última vez" de cada anuncio.
+        dates = f"&start-date={window[0].isoformat()}&end-date={window[1].isoformat()}" if window else ""
         if competitor.google_advertiser_id:
-            return f"https://adstransparency.google.com/advertiser/{competitor.google_advertiser_id}?region={region}"
-        return f"https://adstransparency.google.com/?region={region}&domain={domain_of(competitor, country)}"
+            return f"https://adstransparency.google.com/advertiser/{competitor.google_advertiser_id}?region={region}{dates}"
+        return f"https://adstransparency.google.com/?region={region}&domain={domain_of(competitor, country)}{dates}"
 
-    def collect(self, competitor: CompetitorConfig) -> list[RawCreative]:
+    def collect_window(self, competitor: CompetitorConfig, country: str, date_from, date_to, limit: int) -> list[RawCreative]:
+        """Anuncios de Google que se mostraron dentro de una ventana pasada (Google guarda el historial, Meta no).
+
+        Cuenta solo los que Google dice que se mostraron por última vez dentro de la ventana: seguro estuvieron al aire.
+        """
+        if date_from is None or date_to is None:
+            return []
+        return self.collect(competitor, window=(date_from, date_to), limit=limit, countries=[country])
+
+    def collect(self, competitor: CompetitorConfig, window=None, limit: int | None = None,
+                countries: list[str] | None = None) -> list[RawCreative]:
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as exc:  # pragma: no cover
@@ -209,12 +222,14 @@ class GoogleTransparencyWebCollector:
                         captured.append(pair)
 
             page.on("response", on_response)
-            for country in competitor.ad_countries:
+            want_n = limit or self.max_cards
+            for country in countries or competitor.ad_countries:
                 captured.clear()
-                page.goto(self.url_for(competitor, country), wait_until="domcontentloaded", timeout=90_000)
+                page.goto(self.url_for(competitor, country, window), wait_until="domcontentloaded", timeout=90_000)
                 page.wait_for_timeout(5000)
                 focus = competitor.focus_keywords
-                hrefs = self._load_grid(page, captured, want=self.max_cards * (6 if focus else 1))
+                widen = 8 if window else 6 if focus else 1
+                hrefs = self._load_grid(page, captured, want=want_n * widen)
                 # Links armados desde las respuestas de la API interna (cubren tarjetas sin <a>)
                 region = region_param(country)
                 for adv, cr in captured:
@@ -222,7 +237,8 @@ class GoogleTransparencyWebCollector:
                         hrefs.append(f"/advertiser/{adv}/creative/{cr}?region={region}")
                 # Se recorren más candidatos de los necesarios: los quitados por Google o vacíos no cuentan
                 # (marcas generalistas: muchos más, porque solo sirven los del rubro del cliente)
-                hrefs = hrefs[: self.max_cards * (8 if focus else 3)]
+                hrefs = hrefs[: want_n * (8 if focus or window else 3)]
+                outside = 0
                 if debug:
                     self._grid_debug(page, dbg, competitor.slug, country, hrefs, captured)
                 total = _declared_total(page.inner_text("body"))
@@ -238,7 +254,7 @@ class GoogleTransparencyWebCollector:
                     continue
                 useful = 0
                 for href in hrefs:
-                    if useful >= self.max_cards:
+                    if useful >= want_n:
                         break
                     m = re.search(r"/creative/(CR\w+)", href)
                     if not m:
@@ -263,6 +279,9 @@ class GoogleTransparencyWebCollector:
                         continue
                     if detail["removed"] or not (detail["headline"] or detail["body"] or detail["media"]):
                         continue  # sin contenido analizable: se busca el siguiente
+                    if window and not (detail["last_seen"] and window[0] <= detail["last_seen"] <= window[1]):
+                        outside += 1
+                        continue  # no consta que haya estado al aire en la ventana
                     if focus and not matches(" ".join([detail["headline"] or "", detail["body"] or "", detail.get("description") or ""]), focus):
                         continue  # generalista: anuncio de otro rubro
                     useful += 1
@@ -283,13 +302,16 @@ class GoogleTransparencyWebCollector:
                             countries=[] if country.upper() == "ALL" else [country],
                             first_seen=detail["first_seen"],
                             last_seen=detail["last_seen"],
-                            is_active=True,
+                            is_active=not window,
                             raw={"page_text": detail["page_text"][:3000], "screenshot": detail["screenshot"], "frame_texts": detail["frame_texts"][:5],
                                  "variations": detail["variations"], "regions": detail["regions"], "removed": detail["removed"],
                                  "scoped": detail["scoped"], "text_in_image": detail["text_in_image"],
                                  "first_seen_known": bool(detail["first_seen"])},
                         )
                     )
+                if window:
+                    print(f"[google_web] {competitor.slug} ({country}) {window[0]}..{window[1]}: {useful} anuncios al aire en la ventana"
+                          f" ({outside} revisados eran de otras fechas)")
             browser.close()
         if failed:
             print(f"[google_web] {competitor.slug}: {failed} creativos no se pudieron abrir (quedan para la próxima corrida)")

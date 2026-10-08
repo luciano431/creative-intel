@@ -76,3 +76,19 @@ def test_live_edition_uses_next_dates_only_when_close():
     assert ed.label == "vivo-2026-10" and ed.date_from == dt.date(2026, 8, 7) and ed.start == dt.date(2026, 11, 2)
     old = EventConfig(key="x", name="X", keywords=[], countries=["UY"], editions=[], next_start=dt.date(2025, 1, 1))
     assert live_edition(old, today=dt.date(2026, 10, 6)).start is None
+
+
+def test_own_daily_summary_splits_before_during_after():
+    from creative_intel.analysis.event import own_daily_summary, own_results
+
+    days = [{"date": f"2026-05-{d:02d}", "spend": 10.0, "impressions": 100, "clicks": 5, "results": r, "result_type": "compras"}
+            for d, r in ((20, 1), (21, 1), (25, 6), (26, 4), (28, 2))]
+    out = own_daily_summary(days, dt.date(2026, 5, 25), dt.date(2026, 5, 26))
+    ph = out["phases"]
+    assert ph["antes"]["days"] == 2 and ph["durante"]["results"] == 10 and ph["durante"]["cost_per_result"] == 2.0
+    assert ph["despues"]["spend_per_day"] == 10.0 and out["result_type"] == "compras"
+    rows = own_results([{"id": 1, "tier": "own", "headline": "A", "format": "imagen", "cls": {},
+                         "engagement": {"performance": {"spend": 20, "results": 2, "cost_per_result": 10, "ctr": 1.2}}},
+                        {"id": 2, "tier": "own", "headline": "B", "format": "video", "cls": {"offer": "20% off"},
+                         "engagement": {"performance": {"spend": 30, "results": 6, "cost_per_result": 5, "ctr": 2.0}}}])
+    assert [r["headline"] for r in rows] == ["B", "A"]

@@ -53,6 +53,32 @@ def _register_market_advertisers(session: Session, raws: list[RawCreative]) -> N
     session.flush()
 
 
+def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, errors: list[str]) -> tuple[list[RawCreative], list[dict[str, Any]]]:
+    from .collectors.google_web import GoogleTransparencyWebCollector
+    from .collectors.meta_insights import MetaInsightsCollector
+
+    raws: list[RawCreative] = []
+    google = GoogleTransparencyWebCollector()
+    for c in configs:
+        if not c.active or c.tier not in ("own", "local") or not google.supports(c):
+            continue
+        for country in (c.ad_countries or [c.country]):
+            try:
+                raws += google.collect_window(c, country, edition.date_from, edition.date_to, per_brand)
+            except Exception as exc:
+                errors.append(f"google {c.slug}: {exc}")
+    daily: list[dict[str, Any]] = []
+    own = next((c for c in configs if c.is_own), None)
+    insights = MetaInsightsCollector()
+    if own and insights.supports(own):
+        try:
+            raws += insights.collect_window(own, own.country, edition.date_from, edition.date_to, 15)
+            daily = insights.daily(own, edition.date_from, edition.date_to)
+        except Exception as exc:
+            errors.append(f"resultados propios: {exc}")
+    return raws, daily
+
+
 def collect_event(session: Session, event: EventConfig, edition: EventEdition, per_brand: int | None = None, market: int = 30,
                   collector: Any = None) -> dict[str, Any]:
     from .collectors.meta_web import MetaAdLibraryWebCollector
@@ -75,6 +101,12 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
                 raws += col.collect_window(c, country, None if live else edition.date_from, None if live else edition.date_to, per_brand)
             except Exception as exc:
                 errors.append(f"{c.slug}: {exc}")
+    own_daily: list[dict[str, Any]] = []
+    if not live and collector is None:
+        # Edición pasada: Meta ya no muestra esos anuncios (fuera de la UE), pero Google guarda el historial
+        # y la cuenta publicitaria del cliente tiene sus resultados reales de esas fechas.
+        extra, own_daily = _past_edition_sources(configs, edition, per_brand, errors)
+        raws += extra
     keywords = event.keywords[:2]
     focus = load_client().focus_keywords  # del mercado, solo los que venden lo mismo que el cliente
     for country in event.countries:
@@ -94,6 +126,8 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
     up = upsert_creatives(session, run, raws, dt.date.today(), download_media=True)
     run.status = "collected"
     run.stats = {**(run.stats or {}), "collect": {"ads": len(raws), **dict(up), "errors": errors}}
+    if own_daily:
+        run.stats = {**run.stats, "own_daily": own_daily}
     session.flush()
     return run.stats["collect"]
 
@@ -103,7 +137,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     from . import pipeline
     from .ai.client import check_api
     from .ai.event import mock_event_plan, synthesize_event
-    from .analysis.event import analyze_event
+    from .analysis.event import analyze_event, own_daily_summary, own_results
     from .analysis.metrics import start_known
     from .analysis.signals import signal_list
     from .config import REPORTS_DIR, load_brand
@@ -131,6 +165,8 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     for it in items:
         it["signals"] = signal_list(it, start_known(it))
     metrics = analyze_event(items, edition.start, edition.end, own_name=client.name)
+    metrics["own_daily"] = own_daily_summary((run.stats or {}).get("own_daily") or [], edition.start, edition.end)
+    metrics["own_results"] = own_results(items)
     next_dates = {"start": event.next_start.isoformat() if event.next_start else None,
                   "end": event.next_end.isoformat() if event.next_end else None}
     if mock_ai:

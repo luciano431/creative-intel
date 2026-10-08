@@ -98,6 +98,34 @@
   </div>
 </section>
 
+{% set od = m.own_daily or {} %}
+{% if od.phases or m.own_results %}
+<section>
+  <div class="sec-head"><span class="sec-num">★</span><h2>Lo que le dio resultado a {{ client.name }} en esa edición</h2></div>
+  <p class="sec-intro">Datos de la cuenta publicitaria de {{ client.name }} en Meta{% if od.result_type %} · resultado = {{ od.result_type }}{% endif %}.</p>
+  {% if od.phases %}
+  <div class="tbl"><table>
+    <thead><tr><th>Momento</th><th>Días</th><th>Inversión/día</th><th>Resultados/día</th><th>Costo por resultado</th></tr></thead>
+    <tbody>
+    {% for key, name in [('antes','Antes del evento'),('durante','Durante'),('despues','Después'),('sin_fechas','Ventana completa')] %}{% set p = od.phases.get(key) %}{% if p %}
+      <tr><td><b>{{ name }}</b></td><td>{{ p.days }}</td><td>US$ {{ '%.2f' % p.spend_per_day }}</td><td>{{ p.results_per_day }}</td><td>{{ ('US$ %.2f' % p.cost_per_result) if p.cost_per_result else '—' }}</td></tr>
+    {% endif %}{% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+  {% if m.own_results %}
+  <div class="tbl" style="margin-top:16px"><table>
+    <thead><tr><th>Anuncio</th><th>Producto</th><th>Oferta</th><th>Inversión</th><th>Resultados</th><th>Costo por resultado</th><th>CTR</th></tr></thead>
+    <tbody>
+    {% for r in m.own_results[:10] %}
+      <tr><td>{{ r.headline[:70] or '(sin texto)' }}</td><td>{{ r.product }}</td><td>{{ r.offer or '—' }}</td><td>US$ {{ '%.2f' % (r.spend or 0) }}</td><td>{{ r.results|round(0)|int }} {{ r.result_type }}</td><td>{{ ('US$ %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</td><td>{{ r.ctr }}%</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+</section>
+{% endif %}
+
 <section>
   <div class="sec-head"><span class="sec-num">04</span><h2>Anuncios de referencia</h2></div>
   <p class="sec-intro">Los de la edición anterior con más señales (más días al aire, más versiones). Para inspirarse, no para copiar.</p>
