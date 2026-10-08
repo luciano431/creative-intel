@@ -87,7 +87,7 @@ def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: 
     ediciones pasadas: Instagram guarda las publicaciones)."""
     from .collectors.ig_organic import InstagramOrganic, summarize
 
-    if not settings.meta_access_token or not any(c.instagram for c in configs):
+    if not settings.instagram_access_token or not any(c.instagram for c in configs):
         return {}
     ig = InstagramOrganic()
     out: dict[str, Any] = {}

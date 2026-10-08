@@ -44,7 +44,7 @@ def handle_from_site(url: str, client: httpx.Client | None = None) -> str:
 
 class InstagramOrganic:
     def __init__(self, token: str | None = None, client: httpx.Client | None = None):
-        self.token = token or settings.meta_access_token
+        self.token = token or settings.instagram_access_token
         self.client = client or httpx.Client(timeout=60)
         self.version = settings.meta_graph_version
         self._ig_id = settings.instagram_business_id

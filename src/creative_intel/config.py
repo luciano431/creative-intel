@@ -55,6 +55,8 @@ class Settings:
     # Cuenta de Instagram profesional (de cualquier cliente o de Ranker) desde la que se consultan las cuentas públicas.
     # Vacío: se usa la primera que tenga el token.
     instagram_business_id: str = os.getenv("INSTAGRAM_BUSINESS_ID", "")
+    # Token para Instagram orgánico si sale de otra app (vacío = el mismo META_ACCESS_TOKEN)
+    instagram_access_token: str = os.getenv("INSTAGRAM_ACCESS_TOKEN", "") or os.getenv("META_ACCESS_TOKEN", "")
     meta_graph_version: str = os.getenv("META_GRAPH_VERSION", "v21.0")
     serpapi_key: str = os.getenv("SERPAPI_KEY", "")
     basecamp_account_id: str = os.getenv("BASECAMP_ACCOUNT_ID", "")
