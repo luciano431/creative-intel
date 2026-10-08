@@ -807,6 +807,20 @@ def check_ig(username: Optional[str] = typer.Argument(None, help="Cuenta públic
         prof = InstagramOrganic().profile(username, max_pages=1)
     except Exception as exc:
         rprint(f"[red]No se pudo leer Instagram:[/red] {exc}")
+        try:  # qué permisos tiene el token, para saber qué falta
+            ig = InstagramOrganic()
+            granted = {p["permission"] for p in ig._get("me/permissions").get("data", []) if p.get("status") == "granted"}
+            need = ["instagram_basic", "pages_show_list", "pages_read_engagement"]
+            missing = [p for p in need if p not in granted]
+            rprint(f"Permisos del token: {', '.join(sorted(granted)) or 'ninguno'}")
+            if missing:
+                rprint(f"[yellow]Le faltan:[/yellow] {', '.join(missing)}. Generá un token nuevo con esos permisos (además de ads_read).")
+            else:
+                pages = ig._get("me/accounts", fields="name,instagram_business_account{username}", limit=100).get("data", [])
+                linked = [f"{p['name']} → @{p['instagram_business_account']['username']}" for p in pages if p.get("instagram_business_account")]
+                rprint("Páginas con Instagram vinculado: " + (", ".join(linked) if linked else "[yellow]ninguna[/yellow] (vinculá una cuenta de Instagram profesional a una página que administres)"))
+        except Exception as exc2:
+            rprint(f"(No se pudieron leer los permisos: {exc2})")
         raise typer.Exit(1)
     rprint(f"[green]Instagram OK:[/green] @{prof.get('username')} · {prof.get('followers_count')} seguidores · {len(prof['posts'])} publicaciones leídas")
 
