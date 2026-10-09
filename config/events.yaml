@@ -35,8 +35,8 @@ events:
         from: 2026-05-11
         to: 2026-06-10
     next:
-      start: null              # completar cuando el organizador confirme la fecha
-      end: null
+      start: 2026-11-02        # CyberLunes noviembre 2026: 2 al 4 de noviembre
+      end: 2026-11-04
   black-friday:
     name: Black Friday
     countries: [UY]
