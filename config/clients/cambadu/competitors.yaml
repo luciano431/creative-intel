@@ -14,6 +14,7 @@ countries:
   - es
   own:
     slug: cambadu
+    instagram: cambadu1
     name: Cambadu
     website: https://cambadu.com.uy
     meta_page_id: '397212753672468'
@@ -29,6 +30,7 @@ countries:
   competitors:
     local:
     - slug: tienda-inglesa
+      instagram: tiendainglesa
       name: Tienda Inglesa
       website: ''
       meta_page_id: '152900014726810'
@@ -37,6 +39,7 @@ countries:
       products: []
       active: true
     - slug: disco
+      instagram: discouruguay
       name: Disco Uruguay
       website: ''
       meta_page_id: ''
@@ -45,6 +48,7 @@ countries:
       products: []
       active: true
     - slug: devoto
+      instagram: devotouy
       name: Devoto
       website: ''
       meta_page_id: '105908134182917'
@@ -53,6 +57,7 @@ countries:
       products: []
       active: true
     - slug: ta-ta
+      instagram: tatasupermercados_uy
       name: Ta-Ta
       website: ''
       meta_page_id: '287007558039879'
@@ -61,6 +66,7 @@ countries:
       products: []
       active: true
     - slug: el-dorado
+      instagram: eldoradouy
       name: El Dorado
       website: ''
       meta_page_id: '249240718510878'

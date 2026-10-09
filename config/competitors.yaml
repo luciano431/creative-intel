@@ -14,6 +14,7 @@ countries:
   - es
   own:
     slug: miseguro
+    instagram: misegurookuruguay
     name: miSeguroOk
     website: https://misegurook.com
     meta_page_id: '369108106631260'
@@ -29,6 +30,7 @@ countries:
   competitors:
     local:
     - slug: bse
+      instagram: bseuruguay
       name: Banco de Seguros del Estado (BSE)
       website: https://www.bse.com.uy
       meta_page_id: '1672629656389763'
@@ -40,6 +42,7 @@ countries:
       - viaje
       active: true
     - slug: sura-uy
+      instagram: segurossurauy
       name: SURA Uruguay
       website: https://seguros.sura.com.uy
       meta_page_id: '1021050167970839'
@@ -51,6 +54,7 @@ countries:
       - celular
       active: true
     - slug: mapfre-uy
+      instagram: mapfre.uy
       name: MAPFRE Uruguay
       website: https://www.mapfre.com.uy
       meta_page_id: '614124581947485'
@@ -72,6 +76,7 @@ countries:
       - vida
       active: true
     - slug: sancor-uy
+      instagram: sancorsegurosuy
       name: Sancor Seguros Uruguay
       website: https://www.sancorseguros.com.uy
       meta_page_id: '632148993627811'
@@ -84,6 +89,7 @@ countries:
       active: true
     global:
     - slug: axa
+      instagram: axa
       name: AXA
       website: https://www.axa.com
       meta_page_id: '1570002513271112'
@@ -126,6 +132,7 @@ countries:
       - vida
       active: true
     - slug: generali
+      instagram: generaligroup
       name: Generali
       website: https://www.generali.com
       meta_page_id: ''
@@ -143,6 +150,7 @@ countries:
       - salud
       active: true
     - slug: mapfre-global
+      instagram: mapfre
       name: MAPFRE (global)
       website: https://www.mapfre.com
       meta_page_id: '120104454689359'

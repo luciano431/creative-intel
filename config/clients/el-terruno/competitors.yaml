@@ -14,6 +14,7 @@ countries:
   - es
   own:
     slug: el-terruno
+    instagram: loteselpalmar
     name: El Terruño (Lotes El Palmar)
     website: http://landing.terrenosuruguay.com.uy/
     meta_page_id: '106837405810949'
@@ -28,6 +29,7 @@ countries:
   competitors:
     local:
     - slug: varela-inmobiliaria
+      instagram: varelainmobiliaria
       generalist: true
       name: Varela Inmobiliaria
       website: ''
@@ -37,6 +39,7 @@ countries:
       products: []
       active: true
     - slug: echart
+      instagram: echart_inmobiliaria
       generalist: true
       name: Echart Operadores Inmobiliarios
       website: ''
@@ -55,6 +58,7 @@ countries:
       products: []
       active: true
     - slug: los-naranjos
+      instagram: losnaranjos_uy
       name: Los Naranjos UY
       website: ''
       meta_page_id: '1051761271364647'
@@ -78,6 +82,24 @@ countries:
       google_advertiser_id: ''
       products: []
       active: false
+    - slug: century21
+      name: Century 21 Uruguay
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      instagram: century21uy
+    - slug: las-nubes
+      name: Las Nubes
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      instagram: lasnubesuy
     global:
     - slug: puerto-reyunos
       name: Puerto Reyunos
@@ -90,6 +112,7 @@ countries:
       ad_countries:
       - AR
     - slug: numa-hills
+      instagram: numahills
       name: Numa Hills
       website: ''
       meta_page_id: '950590544799238'

@@ -30,6 +30,7 @@ countries:
   - es
   own:
     slug: verona
+    instagram: verona.uruguay
     name: Verona Office & Home
     website: http://verona.com.uy/
     meta_page_id: '1346728418517082'
@@ -50,6 +51,7 @@ countries:
   competitors:
     local:
     - slug: vinibel
+      instagram: vinibeldecor
       name: Vinibel Uruguay
       website: ''
       meta_page_id: '485649101557927'
@@ -58,6 +60,7 @@ countries:
       products: []
       active: true
     - slug: estilo-house
+      instagram: estilo_house_uy
       generalist: true
       name: Estilo House
       website: ''
@@ -67,6 +70,7 @@ countries:
       products: []
       active: true
     - slug: revko
+      instagram: revko.uy
       name: REVKO
       website: ''
       meta_page_id: '586292537911849'
@@ -75,6 +79,7 @@ countries:
       products: []
       active: true
     - slug: metropolitana
+      instagram: metropolitanapisos
       name: Metropolitana
       website: ''
       meta_page_id: '358443427545517'
@@ -91,8 +96,18 @@ countries:
       google_advertiser_id: ''
       products: []
       active: true
+    - slug: tecnomadera
+      name: Tecnomadera
+      website: ''
+      meta_page_id: ''
+      google_domain: ''
+      google_advertiser_id: ''
+      products: []
+      active: true
+      instagram: tecnomaderauy
     global:
     - slug: steelcase
+      instagram: steelcase
       name: Steelcase
       website: https://www.steelcase.com
       meta_page_id: '86451021593'
@@ -103,6 +118,7 @@ countries:
       ad_countries:
       - US
     - slug: interface
+      instagram: interface
       name: Interface
       website: https://www.interface.com
       meta_page_id: '124823057545947'
