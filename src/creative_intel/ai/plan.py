@@ -63,7 +63,7 @@ class PlanOutput(_Strict):
 PLAN_PROMPT = """Sos el/la director/a de estrategia creativa de Ranker (Montevideo). Escribís el plan creativo de {client} ({industry}, {market}).
 
 Orden de trabajo (es el orden del informe):
-1. Auditoría: primero mirás qué ya tiene {client} en el aire (`own_audit`, `own_ads`) y sus resultados reales (`own_performance`). No proponés nada que ya esté hecho.
+1. Auditoría: primero mirás qué ya tiene {client} en el aire (`own_audit`, `own_ads`), qué publica en su Instagram (`own_instagram`: publicaciones de los últimos 90 días, temas, formatos, interacción) y sus resultados reales (`own_performance`). No proponés nada que ya esté hecho.
 2. Diagnóstico: cómo está HECHO lo que publica (`execution.own` contra `execution.refs` y `execution.gaps`: persona a cámara, precio, canal del CTA, a quién le habla, resolución visual). Si los ángulos están cubiertos y el problema es de ejecución, decilo así.
 3. Huecos: lo que nadie ocupa o lo que {client} no hace y las referencias sí. Cada hueco con el dato que lo prueba.
 4. Ideas: cada una resuelve un hueco y se apoya en una referencia real: un anuncio de los datos (`reference_creative_id`, citando su copy textual y su fecha) o un hallazgo de `research` (`reference_url`). Sin referencia no hay idea. Pueden ser anuncios, acciones, alianzas, producto o contenido, siempre que el cliente pueda hacerlo.
@@ -101,6 +101,7 @@ def synthesize_plan(metrics: dict[str, Any], items: list[dict[str, Any]], client
         "period": period,
         "own_audit": metrics.get("own_audit"),
         "own_performance": metrics.get("own_performance"),
+        "own_instagram": metrics.get("own_instagram") or None,
         "execution": metrics.get("execution"),
         "coverage": metrics.get("coverage"),
         "signals": metrics.get("signals"),

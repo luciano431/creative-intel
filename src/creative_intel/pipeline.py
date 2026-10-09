@@ -90,8 +90,29 @@ def collect(
     run.status = "collected"
     run.stats = {**(run.stats or {}), "declared": declared,
                  "collect": {**dict(stats), **dict(up), "marked_inactive": inactive, "errors": errors, "seen_on": seen_on.isoformat()}}
+    own_ig = own_instagram(configs, seen_on, errors) if extra_raws is None else {}
+    if own_ig:
+        run.stats = {**run.stats, "own_instagram": own_ig}
     session.flush()
     return run.stats["collect"]
+
+
+def own_instagram(configs: list, today: dt.date, errors: list[str], days: int = 90) -> dict[str, Any]:
+    """Instagram orgánico del cliente en los últimos 90 días (lo que ya publica, para no repetirlo)."""
+    from .collectors.ig_organic import InstagramOrganic, summarize
+
+    own = next((c for c in configs if c.is_own and c.instagram), None)
+    if not own or not settings.instagram_access_token:
+        return {}
+    try:
+        prof = InstagramOrganic().profile(own.instagram, since=today - dt.timedelta(days=days), until=today)
+        out = summarize(prof, None, top=6, assets=settings.assets_dir / "organic")
+        out["days"] = days
+        out["captions"] = [(p.get("caption") or "")[:160] for p in (prof.get("posts") or [])[:60]]
+        return out
+    except Exception as exc:
+        errors.append(f"instagram @{own.instagram}: {str(exc)[:200]}")
+        return {}
 
 
 def import_file(session: Session, period: str, path: str | Path, slug: str | None, platform: str | None, seen_on: dt.date | None = None) -> dict[str, Any]:
@@ -202,6 +223,7 @@ def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> 
     from .analysis.execution import execution_gaps, execution_profile, own_audit
 
     metrics["own_audit"] = own_audit([it for it in items if it["tier"] == "own"])
+    metrics["own_instagram"] = (run.stats or {}).get("own_instagram") or {}
     refs_profile = execution_profile([it for it in items if it["tier"] != "own"])
     metrics["execution"] = {"own": metrics["own_audit"]["profile"], "refs": refs_profile,
                             "gaps": execution_gaps(metrics["own_audit"]["profile"], refs_profile)}
@@ -361,6 +383,14 @@ def build_report(session: Session, period: str, out_dir: str | Path | None = Non
 
     out_dir = Path(out_dir or Path(REPORTS_DIR) / period)
     ctx = report_context(session, period)
+    if ctx.get("own_ig", {}).get("top"):  # imágenes del Instagram del cliente junto al informe
+        import shutil
+
+        (Path(out_dir) / "assets").mkdir(parents=True, exist_ok=True)
+        for p in ctx["own_ig"]["top"]:
+            if p.get("image") and Path(p["image"]).is_file():
+                shutil.copy(p["image"], Path(out_dir) / "assets" / Path(p["image"]).name)
+                p["image_rel"] = f"assets/{Path(p['image']).name}"
     paths = render_report(ctx, out_dir)
     (out_dir / "metrics.json").write_text(json.dumps(ctx["metrics"], ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     (out_dir / "synthesis.json").write_text(json.dumps(ctx["synthesis"], ensure_ascii=False, indent=2, default=str), encoding="utf-8")

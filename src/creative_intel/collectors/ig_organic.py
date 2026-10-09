@@ -56,6 +56,14 @@ class InstagramOrganic:
             raise RuntimeError(f"Instagram: {(data.get('error') or {}).get('message', resp.text[:300])}")
         return data
 
+    def own_accounts(self) -> dict[str, str]:
+        """Cuentas de Instagram a las que el token tiene acceso directo (usuario en minúscula -> id)."""
+        if not hasattr(self, "_own"):
+            pages = self._get("me/accounts", fields="instagram_business_account{id,username}", limit=200).get("data", [])
+            self._own = {p["instagram_business_account"]["username"].lower(): p["instagram_business_account"]["id"]
+                         for p in pages if p.get("instagram_business_account", {}).get("username")}
+        return self._own
+
     def ig_id(self) -> str:
         """La cuenta de Instagram profesional desde la que se consulta (la primera que tenga el token)."""
         if not self._ig_id:
@@ -72,10 +80,16 @@ class InstagramOrganic:
         posts: list[dict[str, Any]] = []
         after = ""
         info: dict[str, Any] = {}
+        # Cuentas propias (de los clientes): lectura directa, alcanza con instagram_basic.
+        # De terceros: Business Discovery, que Meta solo habilita con acceso avanzado (revisión de la app).
+        own_id = self.own_accounts().get(username.lower().lstrip("@"))
         for _ in range(max_pages):
             media = f"media{'.after(' + after + ')' if after else ''}.limit(50){{{POST_FIELDS}}}"
-            bd = self._get(self.ig_id(), fields=f"business_discovery.username({username}){{username,name,followers_count,media_count,{media}}}")
-            bd = bd.get("business_discovery") or {}
+            if own_id:
+                bd = self._get(own_id, fields=f"username,name,followers_count,media_count,{media}")
+            else:
+                bd = self._get(self.ig_id(), fields=f"business_discovery.username({username}){{username,name,followers_count,media_count,{media}}}")
+                bd = bd.get("business_discovery") or {}
             info = info or {k: bd.get(k) for k in ("username", "name", "followers_count", "media_count")}
             page = (bd.get("media") or {})
             batch = page.get("data") or []

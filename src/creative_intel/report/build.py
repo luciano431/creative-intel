@@ -217,7 +217,9 @@ def build_plan_context(period: str, metrics: dict[str, Any], plan: dict[str, Any
     for f in plan.get("research") or []:
         sources.append({"url": f["url"], "text": f"{f['who']} — {f['fact'][:110]}"})
     audit = metrics.get("own_audit") or {}
+    own_ig = dict(metrics.get("own_instagram") or {})
     return {
+        "own_ig": own_ig,
         "plan": plan, "period": period, "period_label": period_label(period), "next_period_label": next_period_label(period),
         "generated_at": dt.datetime.now().strftime("%d/%m/%Y %H:%M"), "client": client, "brand": brand, "lbl": taxonomy.label,
         "metrics": metrics, "synthesis": plan, "review": review or {}, "audit": audit, "execution": metrics.get("execution") or {},
