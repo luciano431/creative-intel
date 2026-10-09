@@ -4,9 +4,43 @@ client:
   industry: Ecommerce de tecnología
   market: Uruguay
   description: 'Ecommerce de tecnología: notebooks, celulares, gaming, accesorios y movilidad eléctrica'
-  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
-  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
-  focus_keywords: ['notebook', 'laptop', 'celular', 'smartphone', 'iphone', 'galaxy', 'motorola', 'xiaomi', 'tablet', 'ipad', 'gaming', 'gamer', 'consola', 'playstation', '=ps5', 'xbox', 'nintendo', 'auricular', 'parlante', '=audio', 'smartwatch', 'smart watch', 'reloj intel', 'smart home', 'alexa', 'monitor', 'teclado', '=mouse', '=pc', 'computador', 'tecnolog', 'cargador', 'monopatin', 'scooter', 'electric', 'movilidad']
+  focus_keywords:
+  - notebook
+  - laptop
+  - celular
+  - smartphone
+  - iphone
+  - galaxy
+  - motorola
+  - xiaomi
+  - tablet
+  - ipad
+  - gaming
+  - gamer
+  - consola
+  - playstation
+  - =ps5
+  - xbox
+  - nintendo
+  - auricular
+  - parlante
+  - =audio
+  - smartwatch
+  - smart watch
+  - reloj intel
+  - smart home
+  - alexa
+  - monitor
+  - teclado
+  - =mouse
+  - =pc
+  - computador
+  - tecnolog
+  - cargador
+  - monopatin
+  - scooter
+  - electric
+  - movilidad
 countries:
 - code: UY
   name: Uruguay
@@ -64,7 +98,7 @@ countries:
       name: Crazy Fitness Uruguay
       website: ''
       meta_page_id: '115047996924437'
-      google_domain: ''
+      google_domain: crazyshop.com.uy
       google_advertiser_id: ''
       products: []
       active: true
@@ -74,7 +108,7 @@ countries:
       name: Elpreciobarato
       website: ''
       meta_page_id: '115268581666456'
-      google_domain: ''
+      google_domain: elpreciobarato.com
       google_advertiser_id: ''
       products: []
       active: true
@@ -104,7 +138,7 @@ countries:
       name: Share Computación
       website: ''
       meta_page_id: '310305055970537'
-      google_domain: ''
+      google_domain: sharecomputacion.com
       google_advertiser_id: ''
       products: []
       active: true
