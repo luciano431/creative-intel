@@ -16,6 +16,23 @@ ROOT = Path(__file__).resolve().parents[2]
 # Sin RADAR_CLIENT se usa config/ (cliente por defecto) para no romper instalaciones existentes.
 RADAR_CLIENT = os.getenv("RADAR_CLIENT", "").strip()
 CLIENTS_DIR = ROOT / "config" / "clients"
+
+
+def _is_default_client(slug: str) -> bool:
+    """RADAR_CLIENT=<slug del cliente por defecto> (ej. miseguro) apunta a config/, no a config/clients/<slug>/."""
+    if not slug or (CLIENTS_DIR / slug).is_dir():
+        return False
+    try:
+        import yaml as _y
+
+        data = _y.safe_load((ROOT / "config" / "competitors.yaml").read_text(encoding="utf-8")) or {}
+        return (data.get("client") or {}).get("slug") == slug
+    except Exception:
+        return False
+
+
+if _is_default_client(RADAR_CLIENT):
+    RADAR_CLIENT = ""
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR") or (CLIENTS_DIR / RADAR_CLIENT if RADAR_CLIENT else ROOT / "config"))
 DATA_DIR = ROOT / "data" / "clients" / RADAR_CLIENT if RADAR_CLIENT else ROOT / "data"
 REPORTS_DIR = Path(os.getenv("REPORTS_DIR") or (ROOT / "reports" / RADAR_CLIENT if RADAR_CLIENT else "reports"))
