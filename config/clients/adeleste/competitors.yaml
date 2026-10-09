@@ -4,9 +4,63 @@ client:
   industry: Ecommerce de muebles para hogar y jardín
   market: Uruguay
   description: 'Ecommerce con taller propio: muebles de interior y exterior, parrillas, juegos de hierro y de plaza, climatización'
-  # Rubro del cliente: de las marcas "generalist: true" y de lo encontrado por palabra clave solo se toman
-  # los anuncios que mencionan alguna de estas palabras (sin tildes; "=" adelante = palabra exacta)
-  focus_keywords: ['mueble', 'sillon', 'sofa', '=mesa', '=mesas', 'mesa de', 'mesita', 'silla', 'reposer', 'parrill', 'barbacoa', 'asador', 'quincho', 'jardin', 'muebles de exterior', 'mobiliario de exterior', 'juego de exterior', 'juegos de exterior', 'living de exterior', 'terraza', '=deck', 'hamaca', 'columpio', 'juego de plaza', 'juegos de plaza', 'juegos infantiles', 'tobogan', 'juego de hierro', 'juegos de hierro', 'hierro forjado', 'estufa', 'calefac', 'salamandra', 'aire acondicionado', 'climatiz', 'ventilador', 'decora', 'living', 'comedor', 'dormitorio', 'placard', 'ropero', '=rack', 'banco de jardin', 'bancos de jardin', 'banqueta', 'sombrilla', 'pergola', 'glorieta', '=cama', '=camas', 'sommier', 'colchon', 'alfombra', 'lampara', 'gazebo']
+  focus_keywords:
+  - mueble
+  - sillon
+  - sofa
+  - =mesa
+  - =mesas
+  - mesa de
+  - mesita
+  - silla
+  - reposer
+  - parrill
+  - barbacoa
+  - asador
+  - quincho
+  - jardin
+  - muebles de exterior
+  - mobiliario de exterior
+  - juego de exterior
+  - juegos de exterior
+  - living de exterior
+  - terraza
+  - =deck
+  - hamaca
+  - columpio
+  - juego de plaza
+  - juegos de plaza
+  - juegos infantiles
+  - tobogan
+  - juego de hierro
+  - juegos de hierro
+  - hierro forjado
+  - estufa
+  - calefac
+  - salamandra
+  - aire acondicionado
+  - climatiz
+  - ventilador
+  - decora
+  - living
+  - comedor
+  - dormitorio
+  - placard
+  - ropero
+  - =rack
+  - banco de jardin
+  - bancos de jardin
+  - banqueta
+  - sombrilla
+  - pergola
+  - glorieta
+  - =cama
+  - =camas
+  - sommier
+  - colchon
+  - alfombra
+  - lampara
+  - gazebo
 countries:
 - code: UY
   name: Uruguay
@@ -72,7 +126,7 @@ countries:
       name: Herrería 2 Manos
       website: ''
       meta_page_id: '2221886364790177'
-      google_domain: ''
+      google_domain: herreria2manos.com.uy
       google_advertiser_id: ''
       products: []
       active: false
