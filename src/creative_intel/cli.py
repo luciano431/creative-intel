@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from . import pipeline
-from .config import load_competitors, load_taxonomy
+from .config import load_competitors, load_taxonomy, settings
 from .db import init_db, session_scope, get_or_create_run
 from .review import approve_all_pending, data_qa_queue, latest_synthesis, review_synthesis, set_qa_status
 
@@ -813,6 +813,13 @@ def run_all(
         raise typer.BadParameter("Usá: ids, informe, audit, evento:<clave> o vivo:<clave> (ej. vivo:cyberlunes)")
     else:
         args = commands[step] + (["--period", period] if period and step not in ("ids", "ig") else []) + (["--mock-ai"] if mock_ai and step == "informe" else [])
+    if (args[0] == "evento" and "--live" not in args) or step == "informe":
+        from .meta_token import token_problem
+
+        problem = token_problem(settings.meta_access_token)
+        if problem:  # mejor cortar acá que correr los 6 clientes sin los resultados propios
+            rprint(f"[red]{problem}[/red]")
+            raise typer.Exit(1)
     failed = []
     for c in list_clients():
         if only and c.key not in only:
@@ -827,6 +834,43 @@ def run_all(
         if subprocess.run([sys.executable, "-m", "creative_intel.cli", *args], env=env).returncode != 0:
             failed.append(c.name)
     rprint("\n[green]Listo.[/green]" if not failed else f"\n[red]Con error:[/red] {', '.join(failed)}")
+
+
+@app.command("renovar-token")
+def renovar_token() -> None:
+    """Pegás un token nuevo de Meta (no se ve en pantalla); se canjea por uno de 60 días y se guarda en .env."""
+    import getpass
+
+    from .config import ROOT
+    from .meta_token import HOW_TO_RENEW, exchange, token_info, write_env
+
+    if not settings.meta_app_id or not settings.meta_app_secret:
+        rprint("[red]Faltan META_APP_ID y META_APP_SECRET en .env.[/red] Están en developers.facebook.com → tu app → "
+               "Configuración de la app → Básica (identificador y clave secreta). Cargalos con:\n"
+               "  [bold]read \"I?ID de la app: \" && echo \"META_APP_ID=$I\" >> .env[/bold]\n"
+               "  [bold]read -s \"S?Clave secreta: \" && echo \"META_APP_SECRET=$S\" >> .env[/bold]")
+        raise typer.Exit(1)
+    short = getpass.getpass("Pegá el token nuevo (no se ve) y Enter: ").strip()
+    if not short:
+        raise typer.Exit(1)
+    try:
+        long = exchange(short)
+        info = token_info(long)
+    except Exception as exc:
+        rprint(f"[red]Meta no aceptó el canje:[/red] {exc}\n{HOW_TO_RENEW}")
+        raise typer.Exit(1)
+    values = {}
+    if "ads_read" in info["scopes"]:
+        values["META_ACCESS_TOKEN"] = long
+    if "instagram_basic" in info["scopes"]:
+        values["INSTAGRAM_ACCESS_TOKEN"] = long
+    if not values:
+        rprint(f"[red]El token no tiene ads_read ni instagram_basic[/red] (tiene: {', '.join(info['scopes']) or 'nada'}). {HOW_TO_RENEW}")
+        raise typer.Exit(1)
+    write_env(values, ROOT / ".env")
+    missing = [p for p in ("ads_read", "instagram_basic") if p not in info["scopes"]]
+    rprint(f"[green]Listo:[/green] {', '.join(values)} guardado en .env. Vence el {info['expires'] or 'sin fecha'}."
+           + (f" [yellow]Le falta {', '.join(missing)}: esa parte sigue con el token anterior.[/yellow]" if missing else ""))
 
 
 @app.command("check-meta")

@@ -249,6 +249,13 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         check_api()
     summary: dict[str, Any] = {"event": event.name, "edition": edition.label}
     period = event_period(event, edition)
+    own_cfg = next((c for c in load_competitors() if c.is_own), None)
+    if not skip_collect and not edition.label.startswith("vivo-") and own_cfg and own_cfg.meta_ad_account_id:
+        from .meta_token import token_problem
+
+        problem = token_problem(settings.meta_access_token)
+        if problem:  # sin token no hay resultados propios: se corta acá, antes de gastar tiempo e IA
+            raise pipeline.NoData(problem)
     if not skip_collect:
         pipeline.stage("Buscando los anuncios y los resultados")
         summary["collect"] = collect_event(session, event, edition)

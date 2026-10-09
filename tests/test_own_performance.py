@@ -117,3 +117,13 @@ def test_currency_symbol():
     from creative_intel.events import currency_symbol
 
     assert currency_symbol("UYU") == "$" and currency_symbol("USD") == "US$" and currency_symbol(None) == "US$"
+
+
+def test_write_env_replaces_only_given_keys(tmp_path):
+    from creative_intel.meta_token import write_env
+
+    env = tmp_path / ".env"
+    env.write_text("OPENAI_API_KEY=x\n# META_ACCESS_TOKEN=viejo comentado\nMETA_ACCESS_TOKEN=viejo\n")
+    write_env({"META_ACCESS_TOKEN": "nuevo", "INSTAGRAM_ACCESS_TOKEN": "nuevo"}, env)
+    assert env.read_text() == ("OPENAI_API_KEY=x\n# META_ACCESS_TOKEN=viejo comentado\nMETA_ACCESS_TOKEN=nuevo\n"
+                               "INSTAGRAM_ACCESS_TOKEN=nuevo\n")

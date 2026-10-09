@@ -66,13 +66,16 @@ class Settings:
     # Ideas y guiones: Gemini si hay GEMINI_API_KEY (CREATIVE_PROVIDER=gemini); si no, el mismo modelo del plan
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
     creative_provider: str = os.getenv("CREATIVE_PROVIDER", "gemini" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "")
-    gemini_creative_model: str = os.getenv("GEMINI_CREATIVE_MODEL", "gemini-3.1-pro-preview")
+    gemini_creative_model: str = (os.getenv("GEMINI_CREATIVE_MODEL") or "gemini-3.1-pro-preview").strip().strip("'\"").removeprefix("models/")
     # Anuncios por marca y por plataforma: en Meta los más vistos (orden por impresiones), en Google los primeros.
     top_ads_per_brand: int = int(os.getenv("TOP_ADS_PER_BRAND", "5"))
     # Tope de gasto de IA por corrida (por cliente). Al llegar, la clasificación se detiene y guarda lo hecho.
     max_ai_usd_per_run: float = float(os.getenv("MAX_AI_USD_PER_RUN", "2.00"))
     anthropic_fallbacks: str = os.getenv("ANTHROPIC_FALLBACKS", "default")
     meta_access_token: str = os.getenv("META_ACCESS_TOKEN", "")
+    # App de Meta del Radar: para canjear el token por uno de 60 días (radar renovar-token)
+    meta_app_id: str = os.getenv("META_APP_ID", "")
+    meta_app_secret: str = os.getenv("META_APP_SECRET", "")
     # Cuenta de Instagram profesional (de cualquier cliente o de Ranker) desde la que se consultan las cuentas públicas.
     # Vacío: se usa la primera que tenga el token.
     instagram_business_id: str = os.getenv("INSTAGRAM_BUSINESS_ID", "")

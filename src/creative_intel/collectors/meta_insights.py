@@ -174,6 +174,8 @@ class MetaInsightsCollector:
             try:
                 data += self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500, time_range=time_range).get("data", [])
             except RuntimeError as exc:
+                if "access token" in str(exc).lower():
+                    raise
                 print(f"[meta] {acct}: {exc} · reintento sin los campos de objetivo")
                 data += self._get(f"{acct}/insights", level="ad", fields=BASIC_FIELDS, limit=500, time_range=time_range).get("data", [])
         top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[: limit or self.limit]

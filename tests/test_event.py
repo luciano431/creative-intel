@@ -60,6 +60,7 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
                      editions=[EventEdition(label="2025-06", date_from=dt.date(2025, 5, 12), date_to=dt.date(2025, 6, 10),
                                             start=dt.date(2025, 6, 2), end=dt.date(2025, 6, 4))])
     monkeypatch.setattr("creative_intel.collectors.meta_web.MetaAdLibraryWebCollector", FakeCol)
+    monkeypatch.setattr("creative_intel.meta_token.token_problem", lambda *a, **k: None)
     with session_scope(url) as s:
         out = evmod.run_event(s, ev, ev.edition(), mock_ai=True, out_dir=tmp_path / "rep")
     html = (tmp_path / "rep" / "report.html").read_text(encoding="utf-8")
