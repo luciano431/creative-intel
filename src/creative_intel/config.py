@@ -51,7 +51,11 @@ AI_PROVIDER = _ai_provider()
 
 @dataclass
 class Settings:
-    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / ('radar.db' if RADAR_CLIENT else 'creative_intel.db')}")
+    # Cada cliente tiene SU base (data/clients/<cliente>/radar.db). Un DATABASE_URL de SQLite en .env solo vale para el
+    # cliente por defecto: si se aplicara a todos, los anuncios y las corridas de un cliente aparecerían en otro.
+    database_url: str = (f"sqlite:///{DATA_DIR / 'radar.db'}"
+                         if RADAR_CLIENT and os.getenv("DATABASE_URL", "sqlite").startswith("sqlite")
+                         else os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / ('radar.db' if RADAR_CLIENT else 'creative_intel.db')}"))
     assets_dir: Path = Path(os.getenv("ASSETS_DIR", DATA_DIR / "assets"))
     ai_provider: str = AI_PROVIDER
     # Clasificar: modelo barato con visión. Escribir el plan: el modelo más capaz.

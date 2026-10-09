@@ -16,8 +16,8 @@
       <label for="ed">Edición</label>
       <select id="ed">
         {% for e in events %}
-        <option value="vivo" data-ev="{{ e.key }}">En curso: lo que está activo hoy (archivar para el año que viene)</option>
-        {% for x in e.editions %}<option value="{{ x.label }}" data-ev="{{ e.key }}">Edición anterior {{ x.label }}{% if x.start %} ({{ x.start }}{% if x.end and x.end != x.start %} al {{ x.end }}{% endif %}){% endif %}: resultados del cliente + competencia</option>{% endfor %}
+        {% for x in e.editions %}<option value="{{ x.label }}" data-ev="{{ e.key }}">Guía basada en la edición {{ x.label }}{% if x.start %} ({{ x.start }}{% if x.end and x.end != x.start %} al {{ x.end }}{% endif %}){% endif %}</option>{% endfor %}
+        <option value="vivo" data-ev="{{ e.key }}">Solo archivar lo que la competencia tiene activo hoy (no es la guía)</option>
         {% endfor %}
       </select>
     </div>
@@ -28,7 +28,8 @@
   <div class="row" style="margin-bottom:12px">
     {% for c in clients %}<label class="check"><input type="checkbox" class="cl" value="{{ c.key }}" checked> {{ c.name }}</label>{% endfor %}
   </div>
-  <label class="check" style="margin-bottom:14px"><input type="checkbox" id="ai"> Con IA (resumen, oferta, calendario e ideas con guion · ≈ US$ 0,30 por cliente)</label>
+  <label class="check" style="margin-bottom:4px"><input type="checkbox" id="ai" checked> Con IA (resumen, oferta, calendario e ideas con guion · ≈ US$ 0,30 por cliente)</label>
+  <p class="small muted" id="ai-help" style="margin:0 0 14px"></p>
   <div class="row">
     <button class="btn" id="go" {% if running %}disabled{% endif %}>Generar guías</button>
     <span class="small muted">Corre un cliente tras otro; puede tardar varios minutos por cliente.</span>
@@ -62,15 +63,20 @@
 const $ = id => document.getElementById(id);
 const JOBS = {{ jobs | tojson }};
 const HELP = {
-  vivo: 'Guarda los anuncios activos hoy de cada marca y del mercado. Corré esta opción cada 2 o 3 días antes y durante la fecha: así el año que viene hay contra qué comparar.',
-  past: 'Usa los resultados reales del cliente en esas fechas (Meta), lo que Google guarda de la competencia y, si está configurado, Instagram orgánico.'
+  vivo: 'Solo guarda los anuncios que la competencia tiene activos hoy (sin IA, gratis). Usalo cada 2 o 3 días antes y durante la fecha: así el año que viene la guía tiene contra qué comparar. No genera la guía.',
+  past: 'La guía: resultados reales del cliente en esa edición (Meta), lo que hizo la competencia en esas fechas y el plan de piezas con ideas.'
 };
 function syncEd() {
   const ev = $('ev').value; let first = null;
   [...$('ed').options].forEach(o => { o.hidden = o.dataset.ev !== ev; if (!o.hidden && !first) first = o; });
   if (!$('ed').selectedOptions[0] || $('ed').selectedOptions[0].hidden) first.selected = true;
-  $('ed-help').textContent = $('ed').value === 'vivo' ? HELP.vivo : HELP.past;
+  const vivo = $('ed').value === 'vivo';
+  $('ed-help').textContent = vivo ? HELP.vivo : HELP.past;
+  $('ai').disabled = vivo; if (vivo) $('ai').checked = false;
+  $('ai-help').textContent = vivo ? '' : ($('ai').checked ? '' : 'Sin IA la guía trae solo los números: sin resumen, oferta ni ideas.');
+  $('go').textContent = vivo ? 'Archivar ahora' : 'Generar guías';
 }
+$('ai').addEventListener('change', syncEd);
 $('ev').addEventListener('change', syncEd); $('ed').addEventListener('change', syncEd); syncEd();
 
 function addJob(j) {

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -872,6 +873,55 @@ def check_api_cmd() -> None:
                    else "[yellow]Gemini anda pero CREATIVE_PROVIDER no es gemini.[/yellow]")
     else:
         rprint(f"Ideas y guiones: {settings.synth_model} (para usar Gemini, agregá GEMINI_API_KEY en .env).")
+
+
+@app.command("separar-datos")
+def separar_datos(yes: bool = typer.Option(False, "--yes", "-y", help="No pedir confirmación")) -> None:
+    """Separa la base compartida (si DATABASE_URL hacía que todos los clientes usaran la misma) en una por cliente,
+    dejando en cada una solo sus marcas. Las corridas de eventos y sus resultados propios se limpian para regenerarlas."""
+    import shutil
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session as _S
+
+    from .clients import list_clients
+    from .config import ROOT, load_competitors
+    from .db import Competitor, Run, purge_creatives
+
+    shared = os.getenv("DATABASE_URL", "")
+    if not shared.startswith("sqlite"):
+        rprint("[green]No hay DATABASE_URL de SQLite en .env: cada cliente ya tiene su propia base. No hay nada que separar.[/green]")
+        return
+    src = Path(shared.removeprefix("sqlite:///")) if shared.startswith("sqlite:///") else ROOT / "data" / "creative_intel.db"
+    if not src.is_absolute():
+        src = ROOT / src
+    if not src.exists():
+        rprint(f"[yellow]No encontré la base compartida ({src}). No hay nada que separar.[/yellow]")
+        return
+    if not yes:
+        typer.confirm(f"Separar {src} en una base por cliente (se guarda una copia en {src}.bak)?", abort=True)
+    shutil.copy(src, src.with_suffix(src.suffix + ".bak"))
+    for c in list_clients():
+        target = src if not c.env else ROOT / "data" / "clients" / c.env / "radar.db"
+        if c.env:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                shutil.copy(target, target.with_suffix(".db.antes"))
+            shutil.copy(src.with_suffix(src.suffix + ".bak"), target)
+        keep = {x.slug for x in load_competitors(c.config_path)}
+        engine = create_engine(f"sqlite:///{target}")
+        with _S(engine) as s:
+            others = [x.slug for x in s.query(Competitor).all() if x.slug not in keep]
+            res = purge_creatives(s, slugs=others) if others else {"creatives": 0}
+            for comp in s.query(Competitor).filter(Competitor.slug.in_(others)).all() if others else []:
+                s.delete(comp)
+            for run in s.query(Run).all():  # lo calculado con datos mezclados se vuelve a calcular
+                run.metrics = {}
+                run.stats = {k: v for k, v in (run.stats or {}).items()
+                             if k not in ("own_daily", "own_instagram", "market_search", "organic")}
+            s.commit()
+        rprint(f"{c.name}: quedan sus marcas; se sacaron {res['creatives']} anuncios de otros clientes → {target}")
+    rprint("[green]Listo.[/green] Volvé a generar los informes y guías (con recolección) para que se recalculen.")
 
 
 @app.command("fill-ig")
