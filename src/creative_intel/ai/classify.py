@@ -77,6 +77,16 @@ def build_classification_model(taxonomy: Taxonomy) -> Type[BaseModel]:
         "tone": (str, Field(description="Tono en 1-3 palabras")),
         "key_claims": (list[str], Field(description="Claims concretos, máx 5")),
         "summary": (str, Field(description="Una oración descriptiva")),
+        # Ejecución: cómo está hecho el anuncio (para el diagnóstico, más allá del ángulo)
+        "people": (Literal["persona_a_camara", "persona_sin_hablar", "sin_personas"],
+                   Field(description="Si aparece una persona real hablando a cámara, una persona que no habla, o ninguna")),
+        "shows_price": (bool, Field(description="True si el anuncio dice un precio o monto concreto (texto o imagen)")),
+        "cta_channel": (Literal["whatsapp", "web", "mensaje_directo", "llamada", "tienda_fisica", "formulario", "ninguno"],
+                        Field(description="A dónde manda la llamada a la acción")),
+        "talks_to": (str, Field(description="A quién le habla, 2-6 palabras (ej. 'padre sobre el celular del hijo', 'dueño de su propia e-bike')")),
+        "execution": (Literal["placa_grafica", "foto_producto", "foto_lifestyle", "video_persona", "video_producto", "ugc", "texto", "otro"],
+                      Field(description="Resolución visual dominante")),
+        "copy_quote": (str, Field(description="La frase principal del anuncio, textual, como aparece")),
         "confidence": (lit(taxonomy.confidence_levels), Field(description="Confianza global de la clasificación")),
     }
     return create_model("CreativeClassification", __config__=ConfigDict(extra="forbid"), **fields)  # type: ignore[call-overload]
@@ -214,4 +224,10 @@ def heuristic_classify(creative: Any, taxonomy: Taxonomy) -> dict[str, Any]:
         "summary": f"Anuncio de {product} con ángulo {angle} y hook {hook} (clasificación heurística).",
         "confidence": "low",
         "angle_family": fam,
+        "people": "sin_personas",
+        "shows_price": bool(re.search(r"(\$|us\$|u\$s|uyu)\s?\d", text)),
+        "cta_channel": "whatsapp" if "whatsapp" in text else "web" if text else "ninguno",
+        "talks_to": "",
+        "execution": "video_producto" if fmt == "video" else "texto" if fmt == "texto" else "placa_grafica",
+        "copy_quote": first_line[:160],
     }

@@ -158,6 +158,7 @@ def structured_call(
     effort: str = "medium",
     stream: bool = False,
     client: anthropic.Anthropic | None = None,
+    tools: list[dict[str, Any]] | None = None,
 ) -> T:
     """Una llamada con `output_config.format` (JSON garantizado) validada contra un modelo Pydantic.
 
@@ -166,7 +167,7 @@ def structured_call(
     otro modelo dentro del mismo pedido.
     """
     if settings.ai_provider == "openai" and client is None:
-        return _openai_structured_call(schema_model, system, content, model, max_tokens, effort)
+        return _openai_structured_call(schema_model, system, content, model, max_tokens, effort, tools=tools)
     client = client or get_client()
     kwargs: dict[str, Any] = dict(
         model=model,
@@ -206,7 +207,7 @@ def _openai_content(content: list[dict[str, Any]] | str) -> list[dict[str, Any]]
 
 
 def _openai_structured_call(schema_model: Type[T], system: str, content: list[dict[str, Any]] | str, model: str,
-                            max_tokens: int, effort: str) -> T:
+                            max_tokens: int, effort: str, tools: list[dict[str, Any]] | None = None) -> T:
     """Responses API con salida estructurada estricta (el SDK arma el JSON schema desde el modelo Pydantic)."""
     from pydantic import ValidationError
 
@@ -219,10 +220,13 @@ def _openai_structured_call(schema_model: Type[T], system: str, content: list[di
             reasoning={"effort": effort},
             # en OpenAI el razonamiento cuenta dentro del máximo de salida: se deja margen
             max_output_tokens=max(max_tokens * 2, 8000),
+            **({"tools": tools} if tools else {}),
         )
     except ValidationError as exc:  # JSON cortado: la respuesta quedó incompleta
         raise RuntimeError(f"Respuesta incompleta o mal formada; subir el límite ({exc.errors()[0].get('type')})") from exc
     usage.add(getattr(response, "model", model) or model, getattr(response, "usage", None))
+    searches = sum(getattr(o, "type", "") == "web_search_call" for o in getattr(response, "output", []) or [])
+    usage.usd += 0.01 * searches  # búsqueda web: ≈ US$ 10 cada 1.000 búsquedas
     if getattr(response, "status", "") == "incomplete":
         reason = getattr(getattr(response, "incomplete_details", None), "reason", "")
         if reason == "content_filter":

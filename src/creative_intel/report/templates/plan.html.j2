@@ -1,0 +1,211 @@
+{%- set C = brand.colors -%}
+{%- set P = plan -%}
+{%- macro shot(it, cls='') -%}
+  {%- if it.thumbnail_rel -%}<img class="{{ cls }}" src="{{ it.thumbnail_rel }}" alt="Anuncio de {{ it.competitor }}">
+  {%- else -%}<div class="noimg {{ cls }}">Sin vista previa</div>{%- endif -%}
+{%- endmacro -%}
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ P.thesis }} · Radar creativo</title>
+{% if brand.font_url %}<link rel="stylesheet" href="{{ brand.font_url }}">{% endif %}
+<style>
+  :root {
+    --ground: #F6F5F2; --surface: #FFFFFF; --sunk: #EFEDE8;
+    --ink: {{ C.ink or '#1D1C22' }}; --soft: #4A4954; --faint: #7C7B86;
+    --rule: #E2E0DA; --rule-strong: #C9C6BE;
+    --accent: {{ C.accent or '#FD6D30' }}; --accent-soft: color-mix(in srgb, var(--accent) 12%, white);
+    --dark: {{ C.primary or '#1D1C22' }};
+    --stop: #A3362B; --stop-soft: #F7E6E3; --good: #1E6B55; --good-soft: #E1EFE9; --info: #1F5F8B; --info-soft: #E3EDF4;
+    --head: {{ brand.heading_font | safe or brand.font_family | safe }}; --body: {{ brand.font_family | safe }};
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16.5px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+  a { color: var(--info); text-underline-offset: 2px; }
+  .top { background: var(--dark); color: #fff; }
+  .top .in { max-width: 900px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .top .logo { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+  .top .logo svg { width: 28px; height: 28px; }
+  .top small { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #B9B8C2; }
+  .masthead { border-bottom: 2px solid var(--ink); padding: 40px 0 22px; margin-bottom: 40px; }
+  .kick { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  h1 { font-family: var(--head); font-weight: 700; font-size: clamp(2rem, 6vw, 3rem); line-height: 1.04; letter-spacing: -.02em; margin: 0 0 16px; text-wrap: balance; }
+  .standfirst { font-size: 1.12rem; color: var(--soft); max-width: 66ch; margin: 0 0 22px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 26px; font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
+  .meta b { color: var(--soft); font-weight: 600; }
+  .draft { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 11px; background: var(--accent-soft); color: var(--accent); padding: 3px 8px; }
+  section { margin-bottom: 60px; }
+  .sh { display: flex; align-items: baseline; gap: 16px; border-bottom: 1px solid var(--rule-strong); padding-bottom: 10px; margin-bottom: 26px; }
+  .sh h2 { font-family: var(--head); font-weight: 600; font-size: 1.32rem; margin: 0; flex: 1; letter-spacing: -.01em; }
+  .sh span { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  .audit { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 24px; }
+  .audit > div { background: var(--surface); padding: 18px 20px; }
+  .audit h4, dt, .lbl { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin: 0 0 8px; }
+  .audit ul { margin: 0; padding-left: 16px; font-size: .93rem; line-height: 1.5; display: grid; gap: 5px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin: 22px 0; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  figure img, .noimg { width: 100%; max-height: 360px; object-fit: contain; background: var(--surface); border: 1px solid var(--rule); display: block; }
+  .noimg { height: 200px; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 13px; }
+  figcaption { font-family: var(--mono); font-size: 10.5px; line-height: 1.5; color: var(--faint); }
+  figcaption b { color: var(--soft); }
+  .exec { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); font-size: .93rem; margin-bottom: 22px; }
+  .exec th { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); background: var(--sunk); text-align: left; padding: 10px 14px; }
+  .exec td { padding: 10px 14px; border-top: 1px solid var(--rule); }
+  .exec td.n { font-family: var(--mono); white-space: nowrap; }
+  .verdict { background: var(--stop-soft); border-left: 3px solid var(--stop); padding: 20px 24px; }
+  .verdict p { max-width: none; margin: 0; }
+  .verdict strong { color: var(--stop); font-family: var(--head); }
+  .gaps { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .gap { background: var(--surface); display: grid; grid-template-columns: 30px 1fr; gap: 14px; padding: 14px 18px; }
+  .gap .m { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--stop); padding-top: 3px; }
+  .gap p { margin: 0; font-size: .96rem; max-width: none; }
+  .idea { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--info); padding: 24px 26px; margin-bottom: 18px; }
+  .idea.now { border-left-color: var(--accent); }
+  .idea .num { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; color: var(--faint); }
+  .idea h3 { font-family: var(--head); font-weight: 600; font-size: 1.16rem; margin: 4px 0 0; line-height: 1.25; text-wrap: balance; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 18px; }
+  .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border: 1px solid var(--rule-strong); color: var(--soft); }
+  .tag.now { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .tag.venta { background: var(--good-soft); color: var(--good); border-color: transparent; }
+  .tag.marca { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  dl { margin: 0; display: grid; gap: 16px; }
+  .row { display: grid; grid-template-columns: 116px 1fr; gap: 16px; }
+  dt { padding-top: 5px; margin: 0; }
+  dd { margin: 0; font-size: .97rem; }
+  dd p { max-width: none; margin-bottom: 10px; }
+  ul.copy { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  ul.copy li { font-family: var(--mono); font-size: .86rem; padding-left: 16px; position: relative; }
+  ul.copy li::before { content: ""; position: absolute; left: 0; top: .7em; width: 6px; height: 1px; background: var(--rule-strong); }
+  .ref { display: grid; grid-template-columns: 180px 1fr; gap: 18px; background: var(--sunk); padding: 16px; }
+  .ref.text { grid-template-columns: 1fr; }
+  .ref .who { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); display: block; margin-bottom: 6px; }
+  .ref p { max-width: none; margin-bottom: 8px; font-size: .93rem; color: var(--soft); }
+  table.road { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); font-size: .93rem; }
+  table.road th { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); background: var(--sunk); text-align: left; padding: 10px 14px; }
+  table.road td { padding: 11px 14px; border-top: 1px solid var(--rule); vertical-align: top; }
+  td.when { font-family: var(--mono); color: var(--accent); white-space: nowrap; }
+  .tbl { overflow-x: auto; }
+  .note { background: var(--sunk); border-left: 3px solid var(--rule-strong); padding: 18px 22px; font-size: .95rem; }
+  .note p { max-width: none; margin: 0; }
+  .sources { font-family: var(--mono); font-size: 11.5px; line-height: 1.85; display: grid; gap: 3px; }
+  .sources a { word-break: break-word; }
+  footer { border-top: 1px solid var(--rule-strong); padding-top: 18px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  @media (max-width: 620px) { .row, .ref { grid-template-columns: 1fr; gap: 6px; } dt { padding-top: 0; } }
+</style>
+</head>
+<body>
+<div class="top"><div class="in">
+  <a class="logo" href="{{ brand.agency_url or '#' }}">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span>{{ brand.agency }}</span></a>
+  <small>Radar creativo · {{ client.name }}</small>
+</div></div>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kick"><span>{{ brand.agency }} · Plan creativo</span><span>{{ next_period_label }}</span></div>
+  <h1>{{ P.thesis }}</h1>
+  <p class="standfirst">{{ P.standfirst }}</p>
+  <div class="meta">
+    <span><b>Cliente</b> {{ client.name }}</span>
+    {% if client.market %}<span><b>Mercado</b> {{ client.market }}</span>{% endif %}
+    <span><b>Base</b> {{ audit.active or 0 }} anuncios propios · {{ n_refs }} de referencia{% if P.research %} · {{ P.research | length }} fuentes externas{% endif %}</span>
+  </div>
+  {% if review.status and review.status != 'approved' %}<span class="draft">Borrador · pendiente de validación</span>{% endif %}
+</header>
+
+<section>
+  <div class="sh"><h2>Lo que ya están haciendo</h2><span>Auditoría</span></div>
+  <p>{{ client.name }} tiene hoy <strong>{{ audit.active or 0 }} anuncios activos</strong>{% if audit.platforms %} ({% for k, v in audit.platforms.items() %}{{ v }} en {{ k | capitalize }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif %}. Antes de proponer nada, esto es lo que ya está ocupado.</p>
+  <div class="audit">
+    <div><h4>Anuncios · lo que está en el aire</h4><ul>{% for a in P.audit_ads %}<li>{{ a }}</li>{% endfor %}</ul></div>
+    {% if P.audit_other %}<div><h4>Además</h4><ul>{% for a in P.audit_other %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
+  </div>
+  {% if gallery %}
+  <div class="gallery">
+    {% for g in gallery %}<figure>{{ shot(g.item) }}<figcaption><b>{{ ((g.item.cls or {}).copy_quote or g.item.headline or '')[:60] }}</b>{% if g.item.first_seen %} · activo desde {{ g.item.first_seen }}{% endif %}. {{ g.caption }}</figcaption></figure>{% endfor %}
+  </div>
+  {% endif %}
+  {% set ex = execution %}
+  {% if ex.gaps %}
+  <div class="tbl"><table class="exec">
+    <thead><tr><th>Cómo están hechos</th><th>{{ client.name }}</th><th>Referencias</th></tr></thead>
+    <tbody>{% for g in ex.gaps %}<tr><td>{{ g.dimension }}</td><td class="n">{{ g.own }}</td><td class="n">{{ g.refs }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  <div class="verdict"><p><strong>El diagnóstico.</strong> {{ P.diagnosis }}</p></div>
+</section>
+
+<section>
+  <div class="sh"><h2>Los huecos</h2><span>Lo que nadie ocupó</span></div>
+  <div class="gaps">
+    {% for g in P.gaps %}<div class="gap"><span class="m">{{ '%02d' % loop.index }}</span><p><b>{{ g.title }}.</b> {{ g.detail }}</p></div>{% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="sh"><h2>Ideas</h2><span>01–{{ '%02d' % ideas | length }}</span></div>
+  {% for i in ideas %}
+  <article class="idea{% if i.start_now %} now{% endif %}">
+    <span class="num">IDEA {{ i.num }}</span>
+    <h3>{{ i.title }}</h3>
+    <div class="tags">
+      {% if i.start_now %}<span class="tag now">Arrancar ya</span>{% endif %}
+      {% for t in i.tags %}<span class="tag {{ t }}">{{ {'organico':'orgánico','accion':'acción'}.get(t, t) }}</span>{% endfor %}
+      <span class="tag">Esfuerzo {{ i.effort }}</span>
+    </div>
+    <dl>
+      <div class="row"><dt>Qué hacer</dt><dd>{% for p in i.what_to_do %}<p>{{ p }}</p>{% endfor %}
+        {% if i.copy_lines %}<ul class="copy">{% for c in i.copy_lines %}<li>“{{ c }}”</li>{% endfor %}</ul>{% endif %}</dd></div>
+      {% if i.ref_item or i.finding or i.reference_note %}
+      <div class="row"><dt>Referencia</dt><dd>
+        {% if i.ref_item %}{% set r = i.ref_item %}
+        <div class="ref">{{ shot(r) }}<div>
+          <span class="who">{{ r.competitor }}{% if r.country %} · {{ r.country }}{% endif %}{% if r.first_seen %} · desde {{ r.first_seen }}{% endif %}{% if r.status == 'active' %} · activo{% endif %}</span>
+          <p>{{ i.reference_note }}</p>
+          {% if r.snapshot_url %}<p><a href="{{ r.snapshot_url }}" target="_blank" rel="noopener">Ver el anuncio original</a></p>{% endif %}
+        </div></div>
+        {% else %}
+        <div class="ref text"><div>
+          {% if i.finding %}<span class="who">{{ i.finding.who }}{% if i.finding.date %} · {{ i.finding.date }}{% endif %}</span><p>{{ i.finding.fact }}</p>{% endif %}
+          {% if i.reference_note and (not i.finding or i.reference_note != i.finding.fact) %}<p>{{ i.reference_note }}</p>{% endif %}
+          {% if i.reference_url %}<p><a href="{{ i.reference_url }}" target="_blank" rel="noopener">Ver la fuente</a></p>{% endif %}
+        </div></div>
+        {% endif %}
+      </dd></div>
+      {% endif %}
+      <div class="row"><dt>Cómo se mide</dt><dd>{{ i.how_to_measure }}</dd></div>
+    </dl>
+  </article>
+  {% endfor %}
+</section>
+
+{% if P.roadmap %}
+<section>
+  <div class="sh"><h2>Por dónde empezar</h2><span>Próximos 3 meses</span></div>
+  <div class="tbl"><table class="road">
+    <thead><tr><th>Cuándo</th><th>Qué</th><th>Por qué ahora</th></tr></thead>
+    <tbody>{% for s in P.roadmap %}<tr><td class="when">{{ s.when }}</td><td>{{ s.what }}</td><td>{{ s.why }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+
+<section>
+  <div class="sh"><h2>Cómo leer esto</h2><span>Método</span></div>
+  <div class="note"><p>{{ P.method_note }}</p></div>
+</section>
+
+{% if sources %}
+<section>
+  <div class="sh"><h2>Fuentes</h2><span>Consultadas</span></div>
+  <div class="sources">{% for s in sources %}<a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.text }}</a>{% endfor %}</div>
+</section>
+{% endif %}
+
+<footer><span>{{ brand.agency }} · para {{ client.name }}</span><span>Generado {{ generated_at }}</span></footer>
+</div>
+</body>
+</html>

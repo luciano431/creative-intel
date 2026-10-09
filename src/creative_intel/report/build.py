@@ -195,6 +195,39 @@ def build_report_context(
     }
 
 
+def build_plan_context(period: str, metrics: dict[str, Any], plan: dict[str, Any], items: list[dict[str, Any]],
+                       review: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Contexto del plan editorial: cada id de anuncio citado se cambia por el anuncio (con su imagen)."""
+    from ..config import load_brand, load_client, load_taxonomy
+
+    client, brand, taxonomy = load_client(), load_brand(), load_taxonomy()
+    by_id = {it["id"]: it for it in items}
+    findings = {f["url"]: f for f in plan.get("research") or []}
+    gallery = [{**g, "item": by_id[g["creative_id"]]} for g in plan.get("gallery") or [] if g.get("creative_id") in by_id]
+    ideas = []
+    for n, idea in enumerate(plan.get("ideas") or [], 1):
+        ref = by_id.get(idea.get("reference_creative_id"))
+        ideas.append({**idea, "num": f"{n:02d}", "ref_item": ref, "finding": findings.get(idea.get("reference_url") or "")})
+    shown = [g["item"] for g in gallery] + [i["ref_item"] for i in ideas if i["ref_item"]]
+    sources = []
+    for it in shown:
+        if it.get("snapshot_url") and all(s["url"] != it["snapshot_url"] for s in sources):
+            quote = (it.get("cls") or {}).get("copy_quote") or it.get("headline") or ""
+            sources.append({"url": it["snapshot_url"], "text": f"{it['competitor']} — “{quote[:90]}”" + (f", desde {it['first_seen']}" if it.get("first_seen") else "")})
+    for f in plan.get("research") or []:
+        sources.append({"url": f["url"], "text": f"{f['who']} — {f['fact'][:110]}"})
+    audit = metrics.get("own_audit") or {}
+    return {
+        "plan": plan, "period": period, "period_label": period_label(period), "next_period_label": next_period_label(period),
+        "generated_at": dt.datetime.now().strftime("%d/%m/%Y %H:%M"), "client": client, "brand": brand, "lbl": taxonomy.label,
+        "metrics": metrics, "synthesis": plan, "review": review or {}, "audit": audit, "execution": metrics.get("execution") or {},
+        "own_perf": metrics.get("own_performance") or {}, "coverage": metrics.get("coverage") or [],
+        "gallery": gallery, "ideas": ideas, "sources": sources, "items": items,
+        "n_refs": sum(1 for it in items if it.get("tier") != "own"),
+        "display_ids": {it["id"] for it in shown},
+    }
+
+
 def render_assets(items: list[dict[str, Any]], out_dir: str | Path, wanted: set | None = None) -> None:
     """Copia la imagen de cada anuncio junto al informe y le deja a cada item su ruta relativa."""
     out = Path(out_dir)
@@ -221,7 +254,10 @@ def render_report(context: dict[str, Any], out_dir: str | Path, copy_assets: boo
         render_assets(context["items"], out, context.get("display_ids"))
     env = _env()
     outputs: dict[str, Path] = {}
-    for tpl, name in (("report.html.j2", "report.html"), ("report.md.j2", "report.md"), ("basecamp.html.j2", "basecamp.html")):
+    templates = ((("plan.html.j2", "report.html"), ("plan.md.j2", "report.md"), ("plan_basecamp.html.j2", "basecamp.html"))
+                 if context.get("plan") else
+                 (("report.html.j2", "report.html"), ("report.md.j2", "report.md"), ("basecamp.html.j2", "basecamp.html")))
+    for tpl, name in templates:
         rendered = env.get_template(tpl).render(**context)
         path = out / name
         path.write_text(rendered, encoding="utf-8")

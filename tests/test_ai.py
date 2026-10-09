@@ -18,7 +18,7 @@ def test_dynamic_schema_enforces_taxonomy(taxonomy):
     schema = Model.model_json_schema()
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(schema["properties"])
-    ok = Model(product="celular", product_shown="celular", format_detected="video", placement_guess="reels", hook_type="pregunta", primary_angle="robo",
+    ok = Model(product="celular", product_shown="celular", people="sin_personas", shows_price=False, cta_channel="web", talks_to="x", execution="placa_grafica", copy_quote="x", format_detected="video", placement_guess="reels", hook_type="pregunta", primary_angle="robo",
                secondary_angle=None, pain_point="robo", promise="reposición", offer=None, funnel_stage="mofu", cta_type="cotizar",
                creative_style="ugc", audience_hypothesis="jóvenes", tone="directo", key_claims=["48 hs"], summary="x", confidence="high")
     assert ok.primary_angle == "robo"
@@ -57,7 +57,7 @@ def _fake_client(text, stop_reason="end_turn"):
 
 def test_structured_call_sends_schema_and_fallbacks(taxonomy):
     Model = build_classification_model(taxonomy)
-    payload = dict(product="auto", product_shown="auto", format_detected="texto", placement_guess="search", hook_type="precio", primary_angle="precio",
+    payload = dict(product="auto", product_shown="auto", people="sin_personas", shows_price=False, cta_channel="web", talks_to="x", execution="texto", copy_quote="x", format_detected="texto", placement_guess="search", hook_type="precio", primary_angle="precio",
                    secondary_angle=None, pain_point="precio", promise="ahorro", offer="20%", funnel_stage="bofu", cta_type="cotizar",
                    creative_style="texto_plano", audience_hypothesis="x", tone="directo", key_claims=[], summary="s", confidence="medium")
     client, msgs = _fake_client(json.dumps(payload))

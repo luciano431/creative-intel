@@ -68,3 +68,20 @@ def test_several_ad_accounts_are_summed():
     col = MetaInsightsCollector(token="t", client=httpx.Client(transport=httpx.MockTransport(handler)))
     raws = col.collect(CompetitorConfig(slug="c", name="C", country="UY", tier="own", meta_ad_account_id="act_1,act_2"))
     assert seen == ["act_1", "act_2"] and len(raws) == 1
+
+
+def test_execution_audit_and_gaps():
+    from creative_intel.analysis.execution import execution_gaps, execution_profile, own_audit
+
+    own = [{"id": i, "platform": "meta", "source": "meta_web", "headline": "h",
+            "cls": {"primary_angle": "familia", "angle_family": "emocional", "people": "sin_personas", "shows_price": False,
+                    "cta_channel": "web", "execution": "placa_grafica", "talks_to": "padre", "copy_quote": "Su primer celular"}} for i in range(4)]
+    own.append({"id": 9, "platform": "meta", "source": "meta_insights", "cls": {}})
+    refs = [{"id": 20 + i, "cls": {"people": "persona_a_camara" if i < 2 else "sin_personas", "shows_price": i == 0,
+                                   "cta_channel": "whatsapp", "execution": "video_persona"}} for i in range(4)]
+    a = own_audit(own)
+    assert a["active"] == 4 and a["angles"][0]["example"] == "Su primer celular" and a["profile"]["talks_to"][0] == {"value": "padre", "count": 4}
+    gaps = execution_gaps(a["profile"], execution_profile(refs))
+    by = {g["dimension"]: g for g in gaps}
+    assert by["CTA a WhatsApp"]["own"] == "0 de 4" and by["CTA a WhatsApp"]["refs"] == "4 de 4" and gaps[0]["dimension"] == "CTA a WhatsApp"
+    assert "Resolución dominante: placa gráfica" in by

@@ -144,6 +144,14 @@ def _compact_items(items: list[dict[str, Any]], limit: int = 400) -> list[dict[s
                 "offer": cls.get("offer"),
                 "claims": cls.get("key_claims"),
                 "summary": cls.get("summary"),
+                "people": cls.get("people"),
+                "price": cls.get("shows_price"),
+                "cta_channel": cls.get("cta_channel"),
+                "talks_to": cls.get("talks_to"),
+                "execution": cls.get("execution"),
+                "quote": cls.get("copy_quote"),
+                "first_seen": it.get("first_seen"),
+                "url": it.get("snapshot_url"),
             }
         )
     return out

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import logging
 from collections import Counter
 from pathlib import Path
@@ -198,6 +199,12 @@ def analyze(session: Session, period: str, taxonomy: Taxonomy | None = None) -> 
     from .analysis.own_performance import own_performance
 
     metrics["own_performance"] = own_performance(items)
+    from .analysis.execution import execution_gaps, execution_profile, own_audit
+
+    metrics["own_audit"] = own_audit([it for it in items if it["tier"] == "own"])
+    refs_profile = execution_profile([it for it in items if it["tier"] != "own"])
+    metrics["execution"] = {"own": metrics["own_audit"]["profile"], "refs": refs_profile,
+                            "gaps": execution_gaps(metrics["own_audit"]["profile"], refs_profile)}
     metrics["signals"] = build_signals([it for it in items if it["tier"] != "own"], [it for it in prev_items if it["tier"] != "own"],
                                        metrics["concepts"], start_known)
     add_declared_totals(metrics, (run.stats or {}).get("declared") or {})
@@ -303,7 +310,23 @@ def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthes
     own = [it for it in items if it["tier"] == "own"]
     prev = session.query(Run).filter_by(period=previous_period(period)).one_or_none()
     concepts = run.metrics.get("concepts", [])
-    if mock:
+    plan_format = os.getenv("PLAN_FORMAT", "editorial")
+    if plan_format == "editorial":
+        # Plan editorial: auditoría propia → diagnóstico → huecos → ideas con referencia → por dónde empezar
+        from .ai.plan import mock_plan, synthesize_plan
+        from .ai.research import research
+        from .config import load_client
+
+        ci = load_client()
+        if mock:
+            data, model = mock_plan(run.metrics, items, ci.name), "mock"
+        else:
+            stage("Investigando casos y datos en la web")
+            ex = run.metrics.get("execution") or {}
+            findings = research(ci, ex.get("gaps") or [], run.metrics.get("own_audit") or {},
+                                sorted({it["competitor"] for it in items if it["tier"] != "own"}))
+            data, model = synthesize_plan(run.metrics, items, ci, findings, period), settings.synth_model
+    elif mock:
         data = mock_synthesis(run.metrics, items, concepts, period)
         model = "mock"
     else:
@@ -326,6 +349,10 @@ def report_context(session: Session, period: str) -> dict[str, Any]:
         raise ValueError("No hay síntesis; correr `synthesize` primero")
     items = items_for(session, run, taxonomy)
     review = {"status": synth.status, "reviewer": synth.reviewer, "notes": synth.review_notes}
+    if (synth.data or {}).get("version") == 2:
+        from .report.build import build_plan_context
+
+        return build_plan_context(period, run.metrics, synth.data, items, review=review)
     return build_report_context(period, run.metrics, synth.data, items, run.metrics.get("concepts", []), review=review)
 
 
@@ -350,7 +377,7 @@ def publish(session: Session, period: str, force: bool = False) -> dict[str, Any
         raise PermissionError("La síntesis no está aprobada. Correr `review approve` (o --force para saltar el checkpoint).")
     ctx = report_context(session, period)
     env = _env()
-    result = publish_to_basecamp(ctx, lambda c: env.get_template("basecamp.html.j2").render(**c))
+    result = publish_to_basecamp(ctx, lambda c: env.get_template("plan_basecamp.html.j2" if c.get("plan") else "basecamp.html.j2").render(**c))
     session.add(Publication(run_id=run.id, channel="basecamp", external_url=result["document_url"], payload=result))
     run.status = "published"
     run.finished_at = dt.datetime.now(dt.timezone.utc)

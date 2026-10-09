@@ -1,0 +1,31 @@
+# {{ plan.thesis }}
+
+{{ plan.standfirst }}
+
+## Lo que ya están haciendo
+{% for a in plan.audit_ads %}- {{ a }}
+{% endfor %}{% for a in plan.audit_other %}- {{ a }}
+{% endfor %}
+**El diagnóstico.** {{ plan.diagnosis }}
+
+## Los huecos
+{% for g in plan.gaps %}{{ loop.index }}. **{{ g.title }}.** {{ g.detail }}
+{% endfor %}
+## Ideas
+{% for i in ideas %}
+### {{ i.num }}. {{ i.title }}{% if i.start_now %} (arrancar ya){% endif %}
+
+{% for p in i.what_to_do %}{{ p }}
+
+{% endfor %}{% for c in i.copy_lines %}> {{ c }}
+{% endfor %}
+Referencia: {{ i.reference_note }}{% if i.ref_item and i.ref_item.snapshot_url %} ({{ i.ref_item.snapshot_url }}){% elif i.reference_url %} ({{ i.reference_url }}){% endif %}
+
+Cómo se mide: {{ i.how_to_measure }}
+{% endfor %}
+## Por dónde empezar
+{% for s in plan.roadmap %}- **{{ s.when }}:** {{ s.what }} — {{ s.why }}
+{% endfor %}
+## Fuentes
+{% for s in sources %}- {{ s.text }}: {{ s.url }}
+{% endfor %}

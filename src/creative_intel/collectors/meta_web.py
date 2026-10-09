@@ -44,6 +44,9 @@ def parse_human_date(text: str) -> dt.date | None:
         return None
 
 
+OWN_AUDIT_MAX = 40
+
+
 class MetaAdLibraryWebCollector:
     name = "meta_web"
     platform = "meta"
@@ -163,11 +166,13 @@ class MetaAdLibraryWebCollector:
                 if total is not None:
                     self.declared[competitor.slug] = self.declared.get(competitor.slug, 0) + total
                 focus = competitor.focus_keywords
-                print(f"[meta_web] {competitor.slug} ({country}): ~{total if total is not None else '?'} anuncios activos; se analizan hasta {self.max_cards}"
+                # Del cliente se audita todo lo activo (hasta 40): es la base para no repetir lo que ya hace
+                want = OWN_AUDIT_MAX if competitor.is_own else self.max_cards
+                print(f"[meta_web] {competitor.slug} ({country}): ~{total if total is not None else '?'} anuncios activos; se analizan hasta {want}"
                       + (" (solo del rubro del cliente)" if focus else ""))
-                self._scroll(page, rounds=12 if focus else (2 if self.max_cards <= 10 else 8))
+                self._scroll(page, rounds=12 if (focus or competitor.is_own) else (2 if self.max_cards <= 10 else 8))
                 before = len(out)
-                self._take(page, competitor, country, out, assets, keywords=focus)
+                self._take(page, competitor, country, out, assets, limit=want, keywords=focus)
                 got = len(out) - before
                 if got < self.max_cards:
                     # Menos de N activos: se completa con los más vistos ya finalizados (siguen siendo datos reales)

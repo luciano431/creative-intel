@@ -1,0 +1,10 @@
+<h1>{{ plan.thesis }}</h1>
+<p>{{ plan.standfirst }}</p>
+<h2>El diagnóstico</h2>
+<p>{{ plan.diagnosis }}</p>
+<h2>Los huecos</h2>
+<ol>{% for g in plan.gaps %}<li><strong>{{ g.title }}.</strong> {{ g.detail }}</li>{% endfor %}</ol>
+<h2>Ideas</h2>
+<ol>{% for i in ideas %}<li><strong>{{ i.title }}</strong>{% if i.start_now %} (arrancar ya){% endif %}<br>{{ i.what_to_do | join(' ') }}<br><em>Cómo se mide:</em> {{ i.how_to_measure }}</li>{% endfor %}</ol>
+<h2>Por dónde empezar</h2>
+<ul>{% for s in plan.roadmap %}<li><strong>{{ s.when }}:</strong> {{ s.what }} — {{ s.why }}</li>{% endfor %}</ul>
