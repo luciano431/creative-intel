@@ -360,6 +360,11 @@ def publish(session: Session, period: str, force: bool = False) -> dict[str, Any
 
 
 # ----------------------------------------------------------------------------- cycle
+def stage(msg: str) -> None:
+    """Paso actual, para que la web muestre en qué anda el análisis."""
+    print(f"[etapa] {msg}", flush=True)
+
+
 def run_cycle(
     session: Session,
     period: str,
@@ -376,8 +381,10 @@ def run_cycle(
 
         check_api()  # sin crédito o sin clave: avisar ya, no después de 10 minutos de recolección
     if not skip_collect:
+        stage("Buscando los anuncios de la competencia")
         summary["collect"] = collect(session, period, sources=sources)
         session.commit()  # lo recolectado queda guardado aunque falle un paso posterior
+    stage("Clasificando los anuncios")
     summary["classify"] = classify(session, period, mock=mock_ai)
     session.commit()
     aborted = summary["classify"].get("aborted") if isinstance(summary["classify"], dict) else None
@@ -387,9 +394,12 @@ def run_cycle(
         problem = api_problem(Exception(aborted))
         if problem:
             raise ApiUnavailable(problem + " Los anuncios ya recolectados quedan guardados: al reintentar, tildá «No volver a recolectar».")
+    stage("Analizando los datos")
     metrics = analyze(session, period)
     summary["totals"] = metrics["totals"]
+    stage("Escribiendo el plan")
     synthesize_run(session, period, mock=mock_ai)
+    stage("Armando el informe")
     paths = build_report(session, period, out_dir)
     summary["report"] = {k: str(v) for k, v in paths.items()}
     from .review import data_qa_queue

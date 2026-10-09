@@ -104,10 +104,7 @@
   <h2>Tareas</h2>
   <div id="job-list">
   {% for j in jobs %}
-    <div class="job" data-id="{{ j.id }}" data-status="{{ j.status }}" style="margin-top:12px">
-      <div class="row"><b>{{ j.title }}</b> <span class="tag st">{{ j.status }}</span> <span class="small muted el"></span> <a class="small res" href="{{ j.result_url }}" target="_blank" rel="noopener" style="display:none">Abrir informe</a></div>
-      <pre class="log">{{ j.log }}</pre>
-    </div>
+    <div class="job" data-id="{{ j.id }}" data-status="{{ j.status }}" style="margin-top:12px"></div>
   {% endfor %}
   </div>
 </div>
@@ -122,21 +119,12 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === t.dataset.p));
 }));
 
-const TAG = {pendiente: 'run', corriendo: 'run', listo: 'ok', error: 'warn'};
-function paint(el, j) {
-  el.dataset.status = j.status;
-  const st = el.querySelector('.st'); st.textContent = j.status; st.className = 'tag st ' + (TAG[j.status] || '');
-  el.querySelector('.el').textContent = Math.floor(j.elapsed / 60) + ' min ' + (j.elapsed % 60) + ' s';
-  const pre = el.querySelector('pre'); const atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 8;
-  pre.textContent = j.log || '…'; if (atEnd) pre.scrollTop = pre.scrollHeight;
-  const res = el.querySelector('.res'); res.style.display = (j.status === 'listo' && j.result_url) ? '' : 'none';
-}
+const JOBS = {{ jobs | tojson }};
+document.querySelectorAll('.job').forEach(el => { const j = JOBS.find(x => x.id === el.dataset.id); el.innerHTML = JOB_HTML; if (j) paintJob(el, j); });
 function addJob(j) {
   $('jobs').style.display = '';
   const el = document.createElement('div'); el.className = 'job'; el.dataset.id = j.id; el.style.marginTop = '12px';
-  el.innerHTML = '<div class="row"><b></b> <span class="tag st"></span> <span class="small muted el"></span> <a class="small res" target="_blank" rel="noopener" style="display:none">Abrir informe</a></div><pre class="log"></pre>';
-  el.querySelector('b').textContent = j.title; el.querySelector('.res').href = j.result_url || '#';
-  $('job-list').prepend(el); paint(el, j);
+  el.innerHTML = JOB_HTML; $('job-list').prepend(el); paintJob(el, j);
   document.querySelectorAll('#go, #ids, #disc, #go-ev').forEach(b => { if (b) b.disabled = true; });
   $('jobs').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
@@ -144,7 +132,7 @@ async function poll() {
   const live = [...document.querySelectorAll('.job')].filter(el => ['pendiente', 'corriendo'].includes(el.dataset.status));
   for (const el of live) {
     try {
-      const j = await (await fetch('/api/tareas/' + el.dataset.id)).json(); paint(el, j);
+      const j = await (await fetch('/api/tareas/' + el.dataset.id)).json(); paintJob(el, j);
       if (!['pendiente', 'corriendo'].includes(j.status)) setTimeout(() => location.reload(), 1500);
     } catch (e) {}
   }

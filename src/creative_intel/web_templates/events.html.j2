@@ -40,11 +40,7 @@
   <h2>Guías en proceso</h2>
   <div id="job-list">
     {% for j in jobs %}
-    <div class="job card" data-id="{{ j.id }}" data-status="{{ j.status }}" style="margin-top:12px">
-      <div class="row"><b>{{ j.title }}</b> <span class="tag st"></span> <span class="small muted el"></span></div>
-      <div class="row small links" style="margin-top:6px"></div>
-      <pre class="log"></pre>
-    </div>
+    <div class="job card" data-id="{{ j.id }}" data-status="{{ j.status }}" style="margin-top:12px"></div>
     {% endfor %}
   </div>
 </div>
@@ -77,30 +73,16 @@ function syncEd() {
 }
 $('ev').addEventListener('change', syncEd); $('ed').addEventListener('change', syncEd); syncEd();
 
-const TAG = {pendiente: 'run', corriendo: 'run', listo: 'ok', error: 'warn'};
-function paint(el, j) {
-  el.dataset.status = j.status;
-  const st = el.querySelector('.st'); st.textContent = j.status; st.className = 'tag st ' + (TAG[j.status] || '');
-  el.querySelector('.el').textContent = Math.floor(j.elapsed / 60) + ' min ' + (j.elapsed % 60) + ' s';
-  const pre = el.querySelector('pre'); pre.textContent = j.log || '…'; pre.scrollTop = pre.scrollHeight;
-  const links = el.querySelector('.links'); links.innerHTML = '';
-  if (j.status !== 'pendiente') (j.links || []).forEach(l => {
-    const a = document.createElement('a'); a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Guía de ' + l.name;
-    links.appendChild(a);
-  });
-}
 function addJob(j) {
   $('jobs').style.display = '';
   const el = document.createElement('div'); el.className = 'job card'; el.dataset.id = j.id; el.style.marginTop = '12px';
-  el.innerHTML = '<div class="row"><b></b> <span class="tag st"></span> <span class="small muted el"></span></div><div class="row small links" style="margin-top:6px"></div><pre class="log"></pre>';
-  el.querySelector('b').textContent = j.title;
-  $('job-list').prepend(el); paint(el, j); $('go').disabled = true;
+  el.innerHTML = JOB_HTML; $('job-list').prepend(el); paintJob(el, j); $('go').disabled = true;
 }
-document.querySelectorAll('.job').forEach(el => { const j = JOBS.find(x => x.id === el.dataset.id); if (j) paint(el, j); });
+document.querySelectorAll('.job').forEach(el => { const j = JOBS.find(x => x.id === el.dataset.id); el.innerHTML = JOB_HTML; if (j) paintJob(el, j); });
 async function poll() {
   for (const el of document.querySelectorAll('.job')) {
     if (!['pendiente', 'corriendo'].includes(el.dataset.status)) continue;
-    try { const j = await (await fetch('/api/tareas/' + el.dataset.id)).json(); paint(el, j);
+    try { const j = await (await fetch('/api/tareas/' + el.dataset.id)).json(); paintJob(el, j);
           if (!['pendiente', 'corriendo'].includes(j.status)) $('go').disabled = false; } catch (e) {}
   }
 }

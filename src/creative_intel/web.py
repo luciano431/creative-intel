@@ -62,9 +62,34 @@ class Job:
         return "\n".join(text.splitlines()[-lines:])
 
     def as_dict(self) -> dict[str, Any]:
+        try:
+            full = self.log_path.read_text(encoding="utf-8", errors="replace")
+        except FileNotFoundError:
+            full = ""
         return {"id": self.id, "client": self.client, "kind": self.kind, "title": self.title, "status": self.status,
                 "started": self.started, "finished": self.finished, "elapsed": int((self.finished or time.time()) - self.started),
-                "log": self.tail(), "result_url": self.result_url, "links": self.links}
+                "log": self.tail(), "result_url": self.result_url, "links": self.links,
+                "progress": progress_of(full, len(self.links) or 1)}
+
+
+STAGES = ["Buscando", "Clasificando", "Analizando", "Escribiendo", "Armando"]
+SOURCES = (("[meta_web]", "Meta"), ("[google_web]", "Google"), ("[instagram]", "Instagram"), ("[meta_insights]", "resultados propios"))
+
+
+def progress_of(text: str, total: int) -> dict[str, Any]:
+    """En qué anda una tarea, leído de su registro: cliente actual, paso y porcentaje aproximado."""
+    heads = list(re.finditer(r"══ (.+?) ══", text))
+    seg = text[heads[-1].end():] if heads else text
+    stages = re.findall(r"\[etapa\] (.+)", seg)
+    step = stages[-1].strip() if stages else "Preparando"
+    if step.startswith("Buscando"):
+        last = max(((seg.rfind(tag), name) for tag, name in SOURCES), default=(-1, ""))
+        if last[0] >= 0:
+            step += f" en {last[1]}"
+    k = next((i + 1 for i, w in enumerate(STAGES) if step.startswith(w)), 0)
+    i = max(1, len(heads))
+    pct = round(100 * ((i - 1) + k / (len(STAGES) + 1)) / max(total, 1))
+    return {"client": heads[-1].group(1) if heads else "", "i": i, "total": total, "step": step, "pct": min(pct, 99)}
 
 
 GLOBAL = "_todos"  # tareas que recorren varios clientes (guías de evento)

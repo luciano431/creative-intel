@@ -223,8 +223,10 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     summary: dict[str, Any] = {"event": event.name, "edition": edition.label}
     period = event_period(event, edition)
     if not skip_collect:
+        pipeline.stage("Buscando los anuncios y los resultados")
         summary["collect"] = collect_event(session, event, edition)
         session.commit()
+    pipeline.stage("Clasificando los anuncios")
     summary["classify"] = pipeline.classify(session, period, mock=mock_ai)
     session.commit()
     taxonomy = load_taxonomy()
@@ -244,6 +246,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     market_items = [it for it in items if it.get("tier") != "own"]
     render_assets(own_items, out)  # vista previa de los anuncios propios
     # "Cómo lo encaró el mercado" se calcula SOLO con la competencia; lo del cliente va aparte, con sus resultados
+    pipeline.stage("Analizando los datos")
     metrics = analyze_event(market_items, edition.start, edition.end, own_name=client.name)
     metrics["own_ads"] = len(own_items)
     metrics["own_daily"] = own_daily_summary((run.stats or {}).get("own_daily") or [], edition.start, edition.end)
@@ -257,12 +260,14 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         plan = mock_event_plan(event.name, metrics, client.name)
     else:
         labels = {k: taxonomy.label(k) for k in taxonomy.labels} if getattr(taxonomy, "labels", None) else {}
+        pipeline.stage("Escribiendo la guía con IA")
         plan = synthesize_event(event.name, metrics, items, client, next_dates, labels=labels)
         plan = _gemini_ideas(plan, event, metrics, items, client)
     run.metrics = {"event": metrics, "plan": plan}
     run.status = "draft"
     session.flush()
 
+    pipeline.stage("Armando el informe")
     refs = top_creatives([it for it in items if it.get("tier") != "own"], n=9, per_competitor=2)
     render_assets(refs, out)
     brand = load_brand()

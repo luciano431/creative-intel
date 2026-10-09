@@ -59,6 +59,16 @@
   .tab { border: 0; background: none; font: 600 14px var(--body); padding: 10px 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
   .tab.on { color: var(--ink); border-bottom-color: var(--accent); }
   .panel { display: none; } .panel.on { display: block; }
+  .job .jh { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .job .jt { font: 600 17px var(--head); }
+  .job .clock { font: 600 15px var(--body); font-variant-numeric: tabular-nums; color: var(--muted); }
+  .job .step { margin: 6px 0 8px; font-size: 14px; }
+  .job .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .job .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .6s; }
+  .job.done .bar i { background: var(--teal); } .job.fail .bar i { background: var(--warn); }
+  .job .spin { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+  .job details { margin-top: 10px; } .job summary { cursor: pointer; font-size: 12px; color: var(--muted); }
   @media (max-width: 640px) { main { padding: 20px 16px 48px; } .top .in { padding: 12px 16px; } }
 </style>
 </head>
@@ -78,6 +88,38 @@ async function api(url, body) {
   if (!r.ok) throw new Error(data.detail || ('Error ' + r.status));
   return data;
 }
+</script>
+<script>
+// Tareas en segundo plano: "Análisis en proceso" con reloj y barra; el registro técnico queda plegado.
+const JOB_HTML = '<div class="jh"><span class="spin"></span><span class="jt"></span><span class="clock"></span></div>'
+  + '<div class="small muted ttl"></div><div class="step"></div><div class="bar"><i></i></div>'
+  + '<div class="row small links" style="margin-top:8px"></div>'
+  + '<details><summary>Ver detalle técnico</summary><pre class="log"></pre></details>';
+function fmtTime(s) { const m = Math.floor(s / 60), x = s % 60; return (m ? m + ' min ' : '') + String(x).padStart(2, '0') + ' s'; }
+function paintJob(el, j) {
+  el.dataset.status = j.status; el.dataset.elapsed = j.elapsed;
+  const busy = ['pendiente', 'corriendo'].includes(j.status), p = j.progress || {};
+  el.classList.toggle('done', j.status === 'listo'); el.classList.toggle('fail', j.status === 'error');
+  el.querySelector('.spin').style.display = busy ? '' : 'none';
+  el.querySelector('.jt').textContent = busy ? 'Análisis en proceso' : j.status === 'listo' ? 'Análisis terminado' : 'Hubo un error';
+  el.querySelector('.clock').textContent = fmtTime(j.elapsed);
+  el.querySelector('.ttl').textContent = j.title;
+  el.querySelector('.step').textContent = busy
+    ? ((p.total > 1 ? 'Cliente ' + p.i + ' de ' + p.total + (p.client ? ' · ' + p.client : '') + ' — ' : '') + (p.step || 'Preparando') + '…')
+    : j.status === 'listo' ? 'Listo.' : 'Se detuvo. Abrí el detalle técnico para ver el motivo.';
+  el.querySelector('.bar i').style.width = (busy ? Math.max(3, p.pct || 0) : 100) + '%';
+  const pre = el.querySelector('pre'); pre.textContent = j.log || '…'; pre.scrollTop = pre.scrollHeight;
+  if (j.status === 'error') el.querySelector('details').open = true;
+  const links = el.querySelector('.links'); links.innerHTML = '';
+  const items = (j.links && j.links.length) ? j.links.map(l => ({url: l.url, text: 'Guía de ' + l.name}))
+              : (j.result_url ? [{url: j.result_url, text: 'Abrir informe'}] : []);
+  if (j.status === 'listo' || (j.links && j.links.length && !busy)) items.forEach(l => {
+    const a = document.createElement('a'); a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l.text; links.appendChild(a); });
+}
+setInterval(() => document.querySelectorAll('.job').forEach(el => {
+  if (['pendiente', 'corriendo'].includes(el.dataset.status)) {
+    el.dataset.elapsed = (+el.dataset.elapsed || 0) + 1; el.querySelector('.clock').textContent = fmtTime(+el.dataset.elapsed); }
+}), 1000);
 </script>
 {% block scripts %}{% endblock %}
 </body>
