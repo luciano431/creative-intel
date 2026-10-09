@@ -85,3 +85,35 @@ def test_execution_audit_and_gaps():
     by = {g["dimension"]: g for g in gaps}
     assert by["CTA a WhatsApp"]["own"] == "0 de 4" and by["CTA a WhatsApp"]["refs"] == "4 de 4" and gaps[0]["dimension"] == "CTA a WhatsApp"
     assert "Resolución dominante: placa gráfica" in by
+
+
+def test_deleted_ad_and_rejected_fields_do_not_drop_the_account():
+    import httpx
+
+    from creative_intel.collectors.meta_insights import MetaInsightsCollector
+    from creative_intel.config import CompetitorConfig
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/insights"):
+            if "objective" in req.url.params.get("fields", ""):
+                return httpx.Response(400, json={"error": {"message": "campo no válido"}})
+            return httpx.Response(200, json={"data": [
+                {"ad_id": "11", "ad_name": "Notebook", "spend": "500", "impressions": "8000", "clicks": "120", "ctr": "1.5",
+                 "account_currency": "UYU", "actions": [{"action_type": "link_click", "value": "100"}]}]})
+        if req.url.path.endswith("/previews"):
+            return httpx.Response(200, json={"data": []})
+        return httpx.Response(400, json={"error": {"message": "Object with ID '11' does not exist"}})
+
+    col = MetaInsightsCollector(token="t", client=httpx.Client(transport=httpx.MockTransport(handler)))
+    import datetime as dt
+
+    raws = col.collect_window(CompetitorConfig(slug="dw", name="DW", country="UY", tier="own", meta_ad_account_id="1"), "UY",
+                              dt.date(2026, 5, 11), dt.date(2026, 6, 10), 15)
+    assert len(raws) == 1 and raws[0].headline == "Notebook"
+    assert raws[0].engagement["performance"]["currency"] == "UYU" and raws[0].engagement["performance"]["results"] == 100
+
+
+def test_currency_symbol():
+    from creative_intel.events import currency_symbol
+
+    assert currency_symbol("UYU") == "$" and currency_symbol("USD") == "US$" and currency_symbol(None) == "US$"

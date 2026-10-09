@@ -50,6 +50,7 @@ Reglas:
 10. `event_metrics.organic`: publicaciones orgánicas de Instagram de {client} y de cada competidor en esa ventana (cantidad, likes y comentarios promedio, interacción sobre seguidores, cuántas nombraron el evento y las de más interacción con su texto). Es el dato de la competencia de esa edición: usalo para comparar qué temas, formatos y mensajes generaron más interacción. Interacción no es venta: decilo así.
 11. Cada anuncio propio trae `stage` (tofu = que nos conozcan, mofu = consideración, bofu = conversión) y el resultado que buscaba su campaña. Un anuncio de tráfico o alcance (tofu) no se juzga por leads ni ventas: se compara solo con los de su misma etapa y tipo de resultado.
 12. Las ideas (`ideas`) son obligatorias: 3 a 5, completas, con guion escena por escena, copy y dirección visual, una por momento clave del calendario.
+13. Los montos están en la moneda de la cuenta (`currency`: "$" = pesos uruguayos, "US$" = dólares). Escribilos siempre con ese símbolo. Si no hay anuncios de la competencia de esa edición, decilo en una línea y trabajá con los resultados propios y el orgánico.
 9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado."""
 
 

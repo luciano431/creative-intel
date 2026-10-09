@@ -21,6 +21,11 @@ from .db import Competitor, get_or_create_run, sync_competitors
 from .normalize import upsert_creatives
 
 
+def currency_symbol(code: str | None) -> str:
+    """Moneda de la cuenta publicitaria tal como se escribe en Uruguay (UYU → $, USD → US$)."""
+    return {"UYU": "$", "USD": "US$", "": "US$", None: "US$"}.get(code, code or "US$")
+
+
 def event_period(event: EventConfig, edition: EventEdition) -> str:
     return f"ev-{event.key}-{edition.label}"
 
@@ -75,10 +80,17 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
     insights = MetaInsightsCollector()
     if own and insights.supports(own):
         try:
-            raws += insights.collect_window(own, own.country, edition.date_from, edition.date_to, 15)
+            found = insights.collect_window(own, own.country, edition.date_from, edition.date_to, 15)
+            print(f"[meta] {own.name}: {len(found)} anuncios propios con inversión entre {edition.date_from} y {edition.date_to}")
+            raws += found
+        except Exception as exc:
+            errors.append(f"anuncios propios (Meta): {exc}")
+        try:
             daily = insights.daily(own, edition.date_from, edition.date_to)
         except Exception as exc:
-            errors.append(f"resultados propios: {exc}")
+            errors.append(f"resultados diarios (Meta): {exc}")
+    elif own:
+        errors.append(f"anuncios propios: falta META_ACCESS_TOKEN en .env o meta_ad_account_id de {own.name}")
     return raws, daily
 
 
@@ -248,7 +260,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     client = load_client()
     run = get_or_create_run(session, period)
     items = pipeline.items_for(session, run, taxonomy)
-    if not items:
+    if not items and not (run.stats or {}).get("own_daily") and not (run.stats or {}).get("organic"):
         stats = (summary.get("collect") or {})
         errs = "; ".join(stats.get("errors") or [])[:600]
         raise pipeline.NoData(f"No se encontraron anuncios de {event.name} {edition.label}. "
@@ -271,6 +283,10 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     metrics["own_results"] = own_results(own_items)
     metrics["own_groups"] = own_results_groups(metrics["own_results"])
     metrics["market_search"] = (run.stats or {}).get("market_search") or {}
+    metrics["currency"] = currency_symbol(next((d.get("currency") for d in (run.stats or {}).get("own_daily") or [] if d.get("currency")), None)
+                                          or next(((it.get("engagement") or {}).get("performance", {}).get("currency") for it in own_items
+                                                   if ((it.get("engagement") or {}).get("performance") or {}).get("currency")), None))
+    metrics["collect_errors"] = ((run.stats or {}).get("collect") or {}).get("errors") or []
     metrics["organic"] = _organic_for_report((run.stats or {}).get("organic") or {}, out)
     next_dates = {"start": event.next_start.isoformat() if event.next_start else None,
                   "end": event.next_end.isoformat() if event.next_end else None}

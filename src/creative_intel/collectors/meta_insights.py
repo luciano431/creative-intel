@@ -25,7 +25,8 @@ RESULT_ACTIONS = [
     ("onsite_conversion.messaging_conversation_started_7d", "conversaciones"),
     ("link_click", "clics al sitio"),
 ]
-INSIGHT_FIELDS = "ad_id,ad_name,spend,impressions,reach,clicks,ctr,actions,action_values,objective,optimization_goal"
+INSIGHT_FIELDS = "ad_id,ad_name,spend,impressions,reach,clicks,ctr,actions,action_values,objective,optimization_goal,account_currency"
+BASIC_FIELDS = "ad_id,ad_name,spend,impressions,clicks,ctr,actions,action_values,account_currency"  # por si la cuenta rechaza los de objetivo
 
 # El resultado de cada anuncio sale del OBJETIVO de su campaña (lo que Meta optimiza), no de lo que haya pasado:
 # una campaña de tráfico se mide en visitas a la web aunque alguien después haya dejado un lead.
@@ -109,6 +110,7 @@ def performance_row(ins: dict[str, Any]) -> dict[str, Any]:
         "stage": stage, "objective": ins.get("objective") or "", "optimization_goal": ins.get("optimization_goal") or "",
         "roas": round(revenue / spend, 2) if revenue and spend else None,
         "by_type": results_by_type(ins.get("actions")),
+        "currency": ins.get("account_currency") or "",
     }
 
 
@@ -148,11 +150,12 @@ class MetaInsightsCollector:
         """Inversión y resultados del cliente día por día (todas sus cuentas sumadas)."""
         days: dict[str, dict[str, Any]] = {}
         for acct in self.accounts(competitor.meta_ad_account_id):
-            rows = self._get(f"{acct}/insights", level="account", fields="spend,impressions,clicks,actions,action_values", time_increment=1,
+            rows = self._get(f"{acct}/insights", level="account", fields="spend,impressions,clicks,actions,action_values,account_currency", time_increment=1,
                              limit=500, time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
             for r in rows:
                 perf = performance_row(r)
-                d = days.setdefault(r["date_start"], {"date": r["date_start"], "spend": 0.0, "impressions": 0, "clicks": 0, "by_type": {}})
+                d = days.setdefault(r["date_start"], {"date": r["date_start"], "spend": 0.0, "impressions": 0, "clicks": 0, "by_type": {},
+                                                         "currency": r.get("account_currency") or ""})
                 d["spend"] = round(d["spend"] + perf["spend"], 2)
                 d["impressions"] += perf["impressions"]
                 d["clicks"] += perf["clicks"]
@@ -166,16 +169,24 @@ class MetaInsightsCollector:
         until = until or dt.date.today()
         since = since or until - dt.timedelta(days=self.days)
         data: list[dict[str, Any]] = []
+        time_range = f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}'
         for acct in self.accounts(competitor.meta_ad_account_id):  # varias cuentas: se suman (las sin gasto no aportan)
-            data += self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500,
-                              time_range=f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}').get("data", [])
+            try:
+                data += self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500, time_range=time_range).get("data", [])
+            except RuntimeError as exc:
+                print(f"[meta] {acct}: {exc} · reintento sin los campos de objetivo")
+                data += self._get(f"{acct}/insights", level="ad", fields=BASIC_FIELDS, limit=500, time_range=time_range).get("data", [])
         top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[: limit or self.limit]
         out: list[RawCreative] = []
         for ins in top:
             try:  # vista previa grande (sin esto Meta devuelve una miniatura de 64 px)
                 ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS.replace("creative{", "creative.thumbnail_width(600).thumbnail_height(600){"))
             except RuntimeError:
-                ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS)
+                try:
+                    ad = self._get(str(ins["ad_id"]), fields=AD_FIELDS)
+                except RuntimeError as exc:  # anuncio borrado o sin permiso: los resultados igual valen
+                    print(f"[meta] anuncio {ins['ad_id']}: {exc} · entra solo con sus números")
+                    ad = {}
             cr = ad.get("creative") or {}
             perf = performance_row(ins)
             perf["period"] = {"since": since.isoformat(), "until": until.isoformat()}

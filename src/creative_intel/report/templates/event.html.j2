@@ -43,7 +43,12 @@
   </div>
 </header>
 <main class="wrap">
-{% if not m.ads and not m.own_ads %}
+{% set cur = m.currency or 'US$' %}
+{% if m.collect_errors %}
+<section><div class="card" style="border-left:4px solid #B7791F"><b>Lo que no se pudo traer en esta corrida</b>
+  <ul class="small" style="margin:6px 0 0;padding-left:18px">{% for e in m.collect_errors[:8] %}<li>{{ e[:300] }}</li>{% endfor %}</ul></div></section>
+{% endif %}
+{% if not m.ads and not m.own_ads and not (m.own_daily or {}).phases and not m.organic %}
 <section><div class="card">No se encontraron anuncios de esta edición. Revisá las fechas y palabras del evento en events.yaml.</div></section>
 {% else %}
 {% set od = m.own_daily or {} %}
@@ -57,7 +62,7 @@
     <thead><tr><th>Momento</th><th>Días</th><th>Inversión por día</th>{% for t in od.types %}<th>{{ t | capitalize }} por día</th><th>Costo por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}[t] }}</th>{% endfor %}</tr></thead>
     <tbody>
     {% for key, name in [('antes','Antes'),('durante','Durante el evento'),('despues','Después'),('sin_fechas','Ventana completa')] %}{% set p = od.phases.get(key) %}{% if p %}
-      <tr><td><b>{{ name }}</b></td><td>{{ p.days }}</td><td>US$ {{ '%.2f' % p.spend_per_day }}</td>{% for t in od.types %}{% set x = p.per_type[t] %}<td>{{ x.per_day }}</td><td>{{ ('US$ %.2f' % x.cost) if x.cost else '—' }}</td>{% endfor %}</tr>
+      <tr><td><b>{{ name }}</b></td><td>{{ p.days }}</td><td>{{ cur }} {{ '%.2f' % p.spend_per_day }}</td>{% for t in od.types %}{% set x = p.per_type[t] %}<td>{{ x.per_day }}</td><td>{{ (cur ~ ' %.2f' % x.cost) if x.cost else '—' }}</td>{% endfor %}</tr>
     {% endif %}{% endfor %}
     </tbody>
   </table></div>
@@ -73,9 +78,9 @@
         <div class="cr-top"><span class="tag">{{ lbl(r.format) }}</span>{% if loop.first and g.rows|length > 1 %}<span class="days">el mejor costo</span>{% endif %}</div>
         <h4>{{ r.headline[:70] or '(sin texto)' }}</h4>
         <div class="small muted">{% if r.product %}Producto: {{ r.product }}{% endif %}{% if r.offer %} · Oferta: {{ r.offer }}{% endif %}</div>
-        <div style="margin-top:8px"><b style="font-size:18px">{{ ('US$ %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</b> <span class="small muted">por {{ g.unit }}</span></div>
+        <div style="margin-top:8px"><b style="font-size:18px">{{ (cur ~ ' %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</b> <span class="small muted">por {{ g.unit }}</span></div>
         <div style="height:6px;background:var(--line);border-radius:3px;margin:6px 0"><div style="height:6px;width:{{ r.bar }}%;background:{{ C.accent if C and C.accent else '#F26B38' }};border-radius:3px"></div></div>
-        <div class="small">{{ '{:,}'.format(r.results|round(0)|int).replace(',', '.') }} {{ 'personas alcanzadas' if r.result_type == 'alcance' else r.result_type }} · US$ {{ '%.2f' % (r.spend or 0) }} invertidos · CTR {{ r.ctr }}%{% if r.roas %} · ROAS {{ r.roas }}{% endif %}</div>
+        <div class="small">{{ '{:,}'.format(r.results|round(0)|int).replace(',', '.') }} {{ 'personas alcanzadas' if r.result_type == 'alcance' else r.result_type }} · {{ cur }} {{ '%.2f' % (r.spend or 0) }} invertidos · CTR {{ r.ctr }}%{% if r.roas %} · ROAS {{ r.roas }}{% endif %}</div>
       </div>
     </div>
     {% endfor %}
