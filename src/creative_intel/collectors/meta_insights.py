@@ -158,6 +158,48 @@ class MetaInsightsCollector:
                 engagement={"performance": perf},
                 first_seen=dt.date.fromisoformat(ad["created_time"][:10]) if ad.get("created_time") else None,
                 is_active=ad.get("effective_status") == "ACTIVE",
-                raw={"ad_name": ins.get("ad_name"), "performance": perf, "catalog": "{{" in (cr.get("title") or "") + (cr.get("body") or "")},
+                raw={"ad_name": ins.get("ad_name"), "ad_id": str(ins["ad_id"]), "performance": perf, "refresh_media": True,
+                     "catalog": "{{" in (cr.get("title") or "") + (cr.get("body") or "")},
             ))
+        self._previews(out)
         return out
+
+    def _previews(self, raws: list[RawCreative]) -> None:
+        """Captura nítida de cada anuncio tal como se ve en el feed (vista previa oficial de Meta).
+
+        Sirve también para los anuncios de catálogo y los de marca, que no tienen una imagen fija.
+        """
+        import html as _html
+        import os
+        import re as _re
+
+        targets = []
+        for r in raws:
+            try:
+                body = (self._get(f"{r.raw['ad_id']}/previews", ad_format="MOBILE_FEED_STANDARD").get("data") or [{}])[0].get("body", "")
+            except Exception:
+                continue
+            m = _re.search(r'src="([^"]+)"', body or "")
+            if m:
+                targets.append((r, _html.unescape(m.group(1))))
+        if not targets:
+            return
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            return
+        shots = settings.assets_dir / "screenshots"
+        shots.mkdir(parents=True, exist_ok=True)
+        with sync_playwright() as p:
+            browser = p.chromium.launch(executable_path=os.getenv("PLAYWRIGHT_CHROMIUM_PATH") or None)
+            page = browser.new_page(viewport={"width": 420, "height": 900}, device_scale_factor=2, locale="es-UY")
+            for r, url in targets:
+                try:
+                    page.goto(url, wait_until="networkidle", timeout=45_000)
+                    page.wait_for_timeout(1500)
+                    path = shots / f"own_{r.raw['ad_id']}.png"
+                    page.screenshot(path=str(path), full_page=True)
+                    r.raw["screenshot"] = str(path)
+                except Exception:
+                    continue
+            browser.close()

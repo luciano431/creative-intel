@@ -112,7 +112,7 @@ def upsert_creatives(
         creative.status = "active" if raw.is_active else "inactive"
         creative.raw = raw.raw or creative.raw
         session.flush()
-        if download_media and raw.thumbnail_url and not creative.thumbnail_path:
+        if download_media and raw.thumbnail_url and (not creative.thumbnail_path or (raw.raw or {}).get("refresh_media")):
             creative.thumbnail_path = _download(raw.thumbnail_url, fp) or ""
         sighting = session.query(Sighting).filter_by(creative_id=creative.id, run_id=run.id).one_or_none()
         if sighting is None:

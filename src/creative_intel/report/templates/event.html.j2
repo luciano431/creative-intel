@@ -68,7 +68,7 @@
   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
     {% for r in g.rows[:6] %}
     <div class="cr">
-      <div class="pv" style="height:240px;aspect-ratio:auto">{% if r.thumbnail_rel %}<img src="{{ r.thumbnail_rel }}" alt="{{ r.headline }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}</div>
+      <div class="pv" style="height:340px;aspect-ratio:auto">{% if r.thumbnail_rel %}<img src="{{ r.thumbnail_rel }}" alt="{{ r.headline }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}</div>
       <div class="cr-body">
         <div class="cr-top"><span class="tag">{{ lbl(r.format) }}</span>{% if loop.first and g.rows|length > 1 %}<span class="days">el mejor costo</span>{% endif %}</div>
         <h4>{{ r.headline[:70] or '(sin texto)' }}</h4>
