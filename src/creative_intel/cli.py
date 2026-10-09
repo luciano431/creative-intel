@@ -999,7 +999,9 @@ def check_ig(username: Optional[str] = typer.Argument(None, help="Cuenta públic
     if not username:
         raise typer.BadParameter("Indicá una cuenta: radar check-ig usuario")
     try:
-        prof = InstagramOrganic().profile(username, max_pages=1)
+        import datetime as _dt
+
+        prof = InstagramOrganic().profile(username, since=_dt.date.today() - _dt.timedelta(days=30), max_pages=1)
     except Exception as exc:
         rprint(f"[red]No se pudo leer Instagram:[/red] {exc}")
         try:  # qué permisos tiene el token, para saber qué falta
@@ -1017,8 +1019,8 @@ def check_ig(username: Optional[str] = typer.Argument(None, help="Cuenta públic
         except Exception as exc2:
             rprint(f"(No se pudieron leer los permisos: {exc2})")
         raise typer.Exit(1)
-    via = (f" (perfil público: se ve desde {min((x['timestamp'][:10] for x in prof['posts']), default='—')})"
-           if prof.get("source") == "perfil_publico" else "")
+    via = {"perfil_publico": f" (perfil público: se ve desde {min((x['timestamp'][:10] for x in prof['posts']), default='—')})",
+           "apify": f" en los últimos 30 días (Apify)"}.get(prof.get("source"), "")
     rprint(f"[green]Instagram OK:[/green] @{prof.get('username')} · {prof.get('followers_count')} seguidores · {len(prof['posts'])} publicaciones leídas{via}")
 
 

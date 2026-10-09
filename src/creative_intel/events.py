@@ -129,7 +129,9 @@ def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: 
             continue
         out[c.slug] = {"brand": c.name, "own": c.is_own, "raw": raw_posts(prof),
                        **summarize(prof, keywords, assets=settings.assets_dir / "organic")}
-        how = {"perfil_publico": f" (perfil público: se ve desde {prof.get('visible_since') or '—'})", "archivo": " (solo archivo)"}.get(prof.get("source"), "")
+        how = {"perfil_publico": f" (perfil público: se ve desde {prof.get('visible_since') or '—'})", "archivo": " (solo archivo)",
+               "apify": " (Apify" + (f", tope de {settings.apify_max_posts} alcanzado: llegó hasta {prof.get('visible_since')}" if prof.get("capped") else "")
+                        + ")"}.get(prof.get("source"), "")
         print(f"[instagram] @{c.instagram}: {out[c.slug]['posts']} publicaciones entre {edition.date_from} y {edition.date_to}"
               + how + (f", {prof['archived']} del archivo del Radar" if prof.get("archived") else ""))
         if prof.get("source") == "perfil_publico":

@@ -63,3 +63,40 @@ def test_competitor_falls_back_to_public_profile_and_merges_archive():
     assert [p["id"] for p in merged["posts"]] == ["9", "5"] and merged["archived"] == 1
     s = summarize(merged, ["cyberlunes"])
     assert s["source"] == "perfil_publico" and s["posts"] == 2 and s["event_posts"] == 1
+
+
+def test_competitor_uses_apify_back_to_event_date(monkeypatch):
+    from creative_intel.config import settings
+
+    monkeypatch.setattr(settings, "apify_token", "apify_x")
+    monkeypatch.setattr(settings, "apify_max_posts", 50)
+
+    def graph(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/me/accounts"):
+            return httpx.Response(200, json={"data": []})
+        return httpx.Response(400, json={"error": {"message": "(#10) Application does not have permission for this action"}})
+
+    seen = {}
+
+    def apify(req: httpx.Request) -> httpx.Response:
+        import json
+
+        seen.update(json.loads(req.content))
+        assert req.url.params["token"] == "apify_x"
+        return httpx.Response(200, json=[
+            {"id": "1", "shortCode": "A", "caption": "Ciberlunes en Tienda", "timestamp": "2026-06-02T15:00:00.000Z", "likesCount": 120,
+             "commentsCount": 8, "type": "Sidecar", "url": "https://www.instagram.com/p/A/", "displayUrl": "http://img"},
+            {"id": "2", "shortCode": "B", "caption": "octubre", "timestamp": "2026-10-01T15:00:00.000Z", "likesCount": -1,
+             "commentsCount": 1, "type": "Video", "productType": "clips"}])
+
+    def public(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": {"user": {"username": "rival", "edge_followed_by": {"count": 4000},
+                                                           "edge_owner_to_timeline_media": {"edges": []}}}})
+
+    ig = InstagramOrganic(token="t", client=httpx.Client(transport=httpx.MockTransport(graph)),
+                          public_client=httpx.Client(transport=httpx.MockTransport(public)),
+                          apify_client=httpx.Client(transport=httpx.MockTransport(apify)))
+    prof = ig.profile("rival", since=dt.date(2026, 5, 11), until=dt.date(2026, 6, 10))
+    assert seen["onlyPostsNewerThan"] == "2026-05-11" and seen["resultsLimit"] == 50
+    assert prof["source"] == "apify" and prof["followers_count"] == 4000 and [p["id"] for p in prof["posts"]] == ["1"]
+    assert prof["posts"][0]["media_type"] == "CAROUSEL_ALBUM" and summarize(prof, ["ciberlunes"])["event_posts"] == 1

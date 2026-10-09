@@ -110,6 +110,8 @@
   </table></div>
   {% set partial = m.organic | selectattr('source', 'equalto', 'perfil_publico') | list %}
   {% if partial %}<p class="small muted" style="margin-top:8px">De la competencia, Instagram deja ver sin permiso especial solo las últimas publicaciones{% for o in partial if o.visible_since %}{% if loop.first %} (ej. @{{ o.username }}: desde {{ o.visible_since }}){% endif %}{% endfor %}. Si una cuenta muestra 0, puede ser que publicó tanto después que esas fechas ya no se ven. Lo que el Radar archiva en cada corrida se suma acá.</p>{% endif %}
+  {% set capped = m.organic | selectattr('capped') | list %}
+  {% if capped %}<p class="small muted" style="margin-top:8px">{% for o in capped %}@{{ o.username }}{% if not loop.last %}, {% endif %}{% endfor %}: publica tanto que el tope por cuenta (APIFY_MAX_POSTS) no llegó al inicio de la ventana; lo de esas fechas puede estar incompleto.</p>{% endif %}
   {% for o in m.organic if o.top %}
   <h3 style="margin:22px 0 8px">Lo que más interacción tuvo de {{ o.brand }}</h3>
   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">

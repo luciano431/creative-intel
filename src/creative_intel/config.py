@@ -76,6 +76,9 @@ class Settings:
     # App de Meta del Radar: para canjear el token por uno de 60 días (radar renovar-token)
     meta_app_id: str = os.getenv("META_APP_ID", "")
     meta_app_secret: str = os.getenv("META_APP_SECRET", "")
+    # Instagram de la competencia hasta la fecha del evento (Apify, Instagram Scraper). Tope de publicaciones por cuenta.
+    apify_token: str = os.getenv("APIFY_TOKEN", "")
+    apify_max_posts: int = int(os.getenv("APIFY_MAX_POSTS", "150"))
     # Cuenta de Instagram profesional (de cualquier cliente o de Ranker) desde la que se consultan las cuentas públicas.
     # Vacío: se usa la primera que tenga el token.
     instagram_business_id: str = os.getenv("INSTAGRAM_BUSINESS_ID", "")

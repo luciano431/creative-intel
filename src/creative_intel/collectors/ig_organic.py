@@ -79,13 +79,55 @@ def public_profile(username: str, client: httpx.Client | None = None) -> dict[st
             "media_count": (user.get("edge_owner_to_timeline_media") or {}).get("count"), "posts": posts, "source": "perfil_publico"}
 
 
+APIFY_URL = "https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items"
+APIFY_TYPES = {"Sidecar": "CAROUSEL_ALBUM", "Video": "VIDEO", "Image": "IMAGE"}
+
+
+def apify_profile(username: str, since: dt.date | None, until: dt.date | None, token: str, max_posts: int = 150,
+                  client: httpx.Client | None = None, followers_client: httpx.Client | None = None) -> dict[str, Any]:
+    """Publicaciones de una cuenta pública vía Apify (Instagram Scraper), desde hoy hacia atrás hasta `since`.
+
+    Apify cobra por publicación devuelta: `max_posts` pone el tope por cuenta (APIFY_MAX_POSTS en .env)."""
+    c = client or httpx.Client(timeout=300)
+    body = {"directUrls": [f"https://www.instagram.com/{username.lstrip('@')}/"], "resultsType": "posts",
+            "resultsLimit": max_posts, "addParentData": False}
+    if since:
+        body["onlyPostsNewerThan"] = since.isoformat()
+    resp = c.post(APIFY_URL, params={"token": token}, json=body)
+    if resp.status_code >= 400:
+        try:
+            msg = (resp.json().get("error") or {}).get("message") or resp.text[:200]
+        except ValueError:
+            msg = resp.text[:200]
+        raise RuntimeError(f"Apify: {msg}")
+    items = [it for it in resp.json() if isinstance(it, dict) and it.get("timestamp") and not it.get("error")]
+    posts = [{
+        "id": str(it.get("id") or it.get("shortCode")), "caption": it.get("caption") or "", "timestamp": it["timestamp"],
+        "like_count": it["likesCount"] if (it.get("likesCount") or 0) >= 0 else None, "comments_count": it.get("commentsCount"),
+        "media_type": APIFY_TYPES.get(it.get("type"), "IMAGE"), "media_product_type": "REELS" if it.get("productType") == "clips" else "FEED",
+        "thumbnail_url": it.get("displayUrl"), "media_url": it.get("displayUrl"),
+        "permalink": it.get("url") or (f"https://www.instagram.com/p/{it['shortCode']}/" if it.get("shortCode") else ""),
+    } for it in items]
+    reached = min((p["timestamp"][:10] for p in posts), default=None)
+    posts = [p for p in posts if (not since or p["timestamp"][:10] >= since.isoformat()) and (not until or p["timestamp"][:10] <= until.isoformat())]
+    followers = None
+    try:  # seguidores: del perfil público (gratis); si no responde, la tasa sobre seguidores queda vacía
+        followers = public_profile(username, followers_client).get("followers_count")
+    except Exception:
+        pass
+    return {"username": username.lstrip("@"), "name": (items[0].get("ownerFullName") if items else None), "followers_count": followers,
+            "posts": posts, "source": "apify", "visible_since": reached, "capped": len(items) >= max_posts}
+
+
 class InstagramOrganic:
-    def __init__(self, token: str | None = None, client: httpx.Client | None = None, public_client: httpx.Client | None = None):
+    def __init__(self, token: str | None = None, client: httpx.Client | None = None, public_client: httpx.Client | None = None,
+                 apify_client: httpx.Client | None = None):
         self.token = token or settings.instagram_access_token
         self.client = client or httpx.Client(timeout=60)
         self.version = settings.meta_graph_version
         self._ig_id = settings.instagram_business_id
         self.public_client = public_client
+        self.apify_client = apify_client
 
     def _get(self, path: str, **params: Any) -> dict[str, Any]:
         resp = self.client.get(f"https://graph.facebook.com/{self.version}/{path}", params={"access_token": self.token, **params})
@@ -120,9 +162,17 @@ class InstagramOrganic:
         últimas ~12 publicaciones."""
         try:
             return self._profile_api(username, since, until, max_pages)
-        except RuntimeError as exc:
-            if "permission" not in str(exc).lower() and "#10" not in str(exc):
+        except RuntimeError:
+            # cuenta propia del cliente: el error es real. De la competencia: Meta no deja (#10) o no hay cuenta
+            # vinculada → Apify o el perfil público
+            try:
+                is_own = username.lower().lstrip("@") in self.own_accounts()
+            except RuntimeError:
+                is_own = False
+            if is_own:
                 raise
+        if settings.apify_token:  # de la competencia, hasta la fecha del evento (pago por publicación)
+            return apify_profile(username, since, until, settings.apify_token, settings.apify_max_posts, self.apify_client, self.public_client)
         prof = public_profile(username, self.public_client)
         oldest = min((p["timestamp"][:10] for p in prof["posts"]), default=None)
         prof["visible_since"] = oldest  # lo más viejo que deja ver Instagram sin iniciar sesión
@@ -191,7 +241,7 @@ def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, 
     return {
         "username": profile.get("username"), "name": profile.get("name"), "followers": followers, "posts": n,
         "source": profile.get("source") or "api", "visible_since": profile.get("visible_since"),
-        "archived": profile.get("archived") or 0,
+        "archived": profile.get("archived") or 0, "capped": bool(profile.get("capped")),
         "avg_likes": round(sum(p.get("like_count") or 0 for p in posts) / n, 1) if n else 0,
         "avg_comments": round(sum(p.get("comments_count") or 0 for p in posts) / n, 1) if n else 0,
         "avg_rate": round(sum(p["rate"] or 0 for p in posts) / n, 2) if n and followers else None,
