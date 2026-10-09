@@ -1017,7 +1017,9 @@ def check_ig(username: Optional[str] = typer.Argument(None, help="Cuenta públic
         except Exception as exc2:
             rprint(f"(No se pudieron leer los permisos: {exc2})")
         raise typer.Exit(1)
-    rprint(f"[green]Instagram OK:[/green] @{prof.get('username')} · {prof.get('followers_count')} seguidores · {len(prof['posts'])} publicaciones leídas")
+    via = (f" (perfil público: se ve desde {min((x['timestamp'][:10] for x in prof['posts']), default='—')})"
+           if prof.get("source") == "perfil_publico" else "")
+    rprint(f"[green]Instagram OK:[/green] @{prof.get('username')} · {prof.get('followers_count')} seguidores · {len(prof['posts'])} publicaciones leídas{via}")
 
 
 @app.command()

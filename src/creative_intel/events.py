@@ -94,28 +94,60 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
     return raws, daily
 
 
-def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: list[str]) -> dict[str, Any]:
-    """Instagram orgánico de la marca y de los competidores locales en la ventana del evento (sirve también para
-    ediciones pasadas: Instagram guarda las publicaciones)."""
-    from .collectors.ig_organic import InstagramOrganic, summarize
+def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: list[str],
+             archive: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, Any]:
+    """Instagram orgánico de la marca y de los competidores locales en la ventana del evento.
 
-    if not settings.instagram_access_token or not any(c.instagram for c in configs):
+    Cuentas del cliente: todas las publicaciones de la ventana (sirve para ediciones pasadas). Competencia: si Meta
+    no habilita Business Discovery, el perfil público (últimas ~12) más lo que el Radar archivó en corridas anteriores
+    de este evento: por eso conviene archivar cada 2-3 días antes y durante."""
+    import time
+
+    from .collectors.ig_organic import InstagramOrganic, merge_archive, raw_posts, summarize
+
+    if not any(c.instagram for c in configs):
         return {}
     ig = InstagramOrganic()
     out: dict[str, Any] = {}
+    public_fails = 0
     for c in configs:
         if not c.active or not c.instagram or c.tier not in ("own", "local"):
             continue
         try:
             prof = ig.profile(c.instagram, since=edition.date_from, until=edition.date_to)
-            out[c.slug] = {"brand": c.name, "own": c.is_own,
-                           **summarize(prof, keywords, assets=settings.assets_dir / "organic")}
-            print(f"[instagram] @{c.instagram}: {out[c.slug]['posts']} publicaciones entre {edition.date_from} y {edition.date_to}")
         except Exception as exc:
             errors.append(f"instagram @{c.instagram}: {str(exc)[:200]}")
-            if "permis" in str(exc).lower() or "token" in str(exc).lower() or "vinculada" in str(exc):
+            if "token" in str(exc).lower() or "vinculada" in str(exc):
                 break  # problema del token: no tiene sentido seguir con las demás cuentas
+            public_fails += "público" in str(exc)
+            if public_fails >= 3:
+                errors.append("instagram: el perfil público no responde (Instagram limita las consultas); se reintenta en la próxima corrida")
+                break
+            prof = {"username": c.instagram, "posts": [], "source": "archivo"}
+        prof = merge_archive(prof, (archive or {}).get(c.slug) or [], edition.date_from, edition.date_to)
+        if not prof["posts"] and prof.get("source") == "archivo":
+            continue
+        out[c.slug] = {"brand": c.name, "own": c.is_own, "raw": raw_posts(prof),
+                       **summarize(prof, keywords, assets=settings.assets_dir / "organic")}
+        how = {"perfil_publico": f" (perfil público: se ve desde {prof.get('visible_since') or '—'})", "archivo": " (solo archivo)"}.get(prof.get("source"), "")
+        print(f"[instagram] @{c.instagram}: {out[c.slug]['posts']} publicaciones entre {edition.date_from} y {edition.date_to}"
+              + how + (f", {prof['archived']} del archivo del Radar" if prof.get("archived") else ""))
+        if prof.get("source") == "perfil_publico":
+            time.sleep(2)  # sin apuro: Instagram corta si se le pregunta muy seguido
     return out
+
+
+def _organic_archive(session: Session, event: EventConfig) -> dict[str, list[dict[str, Any]]]:
+    """Todas las publicaciones de Instagram guardadas en corridas anteriores de este evento, por marca."""
+    from .db import Run
+
+    out: dict[str, dict[str, dict[str, Any]]] = {}
+    for run in session.query(Run).filter(Run.period.like(f"ev-{event.key}-%")).all():
+        for slug, o in ((run.stats or {}).get("organic") or {}).items():
+            for p in o.get("raw") or []:
+                if p.get("id"):
+                    out.setdefault(slug, {})[p["id"]] = p
+    return {slug: list(posts.values()) for slug, posts in out.items()}
 
 
 def collect_event(session: Session, event: EventConfig, edition: EventEdition, per_brand: int | None = None, market: int = 30,
@@ -162,7 +194,7 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
                 if known:
                     r.competitor_slug = known.slug
             raws += found
-    organic = _organic(configs, edition, event.keywords, errors) if collector is None else {}
+    organic = _organic(configs, edition, event.keywords, errors, _organic_archive(session, event)) if collector is None else {}
     _register_market_advertisers(session, raws)
     up = upsert_creatives(session, run, raws, dt.date.today(), download_media=True)
     run.status = "collected"
@@ -223,7 +255,7 @@ def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, An
 
     rows = []
     for slug, o in organic.items():
-        o = {**o, "top": [dict(p) for p in o.get("top") or []]}
+        o = {**{k: v for k, v in o.items() if k != "raw"}, "top": [dict(p) for p in o.get("top") or []]}
         for p in o["top"]:
             img = p.get("image")
             if img and Path(img).is_file():

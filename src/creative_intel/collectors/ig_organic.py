@@ -42,12 +42,50 @@ def handle_from_site(url: str, client: httpx.Client | None = None) -> str:
         return ""
 
 
+PUBLIC_URL = "https://www.instagram.com/api/v1/users/web_profile_info/"
+PUBLIC_HEADERS = {"x-ig-app-id": "936619743392459", "Accept": "*/*", "Accept-Language": "es-UY,es;q=0.9",
+                  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+                                "Chrome/126.0 Safari/537.36"}
+
+
+def public_profile(username: str, client: httpx.Client | None = None) -> dict[str, Any]:
+    """Perfil público tal como lo ve cualquiera sin iniciar sesión: seguidores y las últimas ~12 publicaciones.
+
+    Sirve cuando Meta no habilita Business Discovery (cuentas de la competencia). No llega a publicaciones viejas:
+    para tener la historia de un evento hay que archivar en los días previos y durante (cada corrida suma)."""
+    c = client or httpx.Client(timeout=30, follow_redirects=True)
+    resp = c.get(PUBLIC_URL, params={"username": username.lstrip("@")}, headers=PUBLIC_HEADERS)
+    try:
+        user = ((resp.json().get("data") or {}).get("user")) if resp.status_code < 400 else None
+    except ValueError:
+        user = None
+    if not user:
+        raise RuntimeError(f"Instagram público: no se pudo leer @{username} (respuesta {resp.status_code})")
+    posts = []
+    for e in (user.get("edge_owner_to_timeline_media") or {}).get("edges") or []:
+        n = e.get("node") or {}
+        cap = ((n.get("edge_media_to_caption") or {}).get("edges") or [{}])[0].get("node", {}).get("text", "")
+        kind = {"GraphSidecar": "CAROUSEL_ALBUM", "GraphVideo": "VIDEO"}.get(n.get("__typename"), "IMAGE")
+        posts.append({
+            "id": n.get("id"), "caption": cap, "timestamp": dt.datetime.fromtimestamp(n.get("taken_at_timestamp") or 0, dt.timezone.utc).isoformat(),
+            "like_count": (n.get("edge_liked_by") or n.get("edge_media_preview_like") or {}).get("count"),
+            "comments_count": (n.get("edge_media_to_comment") or {}).get("count"),
+            "media_type": kind, "media_product_type": "REELS" if n.get("product_type") == "clips" else "FEED",
+            "thumbnail_url": n.get("thumbnail_src") or n.get("display_url"), "media_url": n.get("display_url"),
+            "permalink": f"https://www.instagram.com/p/{n.get('shortcode')}/" if n.get("shortcode") else "",
+        })
+    return {"username": user.get("username"), "name": user.get("full_name"),
+            "followers_count": (user.get("edge_followed_by") or {}).get("count"),
+            "media_count": (user.get("edge_owner_to_timeline_media") or {}).get("count"), "posts": posts, "source": "perfil_publico"}
+
+
 class InstagramOrganic:
-    def __init__(self, token: str | None = None, client: httpx.Client | None = None):
+    def __init__(self, token: str | None = None, client: httpx.Client | None = None, public_client: httpx.Client | None = None):
         self.token = token or settings.instagram_access_token
         self.client = client or httpx.Client(timeout=60)
         self.version = settings.meta_graph_version
         self._ig_id = settings.instagram_business_id
+        self.public_client = public_client
 
     def _get(self, path: str, **params: Any) -> dict[str, Any]:
         resp = self.client.get(f"https://graph.facebook.com/{self.version}/{path}", params={"access_token": self.token, **params})
@@ -76,7 +114,23 @@ class InstagramOrganic:
         return self._ig_id
 
     def profile(self, username: str, since: dt.date | None = None, until: dt.date | None = None, max_pages: int = 8) -> dict[str, Any]:
-        """Perfil y publicaciones de una cuenta pública, desde las más nuevas hasta `since` (o hasta max_pages × 50)."""
+        """Perfil y publicaciones de una cuenta, desde las más nuevas hasta `since` (o hasta max_pages × 50).
+
+        Si Meta no deja usar Business Discovery (competencia sin acceso avanzado), usa el perfil público: solo las
+        últimas ~12 publicaciones."""
+        try:
+            return self._profile_api(username, since, until, max_pages)
+        except RuntimeError as exc:
+            if "permission" not in str(exc).lower() and "#10" not in str(exc):
+                raise
+        prof = public_profile(username, self.public_client)
+        oldest = min((p["timestamp"][:10] for p in prof["posts"]), default=None)
+        prof["visible_since"] = oldest  # lo más viejo que deja ver Instagram sin iniciar sesión
+        prof["posts"] = [p for p in prof["posts"] if (not since or p["timestamp"][:10] >= since.isoformat())
+                         and (not until or p["timestamp"][:10] <= until.isoformat())]
+        return prof
+
+    def _profile_api(self, username: str, since: dt.date | None, until: dt.date | None, max_pages: int) -> dict[str, Any]:
         posts: list[dict[str, Any]] = []
         after = ""
         info: dict[str, Any] = {}
@@ -101,7 +155,7 @@ class InstagramOrganic:
         if since or until:
             posts = [p for p in posts if (not since or p["timestamp"][:10] >= since.isoformat())
                      and (not until or p["timestamp"][:10] <= until.isoformat())]
-        return {**info, "posts": posts}
+        return {**info, "posts": posts, "source": "api"}
 
 
 def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, top: int = 4,
@@ -136,6 +190,8 @@ def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, 
         types[t] = types.get(t, 0) + 1
     return {
         "username": profile.get("username"), "name": profile.get("name"), "followers": followers, "posts": n,
+        "source": profile.get("source") or "api", "visible_since": profile.get("visible_since"),
+        "archived": profile.get("archived") or 0,
         "avg_likes": round(sum(p.get("like_count") or 0 for p in posts) / n, 1) if n else 0,
         "avg_comments": round(sum(p.get("comments_count") or 0 for p in posts) / n, 1) if n else 0,
         "avg_rate": round(sum(p["rate"] or 0 for p in posts) / n, 2) if n and followers else None,
@@ -144,3 +200,20 @@ def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, 
         "top": [{k: p.get(k) for k in ("caption", "like_count", "comments_count", "interactions", "rate", "timestamp", "permalink",
                                         "media_type", "names_event", "image")} for p in best],
     }
+
+
+RAW_KEYS = ("id", "caption", "like_count", "comments_count", "timestamp", "media_type", "media_product_type", "permalink")
+
+
+def raw_posts(profile: dict[str, Any]) -> list[dict[str, Any]]:
+    """Lo mínimo de cada publicación para archivarla (sin las URLs de imagen, que vencen)."""
+    return [{k: (p.get(k)[:600] if k == "caption" and p.get(k) else p.get(k)) for k in RAW_KEYS} for p in profile.get("posts") or []]
+
+
+def merge_archive(profile: dict[str, Any], archived: list[dict[str, Any]], since: dt.date | None, until: dt.date | None) -> dict[str, Any]:
+    """Suma al perfil las publicaciones guardadas en corridas anteriores (archivo propio del Radar) dentro de la ventana.
+    Si una publicación está en los dos lados, gana la más nueva (likes actualizados)."""
+    seen = {p.get("id") for p in profile.get("posts") or []}
+    extra = [p for p in archived if p.get("id") not in seen and p.get("timestamp")
+             and (not since or p["timestamp"][:10] >= since.isoformat()) and (not until or p["timestamp"][:10] <= until.isoformat())]
+    return {**profile, "posts": (profile.get("posts") or []) + extra, "archived": len(extra)}
