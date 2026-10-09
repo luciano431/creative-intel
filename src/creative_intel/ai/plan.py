@@ -20,11 +20,11 @@ from .synthesize import _compact_items, _Strict
 
 class GalleryItem(_Strict):
     creative_id: int = Field(description="id de un anuncio PROPIO de los datos")
-    caption: str = Field(description="Qué es y qué muestra de la ejecución, 1 oración (ej. 'Le habla al padre, no al dueño')")
+    caption: str = Field(description="Qué es y qué muestra de la ejecución, 1 oración (ej. 'Le habla al comprador, no a quien lo usa')")
 
 
 class Gap(_Strict):
-    title: str = Field(description="El hueco en pocas palabras (ej. 'El dueño adulto no existe en la comunicación')")
+    title: str = Field(description="El hueco en pocas palabras (ej. 'Nadie le habla a quien compra para su empresa')")
     detail: str = Field(description="1-2 oraciones con el dato que lo prueba")
 
 
@@ -48,7 +48,7 @@ class Step(_Strict):
 
 
 class PlanOutput(_Strict):
-    thesis: str = Field(description="Titular del informe con la tesis, máx. 10 palabras (ej. 'Lo que MiseguroOk todavía no probó')")
+    thesis: str = Field(description="Titular del informe con la tesis, máx. 10 palabras (ej. 'Lo que <cliente> todavía no probó')")
     standfirst: str = Field(description="2-3 oraciones: qué se revisó (con cantidades) y qué sale de ahí")
     audit_ads: list[str] = Field(description="Ángulos y piezas que el cliente YA tiene en el aire, cada uno con su ejemplo textual")
     audit_other: list[str] = Field(description="Otras cosas que ya hace (resultados destacados de su cuenta, formatos), o vacío")

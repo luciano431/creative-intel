@@ -83,7 +83,7 @@ def build_classification_model(taxonomy: Taxonomy) -> Type[BaseModel]:
         "shows_price": (bool, Field(description="True si el anuncio dice un precio o monto concreto (texto o imagen)")),
         "cta_channel": (Literal["whatsapp", "web", "mensaje_directo", "llamada", "tienda_fisica", "formulario", "ninguno"],
                         Field(description="A dónde manda la llamada a la acción")),
-        "talks_to": (str, Field(description="A quién le habla, 2-6 palabras (ej. 'padre sobre el celular del hijo', 'dueño de su propia e-bike')")),
+        "talks_to": (str, Field(description="A quién le habla, 2-6 palabras (ej. 'madre que compra para la familia', 'gerente que equipa una oficina', 'joven que compra su primer auto')")),
         "execution": (Literal["placa_grafica", "foto_producto", "foto_lifestyle", "video_persona", "video_producto", "ugc", "texto", "otro"],
                       Field(description="Resolución visual dominante")),
         "copy_quote": (str, Field(description="La frase principal del anuncio, textual, como aparece")),
