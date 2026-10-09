@@ -64,7 +64,7 @@
   <p class="small muted">{{ od.note }}</p>
   {% endif %}
   {% for g in m.own_groups %}
-  <h3 style="margin:22px 0 8px">Anuncios que buscaban {{ g.type }} <span class="small muted">(del menor costo por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}.get(g.type, 'resultado') }} al mayor)</span></h3>
+  <h3 style="margin:22px 0 8px">{{ g.stage }} · medidos en {{ g.type }} <span class="small muted">(del menor costo por {{ g.unit }} al mayor)</span></h3>
   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
     {% for r in g.rows[:6] %}
     <div class="cr">
@@ -73,9 +73,9 @@
         <div class="cr-top"><span class="tag">{{ lbl(r.format) }}</span>{% if loop.first and g.rows|length > 1 %}<span class="days">el mejor costo</span>{% endif %}</div>
         <h4>{{ r.headline[:70] or '(sin texto)' }}</h4>
         <div class="small muted">{% if r.product %}Producto: {{ r.product }}{% endif %}{% if r.offer %} · Oferta: {{ r.offer }}{% endif %}</div>
-        <div style="margin-top:8px"><b style="font-size:18px">{{ ('US$ %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</b> <span class="small muted">por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}.get(r.result_type, 'resultado') }}</span></div>
+        <div style="margin-top:8px"><b style="font-size:18px">{{ ('US$ %.2f' % r.cost_per_result) if r.cost_per_result else '—' }}</b> <span class="small muted">por {{ g.unit }}</span></div>
         <div style="height:6px;background:var(--line);border-radius:3px;margin:6px 0"><div style="height:6px;width:{{ r.bar }}%;background:{{ C.accent if C and C.accent else '#F26B38' }};border-radius:3px"></div></div>
-        <div class="small">{{ r.results|round(0)|int }} {{ r.result_type }} · US$ {{ '%.2f' % (r.spend or 0) }} invertidos · CTR {{ r.ctr }}%{% if r.roas %} · ROAS {{ r.roas }}{% endif %}</div>
+        <div class="small">{{ '{:,}'.format(r.results|round(0)|int).replace(',', '.') }} {{ 'personas alcanzadas' if r.result_type == 'alcance' else r.result_type }} · US$ {{ '%.2f' % (r.spend or 0) }} invertidos · CTR {{ r.ctr }}%{% if r.roas %} · ROAS {{ r.roas }}{% endif %}</div>
       </div>
     </div>
     {% endfor %}

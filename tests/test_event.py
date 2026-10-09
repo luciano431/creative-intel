@@ -93,3 +93,16 @@ def test_own_daily_summary_splits_before_during_after():
                         {"id": 2, "tier": "own", "headline": "B", "format": "video", "cls": {"offer": "20% off"},
                          "engagement": {"performance": {"spend": 30, "results": 6, "result_type": "compras", "cost_per_result": 5, "ctr": 2.0}}}])
     assert [r["headline"] for r in rows] == ["B", "A"]
+
+
+def test_event_related_drops_always_on_ads():
+    from creative_intel.events import event_related
+
+    items = [
+        {"id": 1, "platform": "meta", "headline": "Seguro de auto", "body_text": "", "cls": {}, "first_seen": "2025-09-01"},
+        {"id": 2, "platform": "meta", "headline": "CyberLunes 30% off", "body_text": "", "cls": {}, "first_seen": "2025-09-01"},
+        {"id": 3, "platform": "meta", "headline": "Promo nueva", "body_text": "", "cls": {}, "first_seen": "2026-05-20"},
+        {"id": 4, "platform": "google", "headline": "Cotizá", "body_text": "", "cls": {}, "first_seen": "2026-05-20", "raw": {}},
+    ]
+    keep, dropped = event_related(items, ["cyberlunes"], dt.date(2026, 5, 11))
+    assert [i["id"] for i in keep] == [2, 3] and dropped == 2

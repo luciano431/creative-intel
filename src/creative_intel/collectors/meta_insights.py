@@ -25,7 +25,41 @@ RESULT_ACTIONS = [
     ("onsite_conversion.messaging_conversation_started_7d", "conversaciones"),
     ("link_click", "clics al sitio"),
 ]
-INSIGHT_FIELDS = "ad_id,ad_name,spend,impressions,clicks,ctr,actions,action_values"
+INSIGHT_FIELDS = "ad_id,ad_name,spend,impressions,reach,clicks,ctr,actions,action_values,objective,optimization_goal"
+
+# El resultado de cada anuncio sale del OBJETIVO de su campaña (lo que Meta optimiza), no de lo que haya pasado:
+# una campaña de tráfico se mide en visitas a la web aunque alguien después haya dejado un lead.
+GOAL_RESULT = {
+    "LINK_CLICKS": ("clics al sitio", ("link_click",), "tofu"),
+    "LANDING_PAGE_VIEWS": ("visitas a la web", ("landing_page_view", "omni_landing_page_view"), "tofu"),
+    "REACH": ("alcance", (), "tofu"), "IMPRESSIONS": ("alcance", (), "tofu"), "AD_RECALL_LIFT": ("alcance", (), "tofu"),
+    "THRUPLAY": ("reproducciones", ("video_view",), "tofu"), "VIDEO_VIEWS": ("reproducciones", ("video_view",), "tofu"),
+    "POST_ENGAGEMENT": ("interacciones", ("post_engagement",), "mofu"),
+    "CONVERSATIONS": ("conversaciones", ("onsite_conversion.messaging_conversation_started_7d",), "mofu"),
+    "LEAD_GENERATION": ("leads", ("lead", "onsite_conversion.lead_grouped"), "bofu"),
+    "QUALITY_LEAD": ("leads", ("lead", "onsite_conversion.lead_grouped"), "bofu"),
+}
+OBJECTIVE_RESULT = {
+    "OUTCOME_AWARENESS": GOAL_RESULT["REACH"], "OUTCOME_TRAFFIC": GOAL_RESULT["LINK_CLICKS"],
+    "OUTCOME_ENGAGEMENT": GOAL_RESULT["POST_ENGAGEMENT"], "OUTCOME_LEADS": GOAL_RESULT["LEAD_GENERATION"],
+    "OUTCOME_SALES": ("compras", ("purchase", "offsite_conversion.fb_pixel_purchase", "omni_purchase"), "bofu"),
+}
+FUNNEL_LABEL = {"tofu": "que nos conozcan (TOFU)", "mofu": "consideración (MOFU)", "bofu": "conversión (BOFU)"}
+
+
+def objective_result(ins: dict[str, Any]) -> tuple[str, float, str] | None:
+    """Tipo de resultado, cantidad y etapa según el objetivo de la campaña; None si no se informa."""
+    goal, objective = ins.get("optimization_goal") or "", ins.get("objective") or ""
+    spec = GOAL_RESULT.get(goal)
+    if goal == "OFFSITE_CONVERSIONS" or (not spec and objective):
+        spec = OBJECTIVE_RESULT.get(objective)
+    if not spec:
+        return None
+    label, keys, stage = spec
+    if label == "alcance":
+        return label, float(ins.get("reach") or ins.get("impressions") or 0), stage
+    by = {a.get("action_type"): float(a.get("value") or 0) for a in ins.get("actions") or []}
+    return label, next((by[k] for k in keys if by.get(k)), 0.0), stage
 AD_FIELDS = "id,name,effective_status,created_time,creative{title,body,thumbnail_url,image_url,object_type,video_id}"
 
 
@@ -58,7 +92,9 @@ def results_by_type(actions: list[dict[str, Any]] | None) -> dict[str, float]:
 
 def performance_row(ins: dict[str, Any]) -> dict[str, Any]:
     spend = float(ins.get("spend") or 0)
-    label, results = pick_result(ins.get("actions"))
+    by_goal = objective_result(ins)
+    label, results = (by_goal[0], by_goal[1]) if by_goal else pick_result(ins.get("actions"))
+    stage = by_goal[2] if by_goal else ""
     values = {a.get("action_type"): float(a.get("value") or 0) for a in ins.get("action_values") or []}
     revenue = values.get("purchase") or values.get("offsite_conversion.fb_pixel_purchase") or 0.0
     return {
@@ -68,7 +104,9 @@ def performance_row(ins: dict[str, Any]) -> dict[str, Any]:
         "ctr": round(float(ins.get("ctr") or 0), 2),
         "result_type": label,
         "results": results,
-        "cost_per_result": round(spend / results, 2) if results else None,
+        # alcance: costo cada 1.000 personas; el resto, costo por resultado
+        "cost_per_result": (round(1000 * spend / results, 2) if label == "alcance" else round(spend / results, 2)) if results else None,
+        "stage": stage, "objective": ins.get("objective") or "", "optimization_goal": ins.get("optimization_goal") or "",
         "roas": round(revenue / spend, 2) if revenue and spend else None,
         "by_type": results_by_type(ins.get("actions")),
     }

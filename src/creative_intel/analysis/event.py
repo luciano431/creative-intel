@@ -115,7 +115,12 @@ def analyze_event(items: list[dict[str, Any]], start: dt.date | None, end: dt.da
     return out
 
 
-TYPE_ORDER = ["compras", "conversaciones", "leads", "clics al sitio"]
+TYPE_ORDER = ["compras", "conversaciones", "leads", "clics al sitio"]  # resultados del día a día de la cuenta
+AD_TYPE_ORDER = ["compras", "leads", "conversaciones", "interacciones", "visitas a la web", "clics al sitio", "reproducciones", "alcance"]
+STAGE_ORDER = {"bofu": 0, "mofu": 1, "tofu": 2, "": 3}
+STAGE_NAME = {"bofu": "Conversión (BOFU)", "mofu": "Consideración (MOFU)", "tofu": "Que nos conozcan (TOFU)", "": "Sin objetivo informado"}
+UNIT = {"compras": "compra", "leads": "lead", "conversaciones": "conversación", "interacciones": "interacción",
+        "visitas a la web": "visita", "clics al sitio": "clic", "reproducciones": "reproducción", "alcance": "1.000 personas alcanzadas"}
 
 
 def _types(d: dict[str, Any]) -> dict[str, float]:
@@ -163,20 +168,25 @@ def own_results(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             head = "Anuncio de catálogo"
         rows.append({"id": it["id"], "headline": head, "format": it.get("format"), "thumbnail_rel": it.get("thumbnail_rel"),
                      "product": cls.get("product_shown") or cls.get("product") or "", "offer": cls.get("offer"),
-                     **{k: perf.get(k) for k in ("spend", "results", "result_type", "cost_per_result", "ctr", "roas")}})
-    rank = {t: i for i, t in enumerate(TYPE_ORDER)}
-    return sorted(rows, key=lambda r: (rank.get(r["result_type"] or "", 9), r["cost_per_result"] is None, r["cost_per_result"] or 0))
+                     **{k: perf.get(k) for k in ("spend", "results", "result_type", "cost_per_result", "ctr", "roas", "stage", "objective")}})
+    rank = {t: i for i, t in enumerate(AD_TYPE_ORDER)}
+    return sorted(rows, key=lambda r: (STAGE_ORDER.get(r.get("stage") or "", 3), rank.get(r["result_type"] or "", 9),
+                                       r["cost_per_result"] is None, r["cost_per_result"] or 0))
 
 
 def own_results_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Los anuncios propios por tipo de resultado, con la barra relativa al costo más alto del grupo."""
+    """Los anuncios propios por objetivo de campaña (TOFU/MOFU/BOFU) y tipo de resultado, con la barra relativa
+    al costo más alto del grupo. Solo se comparan costos dentro del mismo grupo."""
     groups: list[dict[str, Any]] = []
-    for t in TYPE_ORDER + [""]:
-        g = [dict(r) for r in rows if (r["result_type"] or "") == t]
-        if not g:
-            continue
+    keys = []
+    for r in rows:
+        k = (r.get("stage") or "", r["result_type"] or "")
+        if k not in keys:
+            keys.append(k)
+    for stage, t in keys:
+        g = [dict(r) for r in rows if (r.get("stage") or "", r["result_type"] or "") == (stage, t)]
         top = max((r["cost_per_result"] or 0) for r in g) or 1
         for r in g:
             r["bar"] = round(100 * (r["cost_per_result"] or 0) / top)
-        groups.append({"type": t or "sin resultado medido", "rows": g})
+        groups.append({"stage": STAGE_NAME.get(stage, stage), "type": t or "sin resultado medido", "unit": UNIT.get(t, "resultado"), "rows": g})
     return groups

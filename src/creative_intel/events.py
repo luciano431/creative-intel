@@ -165,6 +165,21 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
     return run.stats["collect"]
 
 
+def event_related(items: list[dict[str, Any]], keywords: list[str], date_from: dt.date | None) -> tuple[list[dict[str, Any]], int]:
+    """De la competencia, solo lo que tiene que ver con el evento: anuncios que lo nombran o que arrancaron dentro
+    de la ventana. La publicidad de siempre (ej. una campaña de marca al aire hace 250 días) no es del evento."""
+    from .analysis.metrics import start_known
+    from .relevance import item_text, matches
+
+    keep = []
+    for it in items:
+        names_it = matches(item_text(it), keywords)
+        started_in = bool(date_from and start_known(it) and it.get("first_seen") and it["first_seen"] >= date_from.isoformat())
+        if names_it or started_in:
+            keep.append(it)
+    return keep, len(items) - len(keep)
+
+
 def _gemini_ideas(plan: dict[str, Any], event: EventConfig, metrics: dict[str, Any], items: list[dict[str, Any]], client: Any) -> dict[str, Any]:
     """Las ideas y guiones los escribe Gemini (si está configurado) sobre los hechos ya armados."""
     from .ai.creative import strip_for, write_ideas
@@ -243,7 +258,10 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         it["signals"] = signal_list(it, start_known(it))
     out = Path(out_dir or Path(REPORTS_DIR) / "eventos" / f"{event.key}-{edition.label}")
     own_items = [it for it in items if it.get("tier") == "own"]
-    market_items = [it for it in items if it.get("tier") != "own"]
+    market_items, dropped = event_related([it for it in items if it.get("tier") != "own"], event.keywords, edition.date_from)
+    if dropped:
+        print(f"[evento] {dropped} anuncios de la competencia quedaron afuera: estaban al aire desde antes y no nombran {event.name}")
+    items = own_items + market_items
     render_assets(own_items, out)  # vista previa de los anuncios propios
     # "Cómo lo encaró el mercado" se calcula SOLO con la competencia; lo del cliente va aparte, con sus resultados
     pipeline.stage("Analizando los datos")
