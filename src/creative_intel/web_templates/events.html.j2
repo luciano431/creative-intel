@@ -50,7 +50,7 @@
   {% for c in clients %}{% set reps = reports[c.key] %}
   <div class="card">
     <h3>{{ c.name }}</h3>
-    {% if reps %}<ul class="small" style="margin:0;padding-left:18px">{% for r in reps[:8] %}<li><a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.name }}</a></li>{% endfor %}</ul>
+    {% if reps %}<ul class="small" style="margin:0;padding-left:18px">{% for r in reps[:12] %}<li><a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.name }}</a> · <button class="del" data-c="{{ c.key }}" data-n="{{ r.name }}" style="border:0;background:none;color:#9B2F25;cursor:pointer;font:inherit;padding:0">borrar</button></li>{% endfor %}</ul>
     {% else %}<p class="small muted" style="margin:0">Todavía ninguna.</p>{% endif %}
   </div>
   {% endfor %}
@@ -87,6 +87,11 @@ async function poll() {
   }
 }
 setInterval(poll, 3000);
+document.querySelectorAll('.del').forEach(b => b.addEventListener('click', async () => {
+  if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = '¿seguro? clic de nuevo'; return; }
+  try { await api('/api/c/' + b.dataset.c + '/borrar-guia', {name: b.dataset.n}); b.closest('li').remove(); }
+  catch (e) { b.textContent = e.message; }
+}));
 $('go').addEventListener('click', async () => {
   $('err').textContent = '';
   const clients = [...document.querySelectorAll('.cl:checked')].map(x => x.value);

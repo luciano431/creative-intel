@@ -245,6 +245,17 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
         job = jobs.start(None, "evento", title, [cmd], links=links)
         return JSONResponse(job.as_dict())
 
+    @app.post("/api/c/{key}/borrar-guia")
+    async def delete_guide(key: str, request: Request) -> JSONResponse:
+        """Borra una guía de evento generada (la carpeta del informe; los anuncios archivados quedan)."""
+        c = client_or_404(key)
+        name = str((await request.json()).get("name") or "")
+        target = c.reports_dir / "eventos" / name
+        if not re.fullmatch(r"[a-z0-9-]+", name) or not (target / "report.html").exists():
+            raise HTTPException(400, "Guía no encontrada")
+        shutil.rmtree(target)
+        return JSONResponse({"ok": True})
+
     @app.get("/nuevo", response_class=HTMLResponse)
     def new_form() -> HTMLResponse:
         return render("new.html.j2")

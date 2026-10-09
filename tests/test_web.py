@@ -125,3 +125,13 @@ def test_events_page_and_multi_client_job(site, monkeypatch):
     assert links[0]["url"].endswith("/eventos/black-friday-2025/report.html")
     assert client.post("/api/eventos", json={"event": "black-friday", "edition": "2025", "clients": []}).status_code == 400
     assert client.post("/api/eventos", json={"event": "nada", "clients": ["miseguro"]}).status_code == 400
+
+
+def test_delete_event_guide(site):
+    client, _, root = site
+    d = root / "reports" / "eventos" / "cyberlunes-2026-06"
+    d.mkdir(parents=True)
+    (d / "report.html").write_text("x", encoding="utf-8")
+    assert client.post("/api/c/miseguro/borrar-guia", json={"name": "../../x"}).status_code == 400
+    assert client.post("/api/c/miseguro/borrar-guia", json={"name": "cyberlunes-2026-06"}).status_code == 200
+    assert not d.exists()
