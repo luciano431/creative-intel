@@ -524,12 +524,14 @@ def web(
         if not ts:
             rprint("[red]Falta Tailscale.[/red] Instalá la app desde tailscale.com/download (gratis), abrila e iniciá sesión.")
             raise typer.Exit(1)
-        r = subprocess.run([ts, "funnel", "--bg", str(port)], capture_output=True, text=True)
+        # Sin capturar la salida: la primera vez Tailscale muestra un link para habilitar Funnel y espera a que lo aceptes
+        rprint("[dim]Activando Tailscale Funnel… (si aparece un link, abrilo y aceptá)[/dim]")
+        r = subprocess.run([ts, "funnel", "--bg", str(port)])
         if r.returncode != 0:
-            rprint(f"[red]Tailscale Funnel no arrancó:[/red] {(r.stderr or r.stdout).strip()[:500]}")
+            rprint("[red]Tailscale Funnel no arrancó[/red] (ver el mensaje de arriba).")
             raise typer.Exit(1)
         out = subprocess.run([ts, "funnel", "status"], capture_output=True, text=True).stdout
-        m = re.search(r"https://[\w.-]+\.ts\.net", out + r.stdout)
+        m = re.search(r"https://[\w.-]+\.ts\.net", out)
         rprint(f"\n[bold green]Dirección fija: {m.group(0) if m else '(ver: tailscale funnel status)'}[/bold green]\n"
                "Es siempre la misma. Pide la contraseña de WEB_PASSWORD. Anda mientras la Mac esté prendida.\n")
     if tunnel_name:
