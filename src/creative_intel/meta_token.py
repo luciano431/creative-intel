@@ -15,7 +15,7 @@ from .config import settings
 
 HOW_TO_RENEW = ("Sacá uno nuevo en developers.facebook.com/tools/explorer (app del Radar, permisos ads_read, instagram_basic, "
                 "pages_show_list, pages_read_engagement, business_management → Generate Access Token) y corré "
-                "[radar renovar-token]: lo canjea por uno de 60 días y lo guarda en .env.")
+                "radar renovar-token: lo canjea por uno de 60 días y lo guarda en .env.")
 
 
 def _graph(path: str, **params: Any) -> dict[str, Any]:
