@@ -124,12 +124,22 @@ def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: 
     for c in configs:
         if not c.active or not c.instagram or c.tier not in ("own", "local"):
             continue
-        eds = [edition] + list(compare or [])
-        since, until = min(e.date_from for e in eds), max(e.date_to for e in eds)  # una sola lectura por cuenta
+        # Cuenta propia (gratis, API de Meta): una sola lectura para todas las ediciones. Competencia (Apify, se paga):
+        # solo la edición base; para las ediciones a comparar, lo que ya esté guardado, sin volver a pagar.
+        eds = [edition] + (list(compare or []) if c.is_own else [])
+        since, until = min(e.date_from for e in eds), max(e.date_to for e in eds)
         try:
             full = ig.profile(c.instagram, since=since, until=until)
             for ce in compare or []:  # ediciones a comparar: cada una con sus fechas
-                cp = {**full, "posts": [dict(x) for x in full["posts"] if ce.date_from.isoformat() <= x["timestamp"][:10] <= ce.date_to.isoformat()]}
+                if c.is_own:
+                    cp = {**full, "posts": [dict(x) for x in full["posts"] if ce.date_from.isoformat() <= x["timestamp"][:10] <= ce.date_to.isoformat()]}
+                else:
+                    from .collectors.ig_organic import cached_only
+
+                    cp = cached_only(c.instagram, ce.date_from, ce.date_to)
+                    if cp is None:
+                        compare_out.setdefault(ce.label, {})[c.slug] = {"brand": c.name, "own": False, "not_fetched": True}
+                        continue
                 compare_out.setdefault(ce.label, {})[c.slug] = {
                     "brand": c.name, "own": c.is_own,
                     **{k: v for k, v in summarize(cp, keywords, top=3, assets=settings.assets_dir / "organic",
@@ -199,6 +209,37 @@ def _own_paid_summary(own: Any, ed: EventEdition, errors: list[str]) -> dict[str
     return {**paid_totals(days), "top": top}
 
 
+def _market_paid(configs: list, ed: EventEdition, keywords: list[str], errors: list[str]) -> dict[str, Any]:
+    """Pauta de la competencia en los días de otra edición: lo que Google guarda (Meta no guarda lo terminado fuera
+    de la UE). Solo cuenta y ejemplos, para comparar; no entra al análisis de la edición base."""
+    from .collectors.google_web import GoogleTransparencyWebCollector
+
+    google = GoogleTransparencyWebCollector(event_keywords=keywords)
+    out: dict[str, Any] = {}
+    for c in configs:
+        if not c.active or c.is_own or c.tier != "local" or not google.supports(c):
+            continue
+        try:
+            found = google.collect_window(c, c.country, ed.date_from, ed.date_to, 20)
+        except Exception as exc:
+            errors.append(f"comparación {ed.label} google {c.slug}: {exc}")
+            continue
+        out[c.slug] = {"brand": c.name, "ads": len(found),
+                       "examples": [(r.headline or r.body_text or "")[:120] for r in found if (r.headline or r.body_text)][:3]}
+    return out
+
+
+def market_paid_by_brand(items: list[dict[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for it in items:
+        b = out.setdefault(it.get("competitor") or "?", {"brand": it.get("competitor") or "?", "ads": 0, "examples": []})
+        b["ads"] += 1
+        text = it.get("headline") or it.get("body_text") or ""
+        if text and len(b["examples"]) < 3:
+            b["examples"].append(text[:120])
+    return out
+
+
 def paid_totals(days: list[dict[str, Any]]) -> dict[str, Any]:
     """Suma de los días: inversión y cada tipo de resultado con su costo (los tipos no se suman entre sí)."""
     spend = round(sum(d.get("spend") or 0 for d in days), 2)
@@ -262,7 +303,8 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
         stats_cmp = {}
         for ce in compare:
             stats_cmp[ce.label] = {"from": ce.date_from.isoformat(), "to": ce.date_to.isoformat(),
-                                   "own_paid": _own_paid_summary(own_cfg, ce, errors), "organic": compare_out.get(ce.label) or {}}
+                                   "own_paid": _own_paid_summary(own_cfg, ce, errors), "organic": compare_out.get(ce.label) or {},
+                                   "market_paid": _market_paid(configs, ce, event.keywords, errors)}
             print(f"[comparar] {event.name} {ce.label}: pauta propia y orgánico entre {ce.date_from} y {ce.date_to}")
         run.stats = {**(run.stats or {}), "compare": stats_cmp}
     elif collector is None:
@@ -341,7 +383,7 @@ def _gemini_pieces(plan: dict[str, Any], event: EventConfig, metrics: dict[str, 
 def _compare_for_report(compare: dict[str, Any], out: Path) -> list[dict[str, Any]]:
     """Ediciones a comparar, de la más nueva a la más vieja, con su orgánico listo para el informe."""
     return [{"label": label, "from": c.get("from"), "to": c.get("to"), "own_paid": c.get("own_paid") or {},
-             "organic": _organic_for_report(c.get("organic") or {}, out)}
+             "organic": _organic_for_report(c.get("organic") or {}, out), "market_paid": list((c.get("market_paid") or {}).values())}
             for label, c in sorted(compare.items(), reverse=True)]
 
 
@@ -444,6 +486,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     metrics["event_only"] = bool(edition.start and edition.date_from == edition.start)
     metrics["compare"] = _compare_for_report((run.stats or {}).get("compare") or {}, out)
     metrics["own_paid_total"] = paid_totals((run.stats or {}).get("own_daily") or [])
+    metrics["market_paid"] = list(market_paid_by_brand(market_items).values())
     metrics["currency"] = currency_symbol(next((d.get("currency") for d in (run.stats or {}).get("own_daily") or [] if d.get("currency")), None)
                                           or next(((it.get("engagement") or {}).get("performance", {}).get("currency") for it in own_items
                                                    if ((it.get("engagement") or {}).get("performance") or {}).get("currency")), None))

@@ -142,6 +142,23 @@ def _cache_path(username: str) -> Path:
     return IG_CACHE_DIR / f"{re.sub(r'[^a-z0-9._]', '_', username.lower().lstrip('@'))}.json"
 
 
+def cached_only(username: str, since: dt.date, until: dt.date) -> dict[str, Any] | None:
+    """Lo que ya está guardado de una cuenta entre dos fechas, sin llamar a Apify (sin costo). None si el archivo no
+    llega a esas fechas."""
+    import json
+
+    path = _cache_path(username)
+    if not path.exists():
+        return None
+    cache = json.loads(path.read_text(encoding="utf-8"))
+    covered = cache.get("covered_since")
+    if not covered or covered > since.isoformat():
+        return None
+    posts = [dict(x) for x in cache.get("posts") or [] if since.isoformat() <= x["timestamp"][:10] <= until.isoformat()]
+    return {"username": cache.get("username"), "name": cache.get("name"), "followers_count": cache.get("followers_count"),
+            "posts": posts, "source": "apify", "visible_since": covered, "capped": False}
+
+
 def apify_cached(username: str, since: dt.date | None, until: dt.date | None, token: str, max_posts: int,
                  client: httpx.Client | None = None, followers_client: httpx.Client | None = None,
                  today: dt.date | None = None) -> dict[str, Any]:

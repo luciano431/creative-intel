@@ -180,3 +180,17 @@ def test_apify_pays_each_post_once(tmp_path):
     assert [x["id"] for x in p2["posts"]] == ["a"] and p2["paid_posts"] == 0 and calls == ["2025-11-03"]  # no volvió a pagar
     p3 = apify_cached("rival", d(2026, 9, 1), d(2026, 10, 6), "x", 400, c, pc, today=d(2026, 10, 6))
     assert calls == ["2025-11-03", "2026-10-05"] and sorted(x["id"] for x in p3["posts"]) == ["b", "c"]  # solo lo nuevo
+
+
+def test_cached_only_never_calls_apify(tmp_path):
+    import json
+
+    from creative_intel.collectors import ig_organic
+
+    assert ig_organic.cached_only("rival", dt.date(2024, 11, 4), dt.date(2024, 11, 6)) is None  # sin archivo: no se baja
+    ig_organic.IG_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    (ig_organic.IG_CACHE_DIR / "rival.json").write_text(json.dumps({"username": "rival", "covered_since": "2024-10-01", "posts": [
+        {"id": "1", "timestamp": "2024-11-05T10:00:00", "caption": "CyberLunes"}, {"id": "2", "timestamp": "2025-01-01T10:00:00", "caption": "x"}]}))
+    got = ig_organic.cached_only("rival", dt.date(2024, 11, 4), dt.date(2024, 11, 6))
+    assert [p["id"] for p in got["posts"]] == ["1"]
+    assert ig_organic.cached_only("rival", dt.date(2024, 9, 1), dt.date(2024, 9, 5)) is None  # el archivo no llega

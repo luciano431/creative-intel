@@ -188,7 +188,7 @@
 </section>
 {% endif %}
 {% if m.compare %}
-{% set allc = [{'label': edition.label, 'from': edition.date_from|string, 'to': edition.date_to|string, 'own_paid': m.own_paid_total or {}, 'organic': m.organic or []}] + m.compare %}
+{% set allc = [{'label': edition.label, 'from': edition.date_from|string, 'to': edition.date_to|string, 'own_paid': m.own_paid_total or {}, 'organic': m.organic or [], 'market_paid': m.market_paid or []}] + m.compare %}
 {% set types = [] %}{% for c in allc %}{% for t in (c.own_paid.by_type or {}).keys() %}{% if t not in types %}{% set _ = types.append(t) %}{% endif %}{% endfor %}{% endfor %}
 <section>
   <div class="sec-head"><span class="sec-num">VS</span><h2>Cómo fue cada edición</h2></div>
@@ -206,6 +206,18 @@
   <p class="small" style="margin:10px 0 2px"><b>{{ c.label }} · anuncios con más inversión:</b></p>
   <ul class="small" style="margin:0;padding-left:18px">{% for r in c.own_paid.top %}<li>{{ r.ad_name }} · {{ cur }} {{ '%.2f' % (r.spend or 0) }} · {{ (r.results or 0)|round(0)|int }} {{ r.result_type or '' }}{% if r.cost_per_result %} a {{ cur }} {{ '%.2f' % r.cost_per_result }}{% endif %}</li>{% endfor %}</ul>
   {% endfor %}
+  {% set pbrands = [] %}{% for c in allc %}{% for x in c.market_paid or [] %}{% if x.brand not in pbrands %}{% set _ = pbrands.append(x.brand) %}{% endif %}{% endfor %}{% endfor %}
+  <h3 style="margin:22px 0 6px">Pauta de la competencia</h3>
+  {% if pbrands %}
+  <div class="tbl"><table>
+    <thead><tr><th>Marca</th>{% for c in allc %}<th>{{ c.label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for b in pbrands %}<tr><td><b>{{ b }}</b></td>
+      {% for c in allc %}{% set x = ((c.market_paid or []) | selectattr('brand', 'equalto', b) | list | first) %}
+      <td class="small">{% if x and x.ads %}{{ x.ads }} anuncio{{ 's' if x.ads != 1 }}{% for e in x.examples[:2] %}<br>«{{ e }}»{% endfor %}{% else %}—{% endif %}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  <p class="small muted" style="margin-top:6px">Anuncios que se vieron en los días de cada edición. De ediciones pasadas solo queda lo que guarda Google: Meta no guarda los anuncios terminados fuera de la Unión Europea, así que un "—" puede ser que no pautó o que pautó solo en Meta.</p>
   {% set brands = [] %}{% for c in allc %}{% for o in c.organic %}{% if o.brand not in brands %}{% set _ = brands.append(o.brand) %}{% endif %}{% endfor %}{% endfor %}
   {% if brands %}
   <h3 style="margin:22px 0 6px">Instagram en los días de cada edición</h3>
@@ -213,7 +225,7 @@
     <thead><tr><th>Cuenta</th>{% for c in allc %}<th>{{ c.label }}</th>{% endfor %}</tr></thead>
     <tbody>{% for b in brands %}<tr><td><b>{{ b }}</b></td>
       {% for c in allc %}{% set o = (c.organic | selectattr('brand', 'equalto', b) | list | first) %}
-      <td class="small">{% if o and o.capped and o.visible_since and o.visible_since > c['to'] %}no se llegó a esas fechas (Apify trajo desde {{ o.visible_since }}){% elif o and o.posts %}{{ o.posts }} publicaciones · {{ o.event.named if o.event else o.event_posts }} nombran la fecha · {{ o.avg_likes }} likes y {{ o.avg_comments }} comentarios en promedio{% elif o %}no publicó{% else %}—{% endif %}</td>{% endfor %}</tr>
+      <td class="small">{% if o and o.not_fetched %}sin datos (no se bajó, para no gastar crédito de Apify){% elif o and o.capped and o.visible_since and o.visible_since > c['to'] %}no se llegó a esas fechas (Apify trajo desde {{ o.visible_since }}){% elif o and o.posts %}{{ o.posts }} publicaciones · {{ o.event.named if o.event else o.event_posts }} nombran la fecha · {{ o.avg_likes }} likes y {{ o.avg_comments }} comentarios en promedio{% elif o %}no publicó{% else %}—{% endif %}</td>{% endfor %}</tr>
     {% endfor %}</tbody>
   </table></div>
   {% endif %}
