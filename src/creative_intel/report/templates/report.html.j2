@@ -42,7 +42,7 @@
 <header class="cover">
   <div class="wrap">
     <div class="brandbar">
-      <a class="logo" href="{{ brand.agency_url or '#' }}">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% elif brand.logo_url %}<img src="{{ brand.logo_url }}" alt="{{ brand.agency }}">{% endif %}<span><span class="word">{{ brand.agency }}</span><span class="app">Radar creativo</span></span></a>
+      <a class="logo" href="/" title="Volver al inicio del Radar creativo">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% elif brand.logo_url %}<img src="{{ brand.logo_url }}" alt="{{ brand.agency }}">{% endif %}<span><span class="word">{{ brand.agency }}</span><span class="app">Radar creativo</span></span></a>
       <div class="meta">{{ client.industry }}{% if client.market %} · {{ client.market }}{% endif %}</div>
     </div>
     <p class="kicker">{{ brand.app_name }}</p>
@@ -410,7 +410,7 @@
 
 </main>
 <div class="foot"><div class="wrap"><footer>
-  <a class="logo" href="{{ brand.agency_url or '#' }}">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span class="word">{{ brand.agency }}</span></a>
+  <a class="logo" href="/" title="Volver al inicio del Radar creativo">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span class="word">{{ brand.agency }}</span></a>
   <span>{{ brand.app_name }} · Generado el {{ generated_at }}</span>
 </footer></div></div>
 
