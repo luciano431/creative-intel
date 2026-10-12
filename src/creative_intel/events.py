@@ -85,6 +85,14 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
             raws += found
         except Exception as exc:
             errors.append(f"anuncios propios (Meta): {exc}")
+        if edition.start:  # además, los anuncios con inversión en los días del evento en sí, con sus números de esos días
+            try:
+                d1 = edition.end or edition.start
+                found = insights.collect_window(own, own.country, edition.start, d1, 15)
+                print(f"[meta] {own.name}: {len(found)} anuncios propios con inversión en los días del evento ({edition.start} a {d1})")
+                raws += found
+            except Exception as exc:
+                errors.append(f"anuncios propios en los días del evento (Meta): {exc}")
         try:
             daily = insights.daily(own, edition.date_from, edition.date_to)
         except Exception as exc:
@@ -128,7 +136,8 @@ def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: 
         if not prof["posts"] and prof.get("source") == "archivo":
             continue
         out[c.slug] = {"brand": c.name, "own": c.is_own, "raw": raw_posts(prof),
-                       **summarize(prof, keywords, assets=settings.assets_dir / "organic")}
+                       **summarize(prof, keywords, assets=settings.assets_dir / "organic",
+                                   event_days=(edition.start, edition.end or edition.start) if edition.start else None)}
         how = {"perfil_publico": f" (perfil público: se ve desde {prof.get('visible_since') or '—'})", "archivo": " (solo archivo)",
                "apify": " (Apify" + (f", tope de {settings.apify_max_posts} alcanzado: llegó hasta {prof.get('visible_since')}" if prof.get("capped") else "")
                         + ")"}.get(prof.get("source"), "")
@@ -273,7 +282,9 @@ def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, An
     rows = []
     for slug, o in organic.items():
         o = {**{k: v for k, v in o.items() if k != "raw"}, "top": [dict(p) for p in o.get("top") or []]}
-        for p in o["top"]:
+        if o.get("event"):
+            o["event"] = {**o["event"], "pieces": [dict(p) for p in o["event"].get("pieces") or []]}
+        for p in o["top"] + ((o.get("event") or {}).get("pieces") or []):
             img = p.get("image")
             if img and Path(img).is_file():
                 (out / "assets").mkdir(parents=True, exist_ok=True)
@@ -326,11 +337,18 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         it["signals"] = signal_list(it, start_known(it))
     out = Path(out_dir or Path(REPORTS_DIR) / "eventos" / f"{event.key}-{edition.label}")
     own_items = [it for it in items if it.get("tier") == "own"]
+    # Pauta propia en los días del evento (números de esos días): va aparte, no se mezcla con el período completo
+    def _period(it: dict[str, Any]) -> dict[str, Any]:
+        return ((it.get("engagement") or {}).get("performance") or {}).get("period") or {}
+
+    ev_since = edition.start.isoformat() if edition.start else None
+    own_event_items = [it for it in own_items if ev_since and _period(it).get("since") == ev_since]
+    own_items = [it for it in own_items if not (ev_since and _period(it).get("since") == ev_since)]
     market_items, dropped = event_related([it for it in items if it.get("tier") != "own"], event.keywords, edition.date_from)
     if dropped:
         print(f"[evento] {dropped} anuncios de la competencia quedaron afuera: estaban al aire desde antes y no nombran {event.name}")
     items = own_items + market_items
-    render_assets(own_items, out)  # vista previa de los anuncios propios
+    render_assets(own_items + own_event_items, out)  # vista previa de los anuncios propios
     # "Cómo lo encaró el mercado" se calcula SOLO con la competencia; lo del cliente va aparte, con sus resultados
     pipeline.stage("Analizando los datos")
     metrics = analyze_event(market_items, edition.start, edition.end, own_name=client.name)
@@ -338,6 +356,11 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     metrics["own_daily"] = own_daily_summary((run.stats or {}).get("own_daily") or [], edition.start, edition.end)
     metrics["own_results"] = own_results(own_items)
     metrics["own_groups"] = own_results_groups(metrics["own_results"])
+    from .relevance import item_text, matches
+
+    ev_rows = own_results(own_event_items)
+    names = {it["id"]: matches(item_text(it), event.keywords) for it in own_event_items}
+    metrics["own_event_results"] = [{**r, "names_event": names.get(r["id"], False)} for r in ev_rows]
     metrics["market_search"] = (run.stats or {}).get("market_search") or {}
     metrics["currency"] = currency_symbol(next((d.get("currency") for d in (run.stats or {}).get("own_daily") or [] if d.get("currency")), None)
                                           or next(((it.get("engagement") or {}).get("performance", {}).get("currency") for it in own_items

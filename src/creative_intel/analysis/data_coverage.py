@@ -50,6 +50,13 @@ def event_coverage(m: dict[str, Any], live: bool = False) -> dict[str, Any]:
     if partial:
         detail += f" · de {len(partial)} solo se ven las últimas publicaciones"
     rows.append(_row("Instagram de la competencia", bool(with_posts), detail))
+    if any(o.get("event") is not None for o in organic):
+        about = [o for o in organic if (o.get("event") or {}).get("posts")]
+        rows.append(_row("Publicaciones del evento en sí (Instagram)", bool(about),
+                         f"{len(about)} de {len(organic)} cuentas publicaron sobre la fecha o en sus días"))
+    if "own_event_results" in m:
+        ev = m.get("own_event_results") or []
+        rows.append(_row("Pauta propia en los días del evento", bool(ev), f"{len(ev)} anuncios con inversión esos días" if ev else "ninguno"))
     level = _level(pts)
     return {"level": level, "rows": rows, "errors": m.get("collect_errors") or [],
             "missing": [r["source"] for r in rows if not r["ok"]]}

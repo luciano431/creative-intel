@@ -224,10 +224,48 @@ class InstagramOrganic:
         return {**info, "posts": posts, "source": "api"}
 
 
+def _save_image(p: dict[str, Any], assets: Path) -> None:
+    url = p.get("thumbnail_url") or p.get("media_url")
+    if url and not p.get("image"):
+        try:
+            path = assets / f"ig_{p['id']}.jpg"
+            if not path.exists():
+                path.write_bytes(httpx.get(url, timeout=30, follow_redirects=True).content)
+            p["image"] = str(path)
+        except Exception:
+            pass
+
+
+POST_KEYS = ("caption", "like_count", "comments_count", "interactions", "rate", "timestamp", "permalink", "media_type", "names_event", "image")
+
+
+def event_block(posts: list[dict[str, Any]], event_days: tuple[dt.date, dt.date] | None, month_avg: float,
+                assets: Path | None = None, top: int = 6) -> dict[str, Any]:
+    """Las publicaciones DEL EVENTO (lo nombran o salieron en sus días) y cómo les fue contra el promedio de la cuenta
+    en todo el período. Separa lo que se hizo para la fecha de lo que la cuenta publica siempre."""
+    d0, d1 = (event_days or (None, None))
+    picked = []
+    for p in posts:
+        day = (p.get("timestamp") or "")[:10]
+        in_days = bool(d0 and d1 and d0.isoformat() <= day <= d1.isoformat())
+        if p.get("names_event") or in_days:
+            picked.append({**p, "in_days": in_days})
+    picked.sort(key=lambda p: -p["interactions"])
+    if assets:
+        for p in picked[:top]:
+            _save_image(p, assets)
+    n = len(picked)
+    avg = round(sum(p["interactions"] for p in picked) / n, 1) if n else 0
+    return {"posts": n, "named": sum(1 for p in picked if p.get("names_event")), "in_days": sum(1 for p in picked if p["in_days"]),
+            "avg_interactions": avg, "vs_period_pct": round(100 * (avg / month_avg - 1)) if n and month_avg else None,
+            "pieces": [{**{k: p.get(k) for k in POST_KEYS}, "in_days": p["in_days"]} for p in picked[:top]]}
+
+
 def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, top: int = 4,
-              assets: Path | None = None) -> dict[str, Any]:
+              assets: Path | None = None, event_days: tuple[dt.date, dt.date] | None = None) -> dict[str, Any]:
     """Números de una cuenta en la ventana: publicaciones, promedio de likes y comentarios, interacción sobre seguidores,
-    cuántas nombraron el evento y las de más interacción (con su imagen guardada)."""
+    cuántas nombraron el evento y las de más interacción (con su imagen guardada). Con `event_days`, además el bloque
+    de las publicaciones del evento en sí (`event`)."""
     from ..relevance import matches
 
     posts = profile.get("posts") or []
@@ -240,15 +278,7 @@ def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, 
     if assets:
         assets.mkdir(parents=True, exist_ok=True)
         for p in best:
-            url = p.get("thumbnail_url") or p.get("media_url")
-            if url and not p.get("image"):
-                try:
-                    path = assets / f"ig_{p['id']}.jpg"
-                    if not path.exists():
-                        path.write_bytes(httpx.get(url, timeout=30, follow_redirects=True).content)
-                    p["image"] = str(path)
-                except Exception:
-                    pass
+            _save_image(p, assets)
     n = len(posts)
     types: dict[str, int] = {}
     for p in posts:
@@ -263,8 +293,9 @@ def summarize(profile: dict[str, Any], event_keywords: list[str] | None = None, 
         "avg_rate": round(sum(p["rate"] or 0 for p in posts) / n, 2) if n and followers else None,
         "event_posts": sum(p["names_event"] for p in posts),
         "types": types,
-        "top": [{k: p.get(k) for k in ("caption", "like_count", "comments_count", "interactions", "rate", "timestamp", "permalink",
-                                        "media_type", "names_event", "image")} for p in best],
+        "top": [{k: p.get(k) for k in POST_KEYS} for p in best],
+        **({"event": event_block(posts, event_days, sum(p["interactions"] for p in posts) / n if n else 0, assets)}
+           if event_keywords or event_days else {}),
     }
 
 

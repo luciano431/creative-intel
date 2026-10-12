@@ -17,7 +17,7 @@ events:
   cyberlunes:
     name: CyberLunes
     countries: [UY]
-    keywords: [cyberlunes, cyber lunes, ciberlunes, cyber monday]
+    keywords: [cyberlunes, cyber lunes, ciberlunes, ciber lunes, cyber monday]
     editions:
       - label: 2025-06
         start: 2025-06-02      # CyberLunes junio 2025: 2 al 4 de junio (CEDU)

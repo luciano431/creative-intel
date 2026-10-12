@@ -69,10 +69,21 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
             "evidence": "El anuncio de 12 cuotas salió 1 día antes", "reading": "Las cuotas se usan para cerrar",
             "hypothesis": "Creemos que mostrar la caída baja el costo por lead", "test": "2 versiones, 7 días, corta si el CPL sube 20%"}
     monkeypatch.setattr(aiev, "mock_event_plan", lambda *a, **k: {**real_mock(*a, **k), "ideas": [idea]})
+    from creative_intel.collectors.ig_organic import summarize
+
+    posts = [{"id": "1", "caption": "CyberLunes: 20% en tu seguro", "like_count": 90, "comments_count": 10, "timestamp": "2025-06-02T12:00:00+0000"},
+             {"id": "2", "caption": "Día del padre", "like_count": 10, "comments_count": 0, "timestamp": "2025-05-20T12:00:00+0000"},
+             {"id": "3", "caption": "Otra cosa", "like_count": 20, "comments_count": 0, "timestamp": "2025-05-25T12:00:00+0000"}]
+    org = {"rival": {"brand": "Rival", "own": False, "raw": [],
+                     **summarize({"username": "rival", "followers_count": 1000, "posts": posts}, ["cyberlunes"],
+                                 event_days=(dt.date(2025, 6, 2), dt.date(2025, 6, 4)))}}
+    assert org["rival"]["event"]["posts"] == 1 and org["rival"]["event"]["vs_period_pct"] == 131
+    monkeypatch.setattr(evmod, "_organic", lambda *a, **k: org)
     with session_scope(url) as s:
         out = evmod.run_event(s, ev, ev.edition(), mock_ai=True, out_dir=tmp_path / "rep")
     html = (tmp_path / "rep" / "report.html").read_text(encoding="utf-8")
     assert out["ads"] == 2 and "Guía de CyberLunes" in html and "Tienda X" in html and "1 a 7 días antes" in html
+    assert "El evento en sí: 2025-06-02 al 2025-06-04" in html and "+131%" in html and "Rival: lo que publicó para el evento" in html
     assert "Con qué datos se armó esta guía" in html and "Creemos que mostrar la caída" in html and "Cómo se prueba" in html
 
 
