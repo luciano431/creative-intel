@@ -80,6 +80,7 @@ def public_profile(username: str, client: httpx.Client | None = None) -> dict[st
 
 
 APIFY_URL = "https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items"
+APIFY_RETRY_WAIT = 5  # segundos antes de reintentar si Apify da 502/503
 APIFY_TYPES = {"Sidecar": "CAROUSEL_ALBUM", "Video": "VIDEO", "Image": "IMAGE"}
 
 
@@ -94,6 +95,11 @@ def apify_profile(username: str, since: dt.date | None, until: dt.date | None, t
     if since:
         body["onlyPostsNewerThan"] = since.isoformat()
     resp = c.post(APIFY_URL, params={"token": token}, json=body)
+    if resp.status_code >= 500:  # caída momentánea de Apify (502/503): un reintento
+        import time
+
+        time.sleep(APIFY_RETRY_WAIT)
+        resp = c.post(APIFY_URL, params={"token": token}, json=body)
     if resp.status_code >= 400:
         try:
             msg = (resp.json().get("error") or {}).get("message") or resp.text[:200]
@@ -116,10 +122,15 @@ def apify_profile(username: str, since: dt.date | None, until: dt.date | None, t
     reached = min((p["timestamp"][:10] for p in posts), default=None)
     posts = [p for p in posts if (not since or p["timestamp"][:10] >= since.isoformat()) and (not until or p["timestamp"][:10] <= until.isoformat())]
     followers = None
-    try:  # seguidores: del perfil público (gratis); si no responde, la tasa sobre seguidores queda vacía
+    try:  # seguidores: del perfil público (gratis); si Instagram no responde, de Apify (1 resultado)
         followers = public_profile(username, followers_client).get("followers_count")
     except Exception:
-        pass
+        try:
+            det = c.post(APIFY_URL, params={"token": token}, json={k: v for k, v in {**body, "resultsType": "details", "resultsLimit": 1}.items()
+                                                                   if k != "onlyPostsNewerThan"})
+            followers = next((d.get("followersCount") for d in det.json() if isinstance(d, dict) and d.get("followersCount")), None)
+        except Exception:
+            pass
     return {"username": username.lstrip("@"), "name": (items[0].get("ownerFullName") if items else None), "followers_count": followers,
             "posts": posts, "source": "apify", "visible_since": reached, "capped": len(items) >= max_posts}
 

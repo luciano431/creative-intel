@@ -113,3 +113,31 @@ def test_apify_reports_missing_account():
 
     with pytest.raises(RuntimeError, match="noexiste: Page not found"):
         apify_profile("noexiste", dt.date(2026, 5, 1), None, "x", client=httpx.Client(transport=httpx.MockTransport(apify)))
+
+
+def test_apify_followers_from_details_when_public_fails(monkeypatch):
+    from creative_intel.collectors import ig_organic
+    from creative_intel.collectors.ig_organic import apify_profile
+
+    monkeypatch.setattr(ig_organic, "APIFY_RETRY_WAIT", 0)
+
+    calls = []
+
+    def apify(req: httpx.Request) -> httpx.Response:
+        import json
+
+        body = json.loads(req.content)
+        calls.append(body["resultsType"])
+        if body["resultsType"] == "details":
+            assert "onlyPostsNewerThan" not in body
+            return httpx.Response(200, json=[{"username": "rival", "followersCount": 5300}])
+        if len(calls) == 1:
+            return httpx.Response(502, text="<html>502 Bad Gateway</html>")
+        return httpx.Response(200, json=[{"id": "1", "caption": "x", "timestamp": "2026-06-01T10:00:00.000Z", "likesCount": 3}])
+
+    def public(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"message": "login required"})
+
+    prof = apify_profile("rival", dt.date(2026, 5, 1), None, "x", client=httpx.Client(transport=httpx.MockTransport(apify)),
+                         followers_client=httpx.Client(transport=httpx.MockTransport(public)))
+    assert calls == ["posts", "posts", "details"] and prof["followers_count"] == 5300 and len(prof["posts"]) == 1
