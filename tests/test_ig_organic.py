@@ -2,7 +2,14 @@ import datetime as dt
 
 import httpx
 
+import pytest
+
 from creative_intel.collectors.ig_organic import InstagramOrganic, find_handle, summarize
+
+
+@pytest.fixture(autouse=True)
+def _cache_aparte(tmp_path, monkeypatch):
+    monkeypatch.setattr("creative_intel.collectors.ig_organic.IG_CACHE_DIR", tmp_path / "ig_cache")
 
 
 def test_find_handle_skips_post_links():
@@ -141,3 +148,35 @@ def test_apify_followers_from_details_when_public_fails(monkeypatch):
     prof = apify_profile("rival", dt.date(2026, 5, 1), None, "x", client=httpx.Client(transport=httpx.MockTransport(apify)),
                          followers_client=httpx.Client(transport=httpx.MockTransport(public)))
     assert calls == ["posts", "posts", "details"] and prof["followers_count"] == 5300 and len(prof["posts"]) == 1
+
+
+def test_apify_pays_each_post_once(tmp_path):
+    from creative_intel.collectors.ig_organic import apify_cached
+
+    calls = []
+
+    def apify(req: httpx.Request) -> httpx.Response:
+        import json
+
+        body = json.loads(req.content)
+        if body["resultsType"] == "details":
+            return httpx.Response(200, json=[{"followersCount": 100}])
+        calls.append(body.get("onlyPostsNewerThan"))
+        posts = [{"id": "a", "timestamp": "2025-11-04T10:00:00.000Z", "caption": "CyberLunes", "likesCount": 5},
+                 {"id": "b", "timestamp": "2026-10-01T10:00:00.000Z", "caption": "hoy", "likesCount": 1}]
+        if body.get("onlyPostsNewerThan", "") >= "2026-10-05":
+            posts = [{"id": "c", "timestamp": "2026-10-06T10:00:00.000Z", "caption": "nuevo", "likesCount": 2}]
+        return httpx.Response(200, json=posts)
+
+    def public(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(401)
+
+    c = httpx.Client(transport=httpx.MockTransport(apify))
+    pc = httpx.Client(transport=httpx.MockTransport(public))
+    d = dt.date
+    p1 = apify_cached("rival", d(2025, 11, 3), d(2025, 11, 5), "x", 400, c, pc, today=d(2026, 10, 5))
+    assert [x["id"] for x in p1["posts"]] == ["a"] and p1["paid_posts"] == 2 and calls == ["2025-11-03"]
+    p2 = apify_cached("rival", d(2025, 11, 3), d(2025, 11, 5), "x", 400, c, pc, today=d(2026, 10, 6))
+    assert [x["id"] for x in p2["posts"]] == ["a"] and p2["paid_posts"] == 0 and calls == ["2025-11-03"]  # no volvió a pagar
+    p3 = apify_cached("rival", d(2026, 9, 1), d(2026, 10, 6), "x", 400, c, pc, today=d(2026, 10, 6))
+    assert calls == ["2025-11-03", "2026-10-05"] and sorted(x["id"] for x in p3["posts"]) == ["b", "c"]  # solo lo nuevo

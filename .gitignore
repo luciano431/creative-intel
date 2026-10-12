@@ -15,3 +15,4 @@ data/web_jobs/
 data/clients/
 config/**/*.yaml.bak
 config/**/*.yaml.tmp
+data/ig_cache/
