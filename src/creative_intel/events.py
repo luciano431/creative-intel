@@ -334,7 +334,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     # "Cómo lo encaró el mercado" se calcula SOLO con la competencia; lo del cliente va aparte, con sus resultados
     pipeline.stage("Analizando los datos")
     metrics = analyze_event(market_items, edition.start, edition.end, own_name=client.name)
-    metrics["own_ads"] = len(own_items)
+    metrics["own_ads"] = len(own_items)  # todos los propios (también los de la Biblioteca, sin resultados)
     metrics["own_daily"] = own_daily_summary((run.stats or {}).get("own_daily") or [], edition.start, edition.end)
     metrics["own_results"] = own_results(own_items)
     metrics["own_groups"] = own_results_groups(metrics["own_results"])

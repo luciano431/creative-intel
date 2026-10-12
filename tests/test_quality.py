@@ -33,3 +33,12 @@ def test_event_coverage_levels():
     assert c["level"] == "baja" and c["rows"][0]["detail"] == "sin pauta en esas fechas"
     assert "solo se ven las últimas" in c["rows"][-1]["detail"]
     assert plan_coverage({"own_audit": {"active": 4}, "own_performance": {"total": {"ads": 10}}}, 40, 3)["level"] == "alta"
+
+
+def test_chain_and_nolabel_filters():
+    from creative_intel.report.build import chain, nolabel
+
+    html = str(chain("DATO: bici 25% dio 12 compras. LECTURA: oferta simple. HIPÓTESIS: Creemos que <sí>."))
+    assert html.count("<p><b>") == 3 and "<b>Hipótesis:</b>" in html and "&lt;sí&gt;" in html
+    assert chain("sin etiquetas") == "sin etiquetas"
+    assert nolabel("PRUEBA: correr 5 días") == "correr 5 días" and nolabel("Creemos que sí") == "Creemos que sí"

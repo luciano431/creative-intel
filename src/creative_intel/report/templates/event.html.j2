@@ -35,7 +35,7 @@
     <h1>Guía de {{ event.name }} para <span>{{ client.name }}</span></h1>
     <p class="lead">{% if live %}Edición en curso: anuncios activos que arrancaron entre {{ edition.date_from }} y {{ edition.date_to }}{% else %}Basada en los anuncios de la edición {{ edition.label }}{% endif %}{% if m.event_start %} (evento: {{ m.event_start }}{% if m.event_end and m.event_end != m.event_start %} al {{ m.event_end }}{% endif %}{% if not m.official_dates %}, día de más anuncios{% endif %}){% endif %}</p>
     <div class="chips">
-      {% if m.own_ads %}<span class="chip">{{ m.own_ads }} anuncios de {{ client.name }} con resultados</span>{% endif %}
+      {% if m.own_results %}<span class="chip">{{ m.own_results | length }} anuncios de {{ client.name }} con resultados</span>{% endif %}
       <span class="chip">{{ m.ads }} anuncios de la competencia</span>
       {% if next_dates.start %}<span class="chip">Próxima edición: {{ next_dates.start }}</span>{% else %}<span class="chip warn">Fecha de la próxima edición sin confirmar</span>{% endif %}
       <span class="chip">Generado {{ generated_at }}</span>
@@ -114,7 +114,7 @@
     <thead><tr><th>Cuenta</th><th>Seguidores</th><th>Publicaciones</th><th>Nombraron el evento</th><th>Likes promedio</th><th>Comentarios promedio</th><th>Interacción / seguidores</th><th>Tipos</th></tr></thead>
     <tbody>
     {% for o in m.organic %}
-      <tr><td><b>{{ o.brand }}</b>{% if o.own %} (cliente){% endif %}<br><span class="small muted">@{{ o.username }}</span></td><td>{{ '{:,}'.format(o.followers or 0).replace(',', '.') }}</td><td>{{ o.posts }}</td><td>{{ o.event_posts }}</td><td>{{ o.avg_likes }}</td><td>{{ o.avg_comments }}</td><td>{{ ('%.2f%%' % o.avg_rate) if o.avg_rate is not none else '—' }}</td><td class="small">{% for t, n in o.types.items() %}{{ t }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>
+      <tr><td><b>{{ o.brand }}</b>{% if o.own %} (cliente){% endif %}<br><span class="small muted">@{{ o.username }}</span></td><td>{{ '{:,}'.format(o.followers).replace(',', '.') if o.followers else '—' }}</td><td>{{ o.posts }}</td><td>{{ o.event_posts }}</td><td>{{ o.avg_likes }}</td><td>{{ o.avg_comments }}</td><td>{{ ('%.2f%%' % o.avg_rate) if o.avg_rate is not none else '—' }}</td><td class="small">{% for t, n in o.types.items() %}{{ t }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>
     {% endfor %}
     </tbody>
   </table></div>
@@ -213,7 +213,7 @@
 
 <section>
   <div class="sec-head"><span class="sec-num">{{ '06' if m.ads else '04' }}</span><h2>Plan para {{ client.name }}</h2></div>
-  <div class="card" style="margin-bottom:16px"><h3>Oferta a comunicar</h3>{{ plan.offer_recommendation }}</div>
+  <div class="card" style="margin-bottom:16px"><h3>Oferta a comunicar</h3>{{ plan.offer_recommendation | chain }}</div>
   <h3>Calendario de piezas</h3>
   <div class="cal">
     {% for c in plan.calendar %}<div class="when">{{ c.when }}</div><div><b>{{ c.goal | capitalize }}</b> · {{ c.format }} — «{{ c.message }}» <span class="muted">({{ c.cta }})</span></div>{% endfor %}
@@ -230,10 +230,10 @@
       {% if c.copy_draft %}<p><b>Copy:</b> {{ c.copy_draft }}</p>{% endif %}
       <p class="small"><b>CTA:</b> {{ c.cta }} · <b>Visual:</b> {{ c.visual_direction }}</p>
       {% if c.evidence %}<dl class="small chain" style="margin:10px 0 0;border-top:1px solid var(--line, #ddd);padding-top:8px">
-        <dt><b>Dato</b></dt><dd style="margin:0 0 4px">{{ c.evidence }}</dd>
-        <dt><b>Lectura</b></dt><dd style="margin:0 0 4px">{{ c.reading }}</dd>
-        <dt><b>Hipótesis</b></dt><dd style="margin:0 0 4px">{{ c.hypothesis }}</dd>
-        <dt><b>Cómo se prueba</b></dt><dd style="margin:0">{{ c.test }}</dd>
+        <dt><b>Dato</b></dt><dd style="margin:0 0 4px">{{ c.evidence | nolabel }}</dd>
+        <dt><b>Lectura</b></dt><dd style="margin:0 0 4px">{{ c.reading | nolabel }}</dd>
+        <dt><b>Hipótesis</b></dt><dd style="margin:0 0 4px">{{ c.hypothesis | nolabel }}</dd>
+        <dt><b>Cómo se prueba</b></dt><dd style="margin:0">{{ c.test | nolabel }}</dd>
       </dl>{% endif %}
     </div>
     {% endfor %}

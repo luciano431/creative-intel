@@ -23,13 +23,13 @@ class CalendarItem(_Strict):
     when: str = Field(description="Cuándo, relativo al evento: '10 días antes', 'el día', 'último día', 'extensión'")
     goal: str = Field(description="Para qué: anticipar, lanzar, empujar, cerrar")
     format: str = Field(description="Formato de la pieza (video, carrusel, imagen, historia)")
-    message: str = Field(description="Mensaje central, textual")
+    message: str = Field(description="Lo que lee el cliente final en la pieza, textual (no una indicación interna para el equipo)")
     cta: str
 
 
 class EventPlan(_Strict):
     summary: list[EventFact] = Field(description="3 a 4 hechos de cómo lo encaró el mercado en la edición anterior")
-    offer_recommendation: str = Field(description="Qué oferta conviene comunicar y por qué, citando lo que hizo el mercado y respetando la hoja del cliente")
+    offer_recommendation: str = Field(description="Qué oferta conviene comunicar y por qué, en párrafos que empiezan con 'Dato:', 'Lectura:' e 'Hipótesis:', respetando la hoja del cliente")
     calendar: list[CalendarItem] = Field(description="4 a 8 piezas en orden de salida")
     ideas: list[ReasonedIdea] = Field(description="3 a 5 ideas completas y listas para producir, cada una con dato, lectura, hipótesis y prueba")
     avoid: list[str] = Field(description="2 a 4 cosas a no hacer, basadas en datos o en la hoja del cliente")
@@ -47,12 +47,16 @@ Reglas:
 6. `event_metrics.own_results` y `own_daily` son los resultados reales de {client} en esa edición (inversión, resultados, costo por resultado, antes/durante/después). Son lo más importante: el resumen, la oferta y el calendario arrancan de ahí (qué anuncio y qué oferta le dieron el mejor costo por resultado, en qué momento rindió más). Citá los números.
 7. Solo productos de las categorías de {client}; los anuncios de otro rubro ya fueron descartados.
 8. Nunca escribas "resultados" a secas: decí siempre qué son (compras, conversaciones por WhatsApp/Messenger, leads o clics al sitio) y no sumes tipos distintos. Compará costos solo dentro del mismo tipo. No nombres campos ni variables (own_daily, own_results, event_metrics).
+9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado.
 10. `event_metrics.organic`: publicaciones orgánicas de Instagram de {client} y de cada competidor en esa ventana (cantidad, likes y comentarios promedio, interacción sobre seguidores, cuántas nombraron el evento y las de más interacción con su texto). Es el dato de la competencia de esa edición: usalo para comparar qué temas, formatos y mensajes generaron más interacción. Interacción no es venta: decilo así. Si una cuenta tiene `source: perfil_publico`, solo se ven sus últimas publicaciones (desde `visible_since`): con 0 publicaciones en la ventana no digas que no publicó, decí que no se ve.
 11. Cada anuncio propio trae `stage` (tofu = que nos conozcan, mofu = consideración, bofu = conversión) y el resultado que buscaba su campaña. Un anuncio de tráfico o alcance (tofu) no se juzga por leads ni ventas: se compara solo con los de su misma etapa y tipo de resultado.
 12. Las ideas (`ideas`) son obligatorias: 3 a 5, completas, con guion escena por escena, copy y dirección visual, una por momento clave del calendario. Cada una con su cadena: `evidence` (el dato que la origina, citando de dónde sale), `reading`, `hypothesis` y `test` (cómo se prueba y con qué umbral se decide seguir o cortar). Si el dato es débil (pocos anuncios, una sola cuenta), decilo en `reading`.
 13. Los montos están en la moneda de la cuenta (`currency`: "$" = pesos uruguayos, "US$" = dólares). Escribilos siempre con ese símbolo. Si no hay anuncios de la competencia de esa edición, decilo en una línea y trabajá con los resultados propios y el orgánico.
 14. `event_metrics.data_coverage` dice con qué datos se armó la guía y qué faltó. Si la confianza es media o baja, el primer hecho del resumen dice qué faltó y las ideas se plantean como pruebas chicas, no como apuestas grandes.
-9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado."""
+15. Los campos `evidence`, `reading`, `hypothesis` y `test` van sin la etiqueta adelante (nada de "DATO:" o "PRUEBA:"; el informe ya la pone).
+16. No inventes códigos de cupón, precios ni beneficios: si una pieza necesita un código, usá uno que ya haya usado {client} en los datos o escribí "con el código del evento" y aclará en `reading` que lo define el equipo. Lo mismo para cualquier beneficio que no esté en los datos ni en la hoja.
+17. En el calendario, `message` es lo que lee la gente en la pieza. Nunca uses datos internos de la cuenta (costos, ROAS, "salió más caro") como argumento hacia el cliente final.
+18. Al menos una de las ideas es para Instagram orgánico (`format` empieza con "orgánico") y se apoya en lo que más interacción generó en `event_metrics.organic` (de la competencia o propio), citando la publicación en `evidence`. Interacción no es venta: la prueba se mide en interacción, mensajes o visitas, no en compras."""
 
 
 def synthesize_event(event_name: str, metrics: dict[str, Any], items: list[dict[str, Any]], client_info: Any, next_dates: dict[str, Any],

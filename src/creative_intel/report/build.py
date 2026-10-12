@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -33,12 +34,36 @@ def dots(n: int, max_n: int, width: int = 5) -> str:
     return "●" * filled + "○" * (width - filled)
 
 
+CHAIN_RE = re.compile(r"\b(DATO|LECTURA|HIP[OÓ]TESIS|PRUEBA|PROPUESTA)\s*:\s*", re.I)
+
+
+def nolabel(text: Any) -> str:
+    """Saca la etiqueta que a veces repite la IA ('DATO: ...') cuando el informe ya la pone."""
+    return CHAIN_RE.sub("", str(text or ""), count=1).strip() if CHAIN_RE.match(str(text or "").strip()) else str(text or "")
+
+
+def chain(text: Any) -> Any:
+    """'Dato: ... Lectura: ... Hipótesis: ...' en párrafos con la etiqueta en negrita."""
+    from markupsafe import Markup, escape
+
+    t = str(text or "")
+    parts = CHAIN_RE.split(t)
+    if len(parts) < 3:
+        return t
+    out = [f"<p>{escape(parts[0].strip())}</p>"] if parts[0].strip() else []
+    for label, body in zip(parts[1::2], parts[2::2]):
+        out.append(f"<p><b>{escape(label.capitalize())}:</b> {escape(body.strip())}</p>")
+    return Markup("".join(out))
+
+
 def _env() -> Environment:
     env = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html"]), trim_blocks=True, lstrip_blocks=True)
     env.filters["dots"] = dots
     env.filters["bar"] = lambda pct: max(2, min(100, int(round(float(pct or 0)))))
     env.filters["of10"] = lambda pct: max(1, round(float(pct or 0) / 10)) if pct else 0
     env.filters["dias"] = lambda d: "—" if d is None else f"{int(round(float(d)))} días"
+    env.filters["nolabel"] = nolabel
+    env.filters["chain"] = chain
     env.filters["n"] = lambda v: f"{int(v):,}".replace(",", ".") if isinstance(v, (int, float)) else v
     return env
 

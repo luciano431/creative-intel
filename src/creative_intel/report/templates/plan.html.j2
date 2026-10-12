@@ -197,10 +197,10 @@
         {% endif %}
       </dd></div>
       {% endif %}
-      {% if i.evidence %}<div class="row"><dt>Dato</dt><dd>{{ i.evidence }}</dd></div>{% endif %}
-      {% if i.reading %}<div class="row"><dt>Lectura</dt><dd>{{ i.reading }}</dd></div>{% endif %}
-      {% if i.hypothesis %}<div class="row"><dt>Hipótesis</dt><dd>{{ i.hypothesis }}</dd></div>{% endif %}
-      <div class="row"><dt>{{ 'Cómo se prueba' if i.hypothesis else 'Cómo se mide' }}</dt><dd>{{ i.how_to_measure }}</dd></div>
+      {% if i.evidence %}<div class="row"><dt>Dato</dt><dd>{{ i.evidence | nolabel }}</dd></div>{% endif %}
+      {% if i.reading %}<div class="row"><dt>Lectura</dt><dd>{{ i.reading | nolabel }}</dd></div>{% endif %}
+      {% if i.hypothesis %}<div class="row"><dt>Hipótesis</dt><dd>{{ i.hypothesis | nolabel }}</dd></div>{% endif %}
+      <div class="row"><dt>{{ 'Cómo se prueba' if i.hypothesis else 'Cómo se mide' }}</dt><dd>{{ i.how_to_measure | nolabel }}</dd></div>
     </dl>
   </article>
   {% endfor %}
