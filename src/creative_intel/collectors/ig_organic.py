@@ -289,6 +289,10 @@ class InstagramOrganic:
 
 def _save_image(p: dict[str, Any], assets: Path) -> None:
     url = p.get("thumbnail_url") or p.get("media_url")
+    saved = assets / f"ig_{p.get('id')}.jpg"
+    if not p.get("image") and saved.exists():  # ya bajada en otra corrida (lo archivado no guarda la URL, que vence)
+        p["image"] = str(saved)
+        return
     if url and not p.get("image"):
         try:
             path = assets / f"ig_{p['id']}.jpg"

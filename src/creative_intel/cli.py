@@ -733,7 +733,9 @@ def evento(
     live: bool = typer.Option(False, "--live", help="Edición en curso: lo que está activo ahora (correrlo varias veces antes y durante el evento)"),
     inicio: Optional[str] = typer.Option(None, "--inicio", help="Primer día de una edición pasada que no esté cargada (AAAA-MM-DD)"),
     fin: Optional[str] = typer.Option(None, "--fin", help="Último día de esa edición (AAAA-MM-DD; por defecto, igual al inicio)"),
-    comparar: list[str] = typer.Option([], "--comparar", "-c", help="Otra edición para comparar (repetible), ej. --comparar 2024-11"),
+    comparar: list[str] = typer.Option([], "--comparar", "-c", help="Otra edición para comparar la pauta propia (repetible), ej. --comparar 2024-11"),
+    organico_de: Optional[str] = typer.Option(None, "--organico-de", help="Edición de la que sale el Instagram (por defecto, la misma), ej. 2026-06"),
+    sin_apify: bool = typer.Option(False, "--sin-apify", help="Instagram de la competencia: solo lo ya guardado, sin gastar Apify"),
 ) -> None:
     """Guía de un evento comercial: cómo lo encara el mercado (edición en curso o archivada) y qué hace el cliente.
 
@@ -763,7 +765,8 @@ def evento(
             ed = live_edition(ev) if live else ev.edition(edition)
         usage.reset()
         with session_scope() as s:
-            summary = run_event(s, ev, ed, mock_ai=mock_ai, skip_collect=skip_collect, compare=[ev.edition(x) for x in comparar])
+            summary = run_event(s, ev, ed, mock_ai=mock_ai, skip_collect=skip_collect, compare=[ev.edition(x) for x in comparar],
+                                organic_edition=ev.edition(organico_de) if organico_de else None, saved_only=sin_apify)
     except (pipeline.NoData, ValueError) as exc:
         rprint(f"[red]{exc}[/red]")
         raise typer.Exit(1)
@@ -794,7 +797,9 @@ def run_all(
     period: Optional[str] = PeriodOpt,
     only: list[str] = typer.Option([], "--only", help="identificador de cliente (repetible); por defecto, todos"),
     edition: Optional[str] = typer.Option(None, "--edition", help="evento: edición a estudiar"),
-    comparar: list[str] = typer.Option([], "--comparar", help="evento: otra edición para comparar (repetible)"),
+    comparar: list[str] = typer.Option([], "--comparar", help="evento: otra edición para comparar la pauta propia (repetible)"),
+    organico_de: Optional[str] = typer.Option(None, "--organico-de", help="evento: edición de la que sale el Instagram"),
+    sin_apify: bool = typer.Option(False, "--sin-apify", help="evento: Instagram de la competencia solo con lo ya guardado"),
     live: bool = typer.Option(False, "--live", help="evento: edición en curso"),
     mock_ai: bool = typer.Option(False, "--mock-ai", help="evento o informe: sin IA"),
 ) -> None:
@@ -808,7 +813,8 @@ def run_all(
     commands = {"ids": ["fill-ids", "--write"], "ig": ["fill-ig", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"]}
     if step.startswith("evento:"):
         args = ["evento", step.split(":", 1)[1]] + (["--live"] if live else ["--edition", edition] if edition else []) \
-            + [x for c in comparar for x in ("--comparar", c)] + (["--mock-ai"] if mock_ai else [])
+            + [x for c in comparar for x in ("--comparar", c)] + (["--organico-de", organico_de] if organico_de else []) \
+            + (["--sin-apify"] if sin_apify else []) + (["--mock-ai"] if mock_ai else [])
     elif step.startswith("vivo:"):  # archivo del evento en curso, sin IA (gratis): correrlo cada 2-3 días antes y durante
         args = ["evento", step.split(":", 1)[1], "--live", "--mock-ai"]
     elif step not in commands:

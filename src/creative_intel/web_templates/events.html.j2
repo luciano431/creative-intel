@@ -28,7 +28,14 @@
     <div class="row" id="cmp">
       {% for e in events %}{% for x in e.editions %}<label class="check" data-ev="{{ e.key }}"><input type="checkbox" class="cmp" value="{{ x.label }}"> {{ x.label }}{% if x.start %} ({{ x.start }}{% if x.end and x.end != x.start %} al {{ x.end }}{% endif %}){% endif %}</label>{% endfor %}{% endfor %}
     </div>
-    <p class="small muted" style="margin:4px 0 0">Suma una tabla con la pauta y el Instagram de cada cuenta en los días de esa otra edición.</p>
+    <p class="small muted" style="margin:4px 0 0">Suma una tabla con la pauta del cliente en los días de esa otra edición (el cliente contra sí mismo).</p>
+  </div>
+  <div id="org-box" style="margin-bottom:12px">
+    <div class="field" style="max-width:420px"><label for="org">Instagram de la edición</label>
+      <select id="org"><option value="">La misma de la guía</option>
+        {% for e in events %}{% for x in e.editions %}<option value="{{ x.label }}" data-ev="{{ e.key }}">{{ x.label }}{% if x.start %} ({{ x.start }}{% if x.end and x.end != x.start %} al {{ x.end }}{% endif %}){% endif %}</option>{% endfor %}{% endfor %}
+      </select></div>
+    <label class="check"><input type="checkbox" id="saved" checked> Instagram de la competencia: solo lo ya guardado (sin gastar Apify)</label>
   </div>
 
   <label>Clientes</label>
@@ -82,7 +89,8 @@ function syncEd() {
   $('ai').disabled = vivo; if (vivo) $('ai').checked = false;
   $('ai-help').textContent = vivo ? '' : ($('ai').checked ? '' : 'Sin IA la guía trae solo los números: sin resumen, oferta ni ideas.');
   $('go').textContent = vivo ? 'Archivar ahora' : 'Generar guías';
-  $('cmp-box').hidden = vivo;
+  $('cmp-box').hidden = vivo; $('org-box').hidden = vivo;
+  [...$('org').options].forEach(o => { if (o.value) { o.hidden = o.dataset.ev !== ev; if (o.hidden && o.selected) $('org').value = ''; } });
   document.querySelectorAll('#cmp label').forEach(l => {
     const own = l.querySelector('input').value === $('ed').value;
     l.hidden = l.dataset.ev !== ev || own; if (l.hidden) l.querySelector('input').checked = false; });
@@ -113,7 +121,8 @@ $('go').addEventListener('click', async () => {
   $('err').textContent = '';
   const clients = [...document.querySelectorAll('.cl:checked')].map(x => x.value);
   try { addJob(await api('/api/eventos', {event: $('ev').value, edition: $('ed').value, clients, ai: $('ai').checked,
-                                       compare: [...document.querySelectorAll('.cmp:checked')].map(x => x.value)})); }
+                                       compare: [...document.querySelectorAll('.cmp:checked')].map(x => x.value),
+                                       organic_from: $('org').value, saved_only: $('saved').checked})); }
   catch (e) { $('err').textContent = e.message; }
 });
 </script>

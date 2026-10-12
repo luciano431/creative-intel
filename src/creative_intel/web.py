@@ -246,8 +246,11 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
         ai = bool(body.get("ai"))
         labels = {e.label for e in ev.editions}
         cmp = [x for x in body.get("compare") or [] if x in labels and x != edition and edition != "vivo"]
+        org = str(body.get("organic_from") or "")
+        org_flags = ["--organico-de", org] if org in labels and org != edition and edition != "vivo" else []
+        saved = ["--sin-apify"] if body.get("saved_only") and edition != "vivo" else []
         cmd = _radar("all", f"evento:{key_ev}", *[x for k in chosen for x in ("--only", k)], *flags,
-                     *[x for c in cmp for x in ("--comparar", c)], *([] if ai else ["--mock-ai"]))
+                     *[x for c in cmp for x in ("--comparar", c)], *org_flags, *saved, *([] if ai else ["--mock-ai"]))
         links = [{"name": all_clients[k].name,
                   "url": all_clients[k].report_url("x").rsplit("/x/", 1)[0] + f"/eventos/{key_ev}-{label}/report.html"} for k in chosen]
         title = f"{ev.name} ({'en curso' if edition == 'vivo' else label}){' vs ' + ', '.join(cmp) if cmp else ''} · {len(chosen)} cliente{'s' if len(chosen) > 1 else ''}" \

@@ -89,7 +89,7 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
     assert "El evento en sí: 2025-06-02 al 2025-06-04" in html and "Rival: lo que publicó para el evento" in html
     # solo los días del evento: sin la sección del período ni la comparación contra el promedio del período
     assert "Instagram en todo el período" not in html and "Contra su promedio" not in html
-    assert "Cómo fue cada edición" in html and "2024-11" in html and "US$ 300" in html
+    assert "contra sí mismo: cada edición" in html and "2024-11" in html and "US$ 300" in html
     assert "Con qué datos se armó esta guía" in html and "Creemos que mostrar la caída" in html and "Cómo se prueba" in html
 
 
