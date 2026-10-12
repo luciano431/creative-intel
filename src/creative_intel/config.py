@@ -68,7 +68,7 @@ class Settings:
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
     creative_provider: str = os.getenv("CREATIVE_PROVIDER", "gemini" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "")
     # Tolera lo que se haya pegado alrededor ("models/...", comillas, espacios, la clave repetida): queda el nombre del modelo
-    gemini_creative_model: str = next(iter(re.findall(r"gemini[\w.\-]*", (os.getenv("GEMINI_CREATIVE_MODEL") or "").strip().lower().replace(" ", "-"))[-1:]),
+    gemini_creative_model: str = next(iter(m.rstrip("-.") for m in re.findall(r"gemini[a-z0-9.\-]*", re.sub(r"(?i)gemini", "gemini", (os.getenv("GEMINI_CREATIVE_MODEL") or "").strip().replace(" ", "-")))[-1:]),
                                       "gemini-3.1-pro-preview")
     # Anuncios por marca y por plataforma: en Meta los más vistos (orden por impresiones), en Google los primeros.
     top_ads_per_brand: int = int(os.getenv("TOP_ADS_PER_BRAND", "5"))
