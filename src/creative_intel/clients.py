@@ -5,6 +5,7 @@ base de datos y sus informes. Los comandos eligen cliente con la variable RADAR_
 """
 from __future__ import annotations
 
+import datetime as dt
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -135,8 +136,15 @@ class ClientEntry:
         if not d.is_dir():
             return []
         rel = self.reports_dir.relative_to(ROOT / "reports")
-        return [{"name": x.name, "url": "/reports/" + "/".join([*rel.parts, "eventos", x.name, "report.html"])}
-                for x in sorted(d.iterdir(), reverse=True) if (x / "report.html").exists()]
+        out = []
+        for x in sorted(d.iterdir(), reverse=True):
+            f = x / "report.html"
+            if f.exists():
+                mtime = int(f.stat().st_mtime)
+                # ?v=: cada versión nueva tiene otra dirección, así el navegador no muestra la vieja guardada
+                out.append({"name": x.name, "updated": dt.datetime.fromtimestamp(mtime).strftime("%d/%m %H:%M"),
+                            "url": "/reports/" + "/".join([*rel.parts, "eventos", x.name, "report.html"]) + f"?v={mtime}"})
+        return out
 
     def report_url(self, period: str) -> str:
         rel = self.reports_dir.relative_to(ROOT / "reports")

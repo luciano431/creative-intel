@@ -181,6 +181,13 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
     (root / "reports").mkdir(exist_ok=True)
     app.mount("/reports", StaticFiles(directory=root / "reports", html=True), name="reports")
 
+    @app.middleware("http")
+    async def fresh_reports(request: Request, call_next):  # los informes se regeneran: que el navegador no guarde la versión vieja
+        response = await call_next(request)
+        if request.url.path.startswith("/reports/") and request.url.path.endswith(".html"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     def render(name: str, **ctx: Any) -> HTMLResponse:
         brand = load_brand()
         return HTMLResponse(_env.get_template(name).render(brand=brand, C={**brand.colors}, **ctx))

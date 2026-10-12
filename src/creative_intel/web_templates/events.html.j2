@@ -51,7 +51,7 @@
   {% for c in clients %}{% set reps = reports[c.key] %}
   <div class="card">
     <h3>{{ c.name }}</h3>
-    {% if reps %}<ul class="small" style="margin:0;padding-left:18px">{% for r in reps[:12] %}<li><a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.name }}</a> · <button class="del" data-c="{{ c.key }}" data-n="{{ r.name }}" style="border:0;background:none;color:#9B2F25;cursor:pointer;font:inherit;padding:0">borrar</button></li>{% endfor %}</ul>
+    {% if reps %}<ul class="small" style="margin:0;padding-left:18px">{% for r in reps[:12] %}<li><a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.name }}</a> <span class="muted">· {{ r.updated }}</span> · <button class="del" data-c="{{ c.key }}" data-n="{{ r.name }}" style="border:0;background:none;color:#9B2F25;cursor:pointer;font:inherit;padding:0">borrar</button></li>{% endfor %}</ul>
     {% else %}<p class="small muted" style="margin:0">Todavía ninguna.</p>{% endif %}
   </div>
   {% endfor %}

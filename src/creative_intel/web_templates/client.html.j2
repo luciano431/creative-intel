@@ -27,19 +27,11 @@
       <div class="err" id="err-informe"></div>
     </div>
     <div class="card">
-      <h2>Guía de evento</h2>
-      <p class="muted small" style="margin:0 0 14px">Cómo encaró la competencia la edición anterior de una fecha comercial (cuándo arrancó, qué ofertas, cuánta urgencia) y el plan para el cliente: calendario de piezas e ideas con guion.</p>
-      {% if events %}
-      <div class="fields">
-        <div class="field"><label for="ev">Evento</label><select id="ev">{% for k, e in events.items() %}<option value="{{ k }}">{{ e.name }}</option>{% endfor %}</select></div>
-        <div class="field"><label for="ed">Edición a estudiar</label><select id="ed">{% for k, e in events.items() %}{% for x in e.editions %}<option data-ev="{{ k }}" value="{{ x.label }}">{{ e.name }} {{ x.label }} (archivo)</option>{% endfor %}<option data-ev="{{ k }}" value="vivo" selected>{{ e.name }}: en curso (lo activo ahora)</option>{% endfor %}</select></div>
-      </div>
-      <label class="check"><input type="checkbox" id="ev-ai" {{ 'checked' if has_api_key }}> Con IA ({{ ai_name or 'Claude' }})</label>
-      <div class="row" style="margin-top:14px"><button class="btn" id="go-ev" {{ 'disabled' if running }}>Generar guía</button></div>
-      <div class="err" id="err-ev"></div>
-      {% else %}<p class="muted small">No hay eventos cargados en config/events.yaml.</p>{% endif %}
+      <h2>Guías de fechas especiales</h2>
+      <p class="muted small" style="margin:0 0 14px">CyberLunes, Black Friday y las demás fechas se generan desde <a href="/eventos">Eventos</a>.</p>
+      <a class="btn" href="/eventos">Ir a Eventos</a>
       {% set evr = c.event_reports() %}
-      {% if evr %}<table style="margin-top:12px"><tbody>{% for r in evr %}<tr><td>{{ r.name }}</td><td style="text-align:right"><a href="{{ r.url }}" target="_blank" rel="noopener">Abrir</a></td></tr>{% endfor %}</tbody></table>{% endif %}
+      {% if evr %}<table style="margin-top:12px"><tbody>{% for r in evr %}<tr><td>{{ r.name }} <span class="muted small">· {{ r.updated }}</span></td><td style="text-align:right"><a href="{{ r.url }}" target="_blank" rel="noopener">Abrir</a> · <button class="del-guide" data-n="{{ r.name }}" style="border:0;background:none;color:#9B2F25;cursor:pointer;font:inherit;padding:0">borrar</button></td></tr>{% endfor %}</tbody></table>{% endif %}
     </div>
     <div class="card">
       <h2>Informes</h2>
@@ -114,6 +106,11 @@
 <script>
 const KEY = {{ c.key | tojson }};
 const $ = id => document.getElementById(id);
+document.querySelectorAll('.del-guide').forEach(b => b.addEventListener('click', async () => {
+  if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = '¿seguro? clic de nuevo'; return; }
+  try { await api('/api/c/' + KEY + '/borrar-guia', {name: b.dataset.n}); b.closest('tr').remove(); }
+  catch (e) { b.textContent = e.message; }
+}));
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === t.dataset.p));

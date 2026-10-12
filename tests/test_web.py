@@ -100,7 +100,7 @@ def test_event_task_validates_and_starts(site, monkeypatch):
     client, app, _ = site
     started = {}
     monkeypatch.setattr(app.state.jobs, "start", lambda c, kind, title, commands, result_url="": started.update(kind=kind, cmd=commands[-1], url=result_url) or type("J", (), {"as_dict": lambda self: {"ok": 1}})())
-    assert "Guía de evento" in client.get("/c/miseguro").text
+    assert "Guías de fechas especiales" in client.get("/c/miseguro").text
     assert client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "nada"}).status_code == 400
     r = client.post("/api/c/miseguro/tareas", json={"kind": "evento", "event": "cyberlunes", "edition": "2025-06"})
     assert r.status_code == 200 and started["cmd"][-4:] == ["cyberlunes", "--edition", "2025-06", "--mock-ai"]
@@ -135,3 +135,23 @@ def test_delete_event_guide(site):
     assert client.post("/api/c/miseguro/borrar-guia", json={"name": "../../x"}).status_code == 400
     assert client.post("/api/c/miseguro/borrar-guia", json={"name": "cyberlunes-2026-06"}).status_code == 200
     assert not d.exists()
+
+
+def test_reports_are_not_cached_and_links_change_with_each_version(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from creative_intel.clients import list_clients
+    from creative_intel.web import create_app
+
+    rep = tmp_path / "reports" / "eventos" / "cyberlunes-2026-06"
+    rep.mkdir(parents=True)
+    (rep / "report.html").write_text("<html>nueva</html>")
+    import shutil
+
+    shutil.copytree(__import__("creative_intel.config", fromlist=["ROOT"]).ROOT / "config", tmp_path / "config")
+    monkeypatch.setattr("creative_intel.clients.ROOT", tmp_path)
+    client = TestClient(create_app(root=tmp_path, password=""))
+    r = client.get("/reports/eventos/cyberlunes-2026-06/report.html")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    url = list_clients(tmp_path)[0].event_reports()[0]["url"]
+    assert "?v=" in url
