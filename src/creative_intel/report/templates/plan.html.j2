@@ -168,6 +168,7 @@
 
 <section>
   <div class="sh"><h2>Ideas</h2><span>01–{{ '%02d' % ideas | length }}</span></div>
+  {% if P.creative_error %}<p style="border-left:3px solid #9B2F25;padding:4px 0 4px 12px;color:var(--soft)">Gemini no escribió las ideas ({{ P.creative_error }}): quedan como las dejó el análisis. Generá el plan de nuevo cuando Gemini ande.</p>{% endif %}
   {% for i in ideas %}
   <article class="idea{% if i.start_now %} now{% endif %}">
     <span class="num">IDEA {{ i.num }}</span>

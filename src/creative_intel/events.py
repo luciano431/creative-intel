@@ -235,44 +235,46 @@ def event_related(items: list[dict[str, Any]], keywords: list[str], date_from: d
     return keep, len(items) - len(keep)
 
 
-def _gemini_ideas(plan: dict[str, Any], event: EventConfig, metrics: dict[str, Any], items: list[dict[str, Any]], client: Any) -> dict[str, Any]:
-    """Las ideas y guiones los escribe Gemini (si está configurado) sobre los hechos ya armados."""
-    from .ai.creative import strip_for, write_ideas
+def _gemini_pieces(plan: dict[str, Any], event: EventConfig, metrics: dict[str, Any], items: list[dict[str, Any]], client: Any) -> dict[str, Any]:
+    """La parte creativa la escribe Gemini, entera: cada pieza (título, gancho, guion, copy, CTA, visual) a partir del
+    brief del análisis, y el texto de cada momento del calendario. El análisis (dato, lectura, hipótesis, prueba) queda
+    de GPT. Si Gemini falla, la guía queda con los briefs y lo dice; no se reemplaza por texto de otro modelo."""
+    from .ai.creative import GeminiFailed, strip_for, write_event_pieces
     from .ai.synthesize import _compact_items
 
+    briefs = plan.get("ideas") or []
+    calendar = plan.get("calendar") or []
     context = {
         "evento": event.name,
         "hechos": plan.get("summary"),
         "oferta_recomendada": plan.get("offer_recommendation"),
-        "calendario": plan.get("calendar"),
         "no_hacer": plan.get("avoid"),
-        "resultados_propios_edicion": metrics.get("own_results"),
-        "instagram_organico": [{k: o.get(k) for k in ("brand", "own", "followers", "posts", "avg_likes", "avg_comments", "avg_rate", "event_posts", "types", "top")}
-                               for o in metrics.get("organic") or []],
-        "resultados_propios_por_momento": (metrics.get("own_daily") or {}).get("phases"),
-        "anuncios_del_mercado": _compact_items([it for it in items if it.get("tier") != "own"], limit=40),
+        "moneda": metrics.get("currency"),
+        "anuncios_propios_que_mejor_funcionaron": [{k: r.get(k) for k in ("headline", "product", "offer", "result_type", "cost_per_result", "stage")}
+                                                   for r in (metrics.get("own_results") or [])[:8]],
+        "publicaciones_del_evento": [{"cuenta": o.get("brand"), "es_el_cliente": o.get("own"),
+                                      "piezas": [{k: p.get(k) for k in ("caption", "like_count", "comments_count", "timestamp")}
+                                                 for p in ((o.get("event") or {}).get("pieces") or [])[:4]]}
+                                     for o in metrics.get("organic") or []],
         "anuncios_propios": _compact_items([it for it in items if it.get("tier") == "own"], limit=20),
     }
-    base = plan.get("ideas") or []
-    if base:  # el razonamiento (dato, lectura, hipótesis, prueba) queda del análisis; Gemini reescribe la pieza
-        context["ideas_a_reescribir"] = [{k: i.get(k) for k in ("title", "format", "angle", "evidence", "reading", "hypothesis", "hook_line", "copy_draft")}
-                                         for i in base]
-        ask = (f"Reescribí estas {len(base)} ideas para {event.name} (for_what = el título original, tal cual): misma idea y "
-               "mismo dato de origen, con mejor gancho, guion, copy y dirección visual.")
-    else:
-        ask = (f"Escribí 4 ideas para {event.name}, una para cada momento clave del calendario "
-               "(for_what = el momento). Cada una con un producto distinto de la marca.")
-    ideas = write_ideas(client, context, ask)
-    if not ideas:
-        return plan
-    if base:
-        by_title = {i.get("for_what", "").strip().lower(): i for i in ideas}
-        merged = []
-        for n, b in enumerate(base):
-            g = by_title.get((b.get("title") or "").strip().lower()) or (ideas[n] if n < len(ideas) else None)
-            merged.append({**b, **{k: v for k, v in strip_for(g).items() if v}} if g else b)
-        return {**plan, "ideas": merged, "ideas_by": "Gemini (piezas) sobre el análisis"}
-    return {**plan, "ideas": [strip_for(i) | {"moment": i.get("for_what", "")} for i in ideas], "ideas_by": "Gemini"}
+    try:
+        out = write_event_pieces(client, context, [{k: b.get(k) for k in ("title", "moment", "format", "product", "angle", "brief")} for b in briefs],
+                                 [{k: c.get(k) for k in ("when", "goal", "format", "intent")} for c in calendar])
+    except GeminiFailed as exc:
+        print(f"[gemini] no escribió las piezas: {exc}")
+        return {**plan, "creative_error": str(exc)}
+    by_title = {(i.get("for_what") or "").strip().lower(): i for i in out["ideas"]}
+    ideas = []
+    for n, b in enumerate(briefs):
+        g = by_title.get((b.get("title") or "").strip().lower()) or (out["ideas"][n] if n < len(out["ideas"]) else None)
+        ideas.append({**b, "brief_title": b.get("title"), **{k: v for k, v in strip_for(g).items() if v}} if g else b)
+    by_when = {(c.get("when") or "").strip().lower(): c for c in out["calendar"]}
+    cal = []
+    for n, c in enumerate(calendar):
+        g = by_when.get((c.get("when") or "").strip().lower()) or (out["calendar"][n] if n < len(out["calendar"]) else None)
+        cal.append({**c, **({"message": g["message"], "cta": g["cta"]} if g else {})})
+    return {**plan, "ideas": ideas, "calendar": cal, "ideas_by": "Gemini"}
 
 
 def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, Any]]:
@@ -307,6 +309,12 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
 
     if not mock_ai:
         check_api()
+        from .ai.creative import check_gemini
+
+        problem = check_gemini()  # la parte creativa es de Gemini: si no anda, se corta antes de gastar en el análisis
+        if problem:
+            raise pipeline.NoData(f"Gemini no anda ({problem}; modelo: {settings.gemini_creative_model}). Las piezas de la guía "
+                                  "las escribe Gemini: revisá GEMINI_API_KEY y GEMINI_CREATIVE_MODEL en .env (radar check-api).")
     summary: dict[str, Any] = {"event": event.name, "edition": edition.label}
     period = event_period(event, edition)
     own_cfg = next((c for c in load_competitors() if c.is_own), None)
@@ -380,7 +388,8 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         labels = {k: taxonomy.label(k) for k in taxonomy.labels} if getattr(taxonomy, "labels", None) else {}
         pipeline.stage("Escribiendo la guía con IA")
         plan = synthesize_event(event.name, metrics, items, client, next_dates, labels=labels)
-        plan = _gemini_ideas(plan, event, metrics, items, client)
+        pipeline.stage("Escribiendo las piezas con Gemini")
+        plan = _gemini_pieces(plan, event, metrics, items, client)
     run.metrics = {"event": metrics, "plan": plan}
     run.status = "draft"
     session.flush()

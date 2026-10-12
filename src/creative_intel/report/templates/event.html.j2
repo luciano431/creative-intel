@@ -263,19 +263,21 @@
   <div class="card" style="margin-bottom:16px"><h3>Oferta a comunicar</h3>{{ plan.offer_recommendation | chain }}</div>
   <h3>Calendario de piezas</h3>
   <div class="cal">
-    {% for c in plan.calendar %}<div class="when">{{ c.when }}</div><div><b>{{ c.goal | capitalize }}</b> · {{ c.format }} — «{{ c.message }}» <span class="muted">({{ c.cta }})</span></div>{% endfor %}
+    {% for c in plan.calendar %}<div class="when">{{ c.when }}</div><div><b>{{ c.goal | capitalize }}</b> · {{ c.format }} — {% if c.message %}«{{ c.message }}» <span class="muted">({{ c.cta }})</span>{% else %}<span class="muted">{{ c.intent }}</span>{% endif %}</div>{% endfor %}
   </div>
+  {% if plan.creative_error %}<div class="card" style="margin-top:16px;border-left:4px solid #9B2F25"><b>Las piezas no se escribieron:</b> Gemini falló ({{ plan.creative_error }}). Abajo quedan los briefs del análisis; generá la guía de nuevo cuando Gemini ande.</div>{% endif %}
   {% if plan.ideas %}
-  <h3 style="margin-top:24px">Ideas listas para producir</h3>
+  <h3 style="margin-top:24px">{{ 'Ideas listas para producir' if not plan.creative_error else 'Briefs de las piezas' }}</h3>
   <div class="grid g2">
     {% for c in plan.ideas %}
     <div class="card idea">
       <h4 style="margin:0 0 6px">{{ c.title }}</h4>
-      <p class="small muted" style="margin:0 0 8px">{% if c.moment %}{{ c.moment }} · {% endif %}{{ c.format }} · {{ lbl(c.angle) }}</p>
+      <p class="small muted" style="margin:0 0 8px">{% if c.moment %}{{ c.moment }} · {% endif %}{{ c.format }}{% if c.product %} · {{ c.product }}{% endif %} · {{ lbl(c.angle) }}</p>
+      {% if c.brief and not c.script %}<p><b>Brief:</b> {{ c.brief }}</p>{% endif %}
       {% if c.hook_line %}<div class="idea-hook"><span class="k">Primeros 3 segundos</span>«{{ c.hook_line }}»</div>{% endif %}
       {% if c.script %}<div class="k" style="margin:10px 0 4px">Guion</div><ol class="script">{% for b in c.script %}<li>{{ b }}</li>{% endfor %}</ol>{% endif %}
       {% if c.copy_draft %}<p><b>Copy:</b> {{ c.copy_draft }}</p>{% endif %}
-      <p class="small"><b>CTA:</b> {{ c.cta }} · <b>Visual:</b> {{ c.visual_direction }}</p>
+      {% if c.cta or c.visual_direction %}<p class="small"><b>CTA:</b> {{ c.cta }} · <b>Visual:</b> {{ c.visual_direction }}</p>{% endif %}
       {% if c.evidence %}<dl class="small chain" style="margin:10px 0 0;border-top:1px solid var(--line, #ddd);padding-top:8px">
         <dt><b>Dato</b></dt><dd style="margin:0 0 4px">{{ c.evidence | nolabel }}</dd>
         <dt><b>Lectura</b></dt><dd style="margin:0 0 4px">{{ c.reading | nolabel }}</dd>
@@ -289,7 +291,7 @@
   {% if plan.avoid %}<div class="card" style="margin-top:16px"><h3>Qué no hacer</h3><ul>{% for a in plan.avoid %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
 </section>
 {% endif %}
-<section><p class="small muted">Fuentes: Biblioteca de anuncios de Meta{% if not live %} y Centro de transparencia de Google (anuncios que se mostraron entre {{ edition.date_from }} y {{ edition.date_to }}){% endif %}, de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}; resultados de {{ client.name }}: su cuenta publicitaria de Meta. Las cifras del mercado cuentan anuncios, no inversión.{% if plan.ideas_by %} Ideas y guiones: {{ plan.ideas_by }}.{% endif %}</p></section>
+<section><p class="small muted">Fuentes: Biblioteca de anuncios de Meta{% if not live %} y Centro de transparencia de Google (anuncios que se mostraron entre {{ edition.date_from }} y {{ edition.date_to }}){% endif %}, de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}; resultados de {{ client.name }}: su cuenta publicitaria de Meta. Las cifras del mercado cuentan anuncios, no inversión.{% if plan.ideas_by %} Análisis: GPT. Piezas, guiones y textos del calendario: {{ plan.ideas_by }}.{% endif %}</p></section>
 </main>
 </body>
 </html>

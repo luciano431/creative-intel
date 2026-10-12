@@ -127,3 +127,32 @@ def test_event_related_drops_always_on_ads():
     ]
     keep, dropped = event_related(items, ["cyberlunes"], dt.date(2026, 5, 11))
     assert [i["id"] for i in keep] == [2, 3] and dropped == 2
+
+
+def test_gemini_writes_every_piece_and_failure_keeps_briefs(monkeypatch):
+    from types import SimpleNamespace
+
+    import creative_intel.ai.creative as cr
+    from creative_intel.config import EventConfig
+    from creative_intel.events import _gemini_pieces
+
+    ev = EventConfig(key="cyberlunes", name="CyberLunes", keywords=["cyberlunes"], countries=["UY"], editions=[])
+    brief = {"title": "Bici 25", "moment": "el día", "format": "imagen", "product": "bici", "angle": "oferta", "brief": "Vender bici",
+             "evidence": "12 compras", "reading": "simple", "hypothesis": "Creemos que", "test": "7 días"}
+    plan = {"summary": [], "offer_recommendation": "x", "avoid": [], "ideas": [brief],
+            "calendar": [{"when": "el día", "goal": "lanzar", "format": "imagen", "intent": "anunciar la oferta de bici"}]}
+    client = SimpleNamespace(name="miSeguroOk", industry="Seguros", description="", brief=None)
+    piece = {"for_what": "Bici 25", "title": "Tu bici, cubierta", "format": "imagen", "hook_type": "oferta", "angle": "oferta",
+             "hook_line": "Se ve una bici", "script": ["0–3 s · Se ve: bici"], "copy_draft": "Asegurala hoy", "cta": "Cotizá", "visual_direction": "Calle"}
+    monkeypatch.setattr(cr, "write_event_pieces", lambda *a, **k: {"ideas": [piece], "calendar": [{"when": "el día", "message": "Arrancó", "cta": "Entrá"}]})
+    out = _gemini_pieces(plan, ev, {}, [], client)
+    i = out["ideas"][0]
+    assert out["ideas_by"] == "Gemini" and i["title"] == "Tu bici, cubierta" and i["brief_title"] == "Bici 25" and i["evidence"] == "12 compras"
+    assert out["calendar"][0]["message"] == "Arrancó" and out["calendar"][0]["intent"] == "anunciar la oferta de bici"
+
+    def boom(*a, **k):
+        raise cr.GeminiFailed("sin cupo")
+
+    monkeypatch.setattr(cr, "write_event_pieces", boom)
+    out = _gemini_pieces(plan, ev, {}, [], client)
+    assert out["creative_error"] == "sin cupo" and out["ideas"] == [brief] and "ideas_by" not in out

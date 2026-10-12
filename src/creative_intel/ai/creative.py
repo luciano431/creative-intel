@@ -54,6 +54,32 @@ class _Ideas(BaseModel):
     ideas: list[_Idea]
 
 
+class _CalendarCopy(BaseModel):
+    when: str = Field(description="El momento del calendario, copiado tal cual")
+    message: str = Field(description="Lo que lee la gente en la pieza, textual, en el tono de la marca")
+    cta: str = Field(description="Llamado a la acción, textual")
+
+
+class _EventPieces(BaseModel):
+    ideas: list[_Idea]
+    calendar: list[_CalendarCopy]
+
+
+class _PlanPiece(BaseModel):
+    for_what: str = Field(description="El título de la idea que te pasaron, copiado tal cual")
+    title: str = Field(description="La idea en una frase concreta, como la diría el creativo")
+    what_to_do: list[str] = Field(description="1 a 3 párrafos cortos: qué se hace y cómo se ve/se escucha, listo para que el equipo lo produzca")
+    copy_lines: list[str] = Field(description="0 a 3 líneas de copy listas para publicar (vacío si la idea no es una pieza con texto)")
+
+
+class _PlanPieces(BaseModel):
+    ideas: list[_PlanPiece]
+
+
+class GeminiFailed(RuntimeError):
+    """Gemini no escribió la parte creativa (el motivo va en el mensaje)."""
+
+
 _CLIENT = None
 
 
@@ -88,6 +114,59 @@ def _brief_rules(brief: dict[str, Any] | None) -> str:
     for k, v in brief.items():
         lines.append(f"- {k}: {', '.join(v) if isinstance(v, list) else v}")
     return "\n".join(lines)
+
+
+def _generate(client_info: Any, context: dict[str, Any], request: str, schema: type[BaseModel]) -> BaseModel:
+    """Una llamada a Gemini con el prompt de redactor y una respuesta con forma fija. Si falla, GeminiFailed."""
+    if not settings.gemini_api_key:
+        raise GeminiFailed("no hay GEMINI_API_KEY en .env")
+    try:
+        from google.genai import types
+    except ImportError as exc:
+        raise GeminiFailed("falta instalar google-genai (pip install -e .)") from exc
+    system = WRITER_PROMPT.format(client=client_info.name, industry=client_info.industry or client_info.description or "",
+                                  brief_rules=_brief_rules(client_info.brief))
+    prompt = f"Datos (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)}\n\nPedido: {request}"
+    try:
+        resp = _client().models.generate_content(
+            model=settings.gemini_creative_model, contents=prompt,
+            config=types.GenerateContentConfig(system_instruction=system, response_mime_type="application/json",
+                                               response_schema=schema, temperature=1.0, max_output_tokens=24000))
+    except Exception as exc:
+        raise GeminiFailed(f"{gemini_problem(exc)} (modelo: {settings.gemini_creative_model})") from exc
+    meta = getattr(resp, "usage_metadata", None)
+    if meta is not None:
+        usage.add(settings.gemini_creative_model, SimpleNamespace(
+            input_tokens=meta.prompt_token_count or 0,
+            output_tokens=(meta.candidates_token_count or 0) + (meta.thoughts_token_count or 0)))
+    parsed = resp.parsed if isinstance(getattr(resp, "parsed", None), schema) else None
+    if parsed is None:
+        try:
+            parsed = schema.model_validate_json(resp.text or "")
+        except Exception as exc:
+            raise GeminiFailed(f"devolvió algo que no se pudo leer ({str(exc)[:160]})") from exc
+    return parsed
+
+
+def write_event_pieces(client_info: Any, context: dict[str, Any], briefs: list[dict[str, Any]],
+                       calendar: list[dict[str, Any]]) -> dict[str, Any]:
+    """Gemini escribe las piezas de la guía de evento a partir de los briefs del análisis: idea por idea (título,
+    gancho, guion, copy, CTA y dirección visual) y el texto de cada pieza del calendario."""
+    ctx = {**context, "briefs": briefs, "calendario": calendar}
+    request = (f"Escribí las {len(briefs)} piezas de `briefs`, una por brief y en el mismo orden (for_what = el `title` del brief, "
+               "copiado tal cual). Cada pieza cumple lo que pide su brief, con el producto y el formato que dice. Si el formato "
+               "es orgánico, escribila como publicación de Instagram (no como anuncio). Además, para cada momento de `calendario` "
+               "escribí el texto que lee la gente y su CTA (when = el momento, copiado tal cual), según su `intent`.")
+    out = _generate(client_info, ctx, request, _EventPieces)
+    return {"ideas": [i.model_dump() for i in out.ideas], "calendar": [c.model_dump() for c in out.calendar]}
+
+
+def write_plan_pieces(client_info: Any, context: dict[str, Any], ideas: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Gemini reescribe la parte creativa de cada idea del plan (título, qué se hace, copy) sobre el análisis."""
+    ctx = {**context, "ideas": ideas}
+    request = (f"Reescribí las {len(ideas)} ideas de `ideas` en el mismo orden (for_what = su `title`, copiado tal cual): "
+               "misma idea, mismo dato de origen y misma referencia, contada como la contaría un creativo y con copy listo.")
+    return [i.model_dump() for i in _generate(client_info, ctx, request, _PlanPieces).ideas]
 
 
 def write_ideas(client_info: Any, context: dict[str, Any], request: str) -> list[dict[str, Any]] | None:

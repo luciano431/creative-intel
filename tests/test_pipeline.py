@@ -122,9 +122,14 @@ def test_editorial_plan_end_to_end(session, sample_raws, tmp_path, monkeypatch):
     monkeypatch.setattr("creative_intel.ai.research.research", lambda *a, **k: plan["research"])
     monkeypatch.setattr("creative_intel.ai.plan.synthesize_plan", lambda *a, **k: plan)
     monkeypatch.setattr("creative_intel.pipeline.check_api", lambda: None, raising=False)
+    monkeypatch.setattr("creative_intel.ai.creative.check_gemini", lambda: "")
+    monkeypatch.setattr("creative_intel.ai.creative.write_plan_pieces",
+                        lambda ci, ctx, ideas: [{"for_what": i["title"], "title": i["title"] + " (Gemini)", "what_to_do": ["Escrito por Gemini"],
+                                                 "copy_lines": i.get("copy_lines") or []} for i in ideas])
     pipeline.synthesize_run(session, "2026-09", mock=False)
     paths = pipeline.build_report(session, "2026-09", tmp_path)
     html = paths["report.html"].read_text(encoding="utf-8")
     assert "Lo que miSeguroOk todavía no probó" in html and "El diagnóstico" in html and "IDEA 01" in html
     assert "Persona real a cámara" in html and "Ministerio del Interior" in html and "Por dónde empezar" in html
     assert "Asegurala en dos minutos" in paths["report.md"].read_text(encoding="utf-8")
+    assert "(Gemini)" in html and "Escrito por Gemini" in html

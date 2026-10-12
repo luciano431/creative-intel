@@ -11,7 +11,7 @@ from pydantic import Field
 
 from ..config import settings
 from .client import structured_call
-from .synthesize import ReasonedIdea, _compact_items, _Strict
+from .synthesize import _compact_items, _Strict
 
 
 class EventFact(_Strict):
@@ -22,16 +22,29 @@ class EventFact(_Strict):
 class CalendarItem(_Strict):
     when: str = Field(description="Cuándo, relativo al evento: '10 días antes', 'el día', 'último día', 'extensión'")
     goal: str = Field(description="Para qué: anticipar, lanzar, empujar, cerrar")
-    format: str = Field(description="Formato de la pieza (video, carrusel, imagen, historia)")
-    message: str = Field(description="Lo que lee el cliente final en la pieza, textual (no una indicación interna para el equipo)")
-    cta: str
+    format: str = Field(description="Formato de la pieza (video, carrusel, imagen, historia, orgánico)")
+    intent: str = Field(description="Qué tiene que comunicar la pieza y con qué producto u oferta (indicación para el redactor, no el texto final)")
+
+
+class IdeaBrief(_Strict):
+    """Lo que decide el análisis de cada pieza. La pieza en sí (gancho, guion, copy, visual) la escribe el redactor."""
+    title: str = Field(description="Nombre de trabajo de la idea (máx. 6 palabras)")
+    moment: str = Field(description="Momento del calendario al que corresponde, copiado tal cual")
+    format: str = Field(description="video | carrusel | imagen | historia | orgánico (publicación de Instagram)")
+    product: str = Field(description="Producto o categoría del cliente que muestra")
+    angle: str = Field(description="Ángulo del mensaje en pocas palabras")
+    brief: str = Field(description="Qué tiene que lograr la pieza y qué tiene que decir o mostrar, en 2-3 oraciones. Sin escribir la pieza")
+    evidence: str = Field(description="El dato que la origina, con números y de dónde sale (anuncio, cuenta, fecha)")
+    reading: str = Field(description="Qué significa ese dato para el cliente, en una oración")
+    hypothesis: str = Field(description="Qué creemos que va a pasar si se hace, empezando con 'Creemos que'")
+    test: str = Field(description="Cómo se comprueba (contra qué, cuánto tiempo, inversión mínima) y el umbral para seguir o cortar")
 
 
 class EventPlan(_Strict):
     summary: list[EventFact] = Field(description="3 a 4 hechos de cómo lo encaró el mercado en la edición anterior")
     offer_recommendation: str = Field(description="Qué oferta conviene comunicar y por qué, en párrafos que empiezan con 'Dato:', 'Lectura:' e 'Hipótesis:', respetando la hoja del cliente")
     calendar: list[CalendarItem] = Field(description="4 a 8 piezas en orden de salida")
-    ideas: list[ReasonedIdea] = Field(description="3 a 5 ideas completas y listas para producir, cada una con dato, lectura, hipótesis y prueba")
+    ideas: list[IdeaBrief] = Field(description="3 a 5 briefs de piezas, cada uno con dato, lectura, hipótesis y prueba")
     avoid: list[str] = Field(description="2 a 4 cosas a no hacer, basadas en datos o en la hoja del cliente")
 
 
@@ -42,7 +55,7 @@ Reglas:
 1. Castellano claro, voseo, sin jerga en inglés. Separá siempre tres cosas: el DATO (conteos, porcentajes, días, montos de los datos, sin adjetivos), la LECTURA (qué significa para {client}) y la HIPÓTESIS (qué creemos que va a pasar, con "Creemos que..."). Nunca presentes una lectura o una hipótesis como si fuera un dato. El resumen (`summary`) lleva solo datos.
 2. El calendario sale del timing real del mercado (si 6 de cada 10 anuncios arrancaron en la previa, la previa importa) y se escribe relativo al evento.
 3. La oferta respeta la hoja del cliente: si no tiene promociones, no inventes descuentos; proponé beneficios que no bajen el precio y marcalos como propuesta.
-4. Las ideas las escribís completas: título, gancho textual, guion por escenas con tiempos (o placa por placa), copy listo, CTA y dirección visual, con el tono de la hoja.
+4. Vos hacés el análisis y los briefs; las piezas (gancho, guion, copy, CTA, dirección visual y el texto del calendario) las escribe después un redactor. No escribas copy ni guiones: en cada brief decí qué tiene que lograr la pieza, qué producto muestra y qué tiene que decir o mostrar.
 5. Si los datos son pocos (menos de 10 anuncios), decilo en el resumen y no generalices.
 6. `event_metrics.own_results` y `own_daily` son los resultados reales de {client} en esa edición (inversión, resultados, costo por resultado, antes/durante/después). Son lo más importante: el resumen, la oferta y el calendario arrancan de ahí (qué anuncio y qué oferta le dieron el mejor costo por resultado, en qué momento rindió más). Citá los números.
 7. Solo productos de las categorías de {client}; los anuncios de otro rubro ya fueron descartados.
@@ -50,13 +63,13 @@ Reglas:
 9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado.
 10. `event_metrics.organic`: publicaciones orgánicas de Instagram de {client} y de cada competidor en esa ventana (cantidad, likes y comentarios promedio, interacción sobre seguidores, cuántas nombraron el evento y las de más interacción con su texto). Es el dato de la competencia de esa edición: usalo para comparar qué temas, formatos y mensajes generaron más interacción. Interacción no es venta: decilo así. Si una cuenta tiene `source: perfil_publico`, solo se ven sus últimas publicaciones (desde `visible_since`): con 0 publicaciones en la ventana no digas que no publicó, decí que no se ve.
 11. Cada anuncio propio trae `stage` (tofu = que nos conozcan, mofu = consideración, bofu = conversión) y el resultado que buscaba su campaña. Un anuncio de tráfico o alcance (tofu) no se juzga por leads ni ventas: se compara solo con los de su misma etapa y tipo de resultado.
-12. Las ideas (`ideas`) son obligatorias: 3 a 5, completas, con guion escena por escena, copy y dirección visual, una por momento clave del calendario. Cada una con su cadena: `evidence` (el dato que la origina, citando de dónde sale), `reading`, `hypothesis` y `test` (cómo se prueba y con qué umbral se decide seguir o cortar). Si el dato es débil (pocos anuncios, una sola cuenta), decilo en `reading`.
+12. Los briefs (`ideas`) son obligatorios: 3 a 5, uno por momento clave del calendario. Cada uno con su cadena: `evidence` (el dato que lo origina, citando de dónde sale), `reading`, `hypothesis` y `test` (cómo se prueba y con qué umbral se decide seguir o cortar). Si el dato es débil (pocos anuncios, una sola cuenta), decilo en `reading`.
 13. Los montos están en la moneda de la cuenta (`currency`: "$" = pesos uruguayos, "US$" = dólares). Escribilos siempre con ese símbolo. Si no hay anuncios de la competencia de esa edición, decilo en una línea y trabajá con los resultados propios y el orgánico.
 14. `event_metrics.data_coverage` dice con qué datos se armó la guía y qué faltó. Si la confianza es media o baja, el primer hecho del resumen dice qué faltó y las ideas se plantean como pruebas chicas, no como apuestas grandes.
 15. Los campos `evidence`, `reading`, `hypothesis` y `test` van sin la etiqueta adelante (nada de "DATO:" o "PRUEBA:"; el informe ya la pone).
-16. No inventes códigos de cupón, precios ni beneficios: si una pieza necesita un código, usá uno que ya haya usado {client} en los datos o escribí "con el código del evento" y aclará en `reading` que lo define el equipo. Lo mismo para cualquier beneficio que no esté en los datos ni en la hoja.
-17. En el calendario, `message` es lo que lee la gente en la pieza. Nunca uses datos internos de la cuenta (costos, ROAS, "salió más caro") como argumento hacia el cliente final.
-18. Al menos una de las ideas es para Instagram orgánico (`format` empieza con "orgánico") y se apoya en lo que más interacción generó en `event_metrics.organic` (de la competencia o propio), citando la publicación en `evidence`. Interacción no es venta: la prueba se mide en interacción, mensajes o visitas, no en compras.
+16. No inventes códigos de cupón, precios ni beneficios: si una pieza necesita uno que no está en los datos ni en la hoja, decilo en el brief ("con el código que defina el equipo").
+17. En el calendario, `intent` dice qué tiene que comunicar cada pieza. Nunca uses datos internos de la cuenta (costos, ROAS) como argumento hacia el cliente final.
+18. Al menos uno de los briefs es para Instagram orgánico (`format` = "orgánico") y se apoya en lo que mejor funcionó en las publicaciones del evento o del período (`event_metrics.organic`), citando la publicación en `evidence`. Interacción no es venta: la prueba se mide en interacción, mensajes o visitas, no en compras.
 19. Separá siempre EL PERÍODO de EL EVENTO EN SÍ. `own_results`, `own_daily` y `organic` (promedios y `top`) son de toda la ventana (semanas antes y después). Lo del evento en sí está en `own_event_results` (anuncios propios con sus números de los días del evento, con `names_event` si nombran la fecha) y en `organic[].event` (publicaciones que nombran el evento o salieron en sus días, con `vs_period_pct` = cuánto más o menos interacción tuvieron que el promedio de la cuenta). El resumen tiene que decir qué hizo cada marca para el evento en sí (o que no publicó nada sobre la fecha) y cómo le fue contra su propio promedio. No presentes como "del evento" algo que solo es del período.
 20. Las ofertas y cupones que aparecen en los datos son de la edición pasada y ya no están vigentes: usalos como aprendizaje (qué tamaño y qué forma de oferta rindió), no como oferta a repetir tal cual. En `offer_recommendation` proponé la mecánica (tipo y tamaño de oferta, en qué producto, con qué condición) y aclarás que la oferta concreta la confirma el equipo."""
 
@@ -72,7 +85,7 @@ def synthesize_event(event_name: str, metrics: dict[str, Any], items: list[dict[
         "labels": labels or {},
         "creatives": _compact_items(items, limit=150),
     }
-    ask = "Armá la guía, con las ideas completas."
+    ask = "Armá la guía: el análisis, el calendario y los briefs de las piezas."
     content = [{"type": "text", "text": "Datos del evento (JSON):\n" + json.dumps(payload, ensure_ascii=False, default=str) + "\n\n" + ask}]
     system = EVENT_PROMPT.format(event=event_name, client=client_info.name, industry=client_info.industry or "sin industria definida",
                                  market=client_info.market or "mercado local")
@@ -92,7 +105,7 @@ def mock_event_plan(event_name: str, metrics: dict[str, Any], client_name: str) 
         {"headline": f"La oferta más usada: {top_offer}", "detail": f"Descuento máximo visto: {(metrics.get('offers') or {}).get('pct_max') or '—'}%."},
     ]
     calendar = [
-        {"when": w, "goal": g, "format": f, "message": m, "cta": c}
+        {"when": w, "goal": g, "format": f, "intent": m, "message": m, "cta": c}
         for w, g, f, m, c in (
             ("10 días antes", "anticipar", "historia", f"Se viene {event_name} en {client_name}", "Activá el recordatorio"),
             ("2 días antes", "calentar", "carrusel", "Lo que va a estar en oferta", "Mirá la selección"),

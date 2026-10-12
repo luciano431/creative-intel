@@ -320,6 +320,31 @@ def gemini_concepts(data: dict[str, Any], metrics: dict[str, Any], items: list[d
     return data
 
 
+def gemini_plan_pieces(data: dict[str, Any], metrics: dict[str, Any], client_info: Any) -> dict[str, Any]:
+    """Plan editorial: el análisis (dato, lectura, hipótesis, prueba, referencia) es de GPT; cómo se cuenta y se
+    escribe cada idea (título, qué se hace, copy) lo escribe Gemini. Si Gemini falla, el plan lo dice."""
+    from .ai.creative import GeminiFailed, write_plan_pieces
+
+    ideas = data.get("ideas") or []
+    if not ideas:
+        return data
+    context = {"tesis": data.get("thesis"), "diagnostico": data.get("diagnosis"), "huecos": data.get("gaps"),
+               "lo_que_le_funciona_al_cliente": metrics.get("own_performance"), "instagram_propio": metrics.get("own_instagram")}
+    briefs = [{k: i.get(k) for k in ("title", "what_to_do", "copy_lines", "evidence", "reading", "hypothesis", "reference_note", "tags")}
+              for i in ideas]
+    try:
+        pieces = write_plan_pieces(client_info, context, briefs)
+    except GeminiFailed as exc:
+        print(f"[gemini] no escribió las ideas: {exc}")
+        return {**data, "creative_error": str(exc)}
+    by_title = {(x.get("for_what") or "").strip().lower(): x for x in pieces}
+    merged = []
+    for n, i in enumerate(ideas):
+        g = by_title.get((i.get("title") or "").strip().lower()) or (pieces[n] if n < len(pieces) else None)
+        merged.append({**i, **{k: g[k] for k in ("title", "what_to_do", "copy_lines") if g.get(k)}} if g else i)
+    return {**data, "ideas": merged, "ideas_by": "Gemini"}
+
+
 def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthesis:
     taxonomy = load_taxonomy()
     run = get_or_create_run(session, period)
@@ -343,11 +368,19 @@ def synthesize_run(session: Session, period: str, mock: bool = False) -> Synthes
         if mock:
             data, model = mock_plan(run.metrics, items, ci.name), "mock"
         else:
+            from .ai.creative import check_gemini
+
+            problem = check_gemini()  # la parte creativa es de Gemini: si no anda, se corta antes de gastar en el análisis
+            if problem:
+                raise NoData(f"Gemini no anda ({problem}; modelo: {settings.gemini_creative_model}). La parte creativa del plan "
+                             "la escribe Gemini: revisá GEMINI_API_KEY y GEMINI_CREATIVE_MODEL en .env (radar check-api).")
             stage("Investigando casos y datos en la web")
             ex = run.metrics.get("execution") or {}
             findings = research(ci, ex.get("gaps") or [], run.metrics.get("own_audit") or {},
                                 sorted({it["competitor"] for it in items if it["tier"] != "own"}))
             data, model = synthesize_plan(run.metrics, items, ci, findings, period), settings.synth_model
+            stage("Escribiendo las ideas con Gemini")
+            data = gemini_plan_pieces(data, run.metrics, ci)
     elif mock:
         data = mock_synthesis(run.metrics, items, concepts, period)
         model = "mock"
