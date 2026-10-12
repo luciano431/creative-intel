@@ -244,10 +244,13 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
         if not chosen:
             raise HTTPException(400, "Elegí al menos un cliente")
         ai = bool(body.get("ai"))
-        cmd = _radar("all", f"evento:{key_ev}", *[x for k in chosen for x in ("--only", k)], *flags, *([] if ai else ["--mock-ai"]))
+        labels = {e.label for e in ev.editions}
+        cmp = [x for x in body.get("compare") or [] if x in labels and x != edition and edition != "vivo"]
+        cmd = _radar("all", f"evento:{key_ev}", *[x for k in chosen for x in ("--only", k)], *flags,
+                     *[x for c in cmp for x in ("--comparar", c)], *([] if ai else ["--mock-ai"]))
         links = [{"name": all_clients[k].name,
                   "url": all_clients[k].report_url("x").rsplit("/x/", 1)[0] + f"/eventos/{key_ev}-{label}/report.html"} for k in chosen]
-        title = f"{ev.name} ({'en curso' if edition == 'vivo' else label}) · {len(chosen)} cliente{'s' if len(chosen) > 1 else ''}" \
+        title = f"{ev.name} ({'en curso' if edition == 'vivo' else label}){' vs ' + ', '.join(cmp) if cmp else ''} · {len(chosen)} cliente{'s' if len(chosen) > 1 else ''}" \
                 + (" · con IA" if ai else " · sin IA")
         job = jobs.start(None, "evento", title, [cmd], links=links)
         return JSONResponse(job.as_dict())

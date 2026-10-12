@@ -27,7 +27,9 @@ def currency_symbol(code: str | None) -> str:
 
 
 def event_period(event: EventConfig, edition: EventEdition) -> str:
-    return f"ev-{event.key}-{edition.label}"
+    # Solo los días del evento: corrida aparte, así no se mezcla con lo bajado antes con la ventana de semanas
+    days_only = edition.start and edition.date_from == edition.start and not edition.label.startswith("vivo-")
+    return f"ev-{event.key}-{edition.label}" + ("-dias" if days_only else "")
 
 
 def live_edition(event: EventConfig, today: dt.date | None = None, lookback_days: int = 60) -> EventEdition:
@@ -85,7 +87,7 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
             raws += found
         except Exception as exc:
             errors.append(f"anuncios propios (Meta): {exc}")
-        if edition.start:  # además, los anuncios con inversión en los días del evento en sí, con sus números de esos días
+        if edition.start and edition.date_from != edition.start:  # ventana más larga: además, los días del evento en sí
             try:
                 d1 = edition.end or edition.start
                 found = insights.collect_window(own, own.country, edition.start, d1, 15)
@@ -103,7 +105,8 @@ def _past_edition_sources(configs: list, edition: EventEdition, per_brand: int, 
 
 
 def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: list[str],
-             archive: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, Any]:
+             archive: dict[str, list[dict[str, Any]]] | None = None, compare: list[EventEdition] | None = None,
+             compare_out: dict[str, Any] | None = None) -> dict[str, Any]:
     """Instagram orgánico de la marca y de los competidores locales en la ventana del evento.
 
     Cuentas del cliente: todas las publicaciones de la ventana (sirve para ediciones pasadas). Competencia: si Meta
@@ -121,8 +124,17 @@ def _organic(configs: list, edition: EventEdition, keywords: list[str], errors: 
     for c in configs:
         if not c.active or not c.instagram or c.tier not in ("own", "local"):
             continue
+        eds = [edition] + list(compare or [])
+        since, until = min(e.date_from for e in eds), max(e.date_to for e in eds)  # una sola lectura por cuenta
         try:
-            prof = ig.profile(c.instagram, since=edition.date_from, until=edition.date_to)
+            full = ig.profile(c.instagram, since=since, until=until)
+            for ce in compare or []:  # ediciones a comparar: cada una con sus fechas
+                cp = {**full, "posts": [dict(x) for x in full["posts"] if ce.date_from.isoformat() <= x["timestamp"][:10] <= ce.date_to.isoformat()]}
+                compare_out.setdefault(ce.label, {})[c.slug] = {
+                    "brand": c.name, "own": c.is_own,
+                    **{k: v for k, v in summarize(cp, keywords, top=3, assets=settings.assets_dir / "organic",
+                                                  event_days=(ce.start, ce.end or ce.start) if ce.start else None).items()}}
+            prof = {**full, "posts": [x for x in full["posts"] if edition.date_from.isoformat() <= x["timestamp"][:10] <= edition.date_to.isoformat()]}
         except Exception as exc:
             errors.append(f"instagram @{c.instagram}: {str(exc)[:200]}")
             if "token" in str(exc).lower() or "vinculada" in str(exc):
@@ -161,8 +173,44 @@ def _organic_archive(session: Session, event: EventConfig) -> dict[str, list[dic
     return {slug: list(posts.values()) for slug, posts in out.items()}
 
 
+def event_only(edition: EventEdition) -> EventEdition:
+    """La edición recortada a los días del evento (lo que se pidió), no a la ventana de semanas alrededor."""
+    if not edition.start or edition.label.startswith("vivo-"):
+        return edition
+    return EventEdition(label=edition.label, date_from=edition.start, date_to=edition.end or edition.start,
+                        start=edition.start, end=edition.end or edition.start)
+
+
+def _own_paid_summary(own: Any, ed: EventEdition, errors: list[str]) -> dict[str, Any]:
+    """Pauta propia en los días de una edición: inversión y cada tipo de resultado con su costo, y los anuncios con
+    más inversión (sin guardarlos como creativos: es solo para comparar)."""
+    from .collectors.meta_insights import MetaInsightsCollector
+
+    col = MetaInsightsCollector()
+    if not own or not col.supports(own):
+        return {}
+    try:
+        days = col.daily(own, ed.date_from, ed.date_to)
+        top = col.top_rows(own, ed.date_from, ed.date_to, 5)
+    except Exception as exc:
+        errors.append(f"comparación {ed.label} (Meta): {exc}")
+        return {}
+    return {**paid_totals(days), "top": top}
+
+
+def paid_totals(days: list[dict[str, Any]]) -> dict[str, Any]:
+    """Suma de los días: inversión y cada tipo de resultado con su costo (los tipos no se suman entre sí)."""
+    spend = round(sum(d.get("spend") or 0 for d in days), 2)
+    types: dict[str, float] = {}
+    for d in days:
+        for k, v in (d.get("by_type") or {}).items():
+            types[k] = types.get(k, 0) + v
+    return {"spend": spend, "currency": next((d.get("currency") for d in days if d.get("currency")), ""),
+            "by_type": {k: {"total": round(v), "cost": round(spend / v, 2) if v else None} for k, v in types.items()}}
+
+
 def collect_event(session: Session, event: EventConfig, edition: EventEdition, per_brand: int | None = None, market: int = 30,
-                  collector: Any = None) -> dict[str, Any]:
+                  collector: Any = None, compare: list[EventEdition] | None = None) -> dict[str, Any]:
     from .collectors.meta_web import MetaAdLibraryWebCollector
 
     run = get_or_create_run(session, event_period(event, edition))
@@ -205,7 +253,19 @@ def collect_event(session: Session, event: EventConfig, edition: EventEdition, p
                 if known:
                     r.competitor_slug = known.slug
             raws += found
-    organic = _organic(configs, edition, event.keywords, errors, _organic_archive(session, event)) if collector is None else {}
+    compare_out: dict[str, Any] = {}
+    organic = _organic(configs, edition, event.keywords, errors, _organic_archive(session, event), compare, compare_out) \
+        if collector is None else {}
+    if compare and collector is None:
+        own_cfg = next((c for c in configs if c.is_own), None)
+        stats_cmp = {}
+        for ce in compare:
+            stats_cmp[ce.label] = {"from": ce.date_from.isoformat(), "to": ce.date_to.isoformat(),
+                                   "own_paid": _own_paid_summary(own_cfg, ce, errors), "organic": compare_out.get(ce.label) or {}}
+            print(f"[comparar] {event.name} {ce.label}: pauta propia y orgánico entre {ce.date_from} y {ce.date_to}")
+        run.stats = {**(run.stats or {}), "compare": stats_cmp}
+    elif collector is None:
+        run.stats = {k: v for k, v in (run.stats or {}).items() if k != "compare"}  # sin comparación pedida: no queda una vieja
     _register_market_advertisers(session, raws)
     up = upsert_creatives(session, run, raws, dt.date.today(), download_media=True)
     run.status = "collected"
@@ -277,6 +337,13 @@ def _gemini_pieces(plan: dict[str, Any], event: EventConfig, metrics: dict[str, 
     return {**plan, "ideas": ideas, "calendar": cal, "ideas_by": "Gemini"}
 
 
+def _compare_for_report(compare: dict[str, Any], out: Path) -> list[dict[str, Any]]:
+    """Ediciones a comparar, de la más nueva a la más vieja, con su orgánico listo para el informe."""
+    return [{"label": label, "from": c.get("from"), "to": c.get("to"), "own_paid": c.get("own_paid") or {},
+             "organic": _organic_for_report(c.get("organic") or {}, out)}
+            for label, c in sorted(compare.items(), reverse=True)]
+
+
 def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, Any]]:
     """Las cuentas ordenadas (el cliente primero) con sus imágenes copiadas junto al informe."""
     import shutil
@@ -297,7 +364,7 @@ def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, An
 
 
 def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_ai: bool = False, skip_collect: bool = False,
-              out_dir: str | Path | None = None) -> dict[str, Any]:
+              out_dir: str | Path | None = None, compare: list[EventEdition] | None = None) -> dict[str, Any]:
     from . import pipeline
     from .ai.client import check_api
     from .ai.event import mock_event_plan, synthesize_event
@@ -315,6 +382,9 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         if problem:
             raise pipeline.NoData(f"Gemini no anda ({problem}; modelo: {settings.gemini_creative_model}). Las piezas de la guía "
                                   "las escribe Gemini: revisá GEMINI_API_KEY y GEMINI_CREATIVE_MODEL en .env (radar check-api).")
+    # Lo que se pidió: los días del evento (no el mes alrededor), y las ediciones a comparar también en sus días
+    edition = event_only(edition)
+    compare = [event_only(e) for e in compare or [] if e.label != edition.label]
     summary: dict[str, Any] = {"event": event.name, "edition": edition.label}
     period = event_period(event, edition)
     own_cfg = next((c for c in load_competitors() if c.is_own), None)
@@ -326,7 +396,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
             raise pipeline.NoData(problem)
     if not skip_collect:
         pipeline.stage("Buscando los anuncios y los resultados")
-        summary["collect"] = collect_event(session, event, edition)
+        summary["collect"] = collect_event(session, event, edition, compare=compare)
         session.commit()
     pipeline.stage("Clasificando los anuncios")
     summary["classify"] = pipeline.classify(session, period, mock=mock_ai)
@@ -349,7 +419,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     def _period(it: dict[str, Any]) -> dict[str, Any]:
         return ((it.get("engagement") or {}).get("performance") or {}).get("period") or {}
 
-    ev_since = edition.start.isoformat() if edition.start else None
+    ev_since = edition.start.isoformat() if edition.start and edition.date_from != edition.start else None
     own_event_items = [it for it in own_items if ev_since and _period(it).get("since") == ev_since]
     own_items = [it for it in own_items if not (ev_since and _period(it).get("since") == ev_since)]
     market_items, dropped = event_related([it for it in items if it.get("tier") != "own"], event.keywords, edition.date_from)
@@ -370,6 +440,9 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
     names = {it["id"]: matches(item_text(it), event.keywords) for it in own_event_items}
     metrics["own_event_results"] = [{**r, "names_event": names.get(r["id"], False)} for r in ev_rows]
     metrics["market_search"] = (run.stats or {}).get("market_search") or {}
+    metrics["event_only"] = bool(edition.start and edition.date_from == edition.start)
+    metrics["compare"] = _compare_for_report((run.stats or {}).get("compare") or {}, out)
+    metrics["own_paid_total"] = paid_totals((run.stats or {}).get("own_daily") or [])
     metrics["currency"] = currency_symbol(next((d.get("currency") for d in (run.stats or {}).get("own_daily") or [] if d.get("currency")), None)
                                           or next(((it.get("engagement") or {}).get("performance", {}).get("currency") for it in own_items
                                                    if ((it.get("engagement") or {}).get("performance") or {}).get("currency")), None))

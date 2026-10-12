@@ -19,6 +19,11 @@ events:
     countries: [UY]
     keywords: [cyberlunes, cyber lunes, ciberlunes, ciber lunes, cyber monday]
     editions:
+      - label: 2024-11
+        start: 2024-11-04      # 4 al 6 de noviembre de 2024 (CEDU). CONFIRMAR: la nota no dice el año; el 4/11/2024 fue lunes
+        end: 2024-11-06
+        from: 2024-10-14
+        to: 2024-11-13
       - label: 2025-06
         start: 2025-06-02      # CyberLunes junio 2025: 2 al 4 de junio (CEDU)
         end: 2025-06-04

@@ -79,11 +79,17 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
                                  event_days=(dt.date(2025, 6, 2), dt.date(2025, 6, 4)))}}
     assert org["rival"]["event"]["posts"] == 1 and org["rival"]["event"]["vs_period_pct"] == 131
     monkeypatch.setattr(evmod, "_organic", lambda *a, **k: org)
+    monkeypatch.setattr(evmod, "_own_paid_summary", lambda own, ed, errors: {
+        "spend": 300.0, "currency": "USD", "by_type": {"compras": {"total": 10, "cost": 30.0}}, "top": [{"ad_name": "Bici 2024", "spend": 100, "results": 5, "result_type": "compras", "cost_per_result": 20}]})
+    old_ed = EventEdition(label="2024-11", date_from=dt.date(2024, 10, 14), date_to=dt.date(2024, 11, 12), start=dt.date(2024, 11, 4), end=dt.date(2024, 11, 6))
     with session_scope(url) as s:
-        out = evmod.run_event(s, ev, ev.edition(), mock_ai=True, out_dir=tmp_path / "rep")
+        out = evmod.run_event(s, ev, ev.edition(), mock_ai=True, out_dir=tmp_path / "rep", compare=[old_ed])
     html = (tmp_path / "rep" / "report.html").read_text(encoding="utf-8")
     assert out["ads"] == 2 and "Guía de CyberLunes" in html and "Tienda X" in html and "1 a 7 días antes" in html
-    assert "El evento en sí: 2025-06-02 al 2025-06-04" in html and "+131%" in html and "Rival: lo que publicó para el evento" in html
+    assert "El evento en sí: 2025-06-02 al 2025-06-04" in html and "Rival: lo que publicó para el evento" in html
+    # solo los días del evento: sin la sección del período ni la comparación contra el promedio del período
+    assert "Instagram en todo el período" not in html and "Contra su promedio" not in html
+    assert "Cómo fue cada edición" in html and "2024-11" in html and "US$ 300" in html
     assert "Con qué datos se armó esta guía" in html and "Creemos que mostrar la caída" in html and "Cómo se prueba" in html
 
 

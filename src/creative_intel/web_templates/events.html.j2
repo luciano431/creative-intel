@@ -23,6 +23,13 @@
     </div>
   </div>
   <p class="small muted" id="ed-help" style="margin:0 0 12px"></p>
+  <div id="cmp-box" style="margin-bottom:12px">
+    <label>Comparar con</label>
+    <div class="row" id="cmp">
+      {% for e in events %}{% for x in e.editions %}<label class="check" data-ev="{{ e.key }}"><input type="checkbox" class="cmp" value="{{ x.label }}"> {{ x.label }}{% if x.start %} ({{ x.start }}{% if x.end and x.end != x.start %} al {{ x.end }}{% endif %}){% endif %}</label>{% endfor %}{% endfor %}
+    </div>
+    <p class="small muted" style="margin:4px 0 0">Suma una tabla con la pauta y el Instagram de cada cuenta en los días de esa otra edición.</p>
+  </div>
 
   <label>Clientes</label>
   <div class="row" style="margin-bottom:12px">
@@ -64,7 +71,7 @@ const $ = id => document.getElementById(id);
 const JOBS = {{ jobs | tojson }};
 const HELP = {
   vivo: 'Solo guarda los anuncios que la competencia tiene activos hoy (sin IA, gratis). Usalo cada 2 o 3 días antes y durante la fecha: así el año que viene la guía tiene contra qué comparar. No genera la guía.',
-  past: 'La guía: resultados reales del cliente en esa edición (Meta), lo que hizo la competencia en esas fechas y el plan de piezas con ideas.'
+  past: 'La guía: solo los días de esa edición. Resultados reales del cliente (Meta), lo que publicó cada marca para la fecha y el plan de piezas.'
 };
 function syncEd() {
   const ev = $('ev').value; let first = null;
@@ -75,6 +82,10 @@ function syncEd() {
   $('ai').disabled = vivo; if (vivo) $('ai').checked = false;
   $('ai-help').textContent = vivo ? '' : ($('ai').checked ? '' : 'Sin IA la guía trae solo los números: sin resumen, oferta ni ideas.');
   $('go').textContent = vivo ? 'Archivar ahora' : 'Generar guías';
+  $('cmp-box').hidden = vivo;
+  document.querySelectorAll('#cmp label').forEach(l => {
+    const own = l.querySelector('input').value === $('ed').value;
+    l.hidden = l.dataset.ev !== ev || own; if (l.hidden) l.querySelector('input').checked = false; });
 }
 $('ai').addEventListener('change', syncEd);
 $('ev').addEventListener('change', syncEd); $('ed').addEventListener('change', syncEd); syncEd();
@@ -101,7 +112,8 @@ document.querySelectorAll('.del').forEach(b => b.addEventListener('click', async
 $('go').addEventListener('click', async () => {
   $('err').textContent = '';
   const clients = [...document.querySelectorAll('.cl:checked')].map(x => x.value);
-  try { addJob(await api('/api/eventos', {event: $('ev').value, edition: $('ed').value, clients, ai: $('ai').checked})); }
+  try { addJob(await api('/api/eventos', {event: $('ev').value, edition: $('ed').value, clients, ai: $('ai').checked,
+                                       compare: [...document.querySelectorAll('.cmp:checked')].map(x => x.value)})); }
   catch (e) { $('err').textContent = e.message; }
 });
 </script>

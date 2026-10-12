@@ -46,10 +46,15 @@ def event_coverage(m: dict[str, Any], live: bool = False) -> dict[str, Any]:
     with_posts = [o for o in comp if o.get("posts")]
     pts += 2 if len(with_posts) >= 2 else 1 if with_posts else 0
     partial = [o for o in comp if o.get("source") == "perfil_publico"]
+    capped = [o for o in comp if o.get("capped") and not o.get("posts")]
+    if capped:
+        detail_cap = f" · de {len(capped)} no se llegó a esas fechas (subí APIFY_MAX_POSTS)"
+    else:
+        detail_cap = ""
     detail = f"{len(with_posts)} de {len(comp)} cuentas con publicaciones en esas fechas" if comp else "no se pudo leer ninguna cuenta"
     if partial:
         detail += f" · de {len(partial)} solo se ven las últimas publicaciones"
-    rows.append(_row("Instagram de la competencia", bool(with_posts), detail))
+    rows.append(_row("Instagram de la competencia", bool(with_posts), detail + detail_cap))
     if any(o.get("event") is not None for o in organic):
         about = [o for o in organic if (o.get("event") or {}).get("posts")]
         rows.append(_row("Publicaciones del evento en sí (Instagram)", bool(about),

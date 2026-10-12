@@ -64,7 +64,7 @@
 {% set od = m.own_daily or {} %}
 {% if od.phases or m.own_groups %}
 <section>
-  <div class="sec-head"><span class="sec-num">01</span><h2>Lo que le funcionó a {{ client.name }}</h2></div>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Lo que le funcionó a {{ client.name }}{% if m.event_only %} en los días del evento{% endif %}</h2></div>
   <p class="sec-intro">Datos reales de la cuenta publicitaria de {{ client.name }} en Meta, del {{ edition.date_from }} al {{ edition.date_to }}. Cada tipo de resultado va por separado: compras, conversaciones (WhatsApp / Messenger), leads y clics al sitio no se suman entre sí.</p>
   {% if od.phases %}
   <h3 style="margin:8px 0 6px">Antes, durante y después del evento</h3>
@@ -106,7 +106,7 @@
   </div>
 </section>
 
-{% if m.organic %}
+{% if m.organic and not m.event_only %}
 <section>
   <div class="sec-head"><span class="sec-num">IG</span><h2>Instagram en todo el período</h2></div>
   <p class="sec-intro">Contexto: todas las publicaciones (no anuncios) de cada cuenta entre {{ edition.date_from }} y {{ edition.date_to }}, sean o no del evento. Lo dedicado al evento va en la sección siguiente. Interacción = likes + comentarios; la tasa la divide por los seguidores para poder comparar cuentas de distinto tamaño.</p>
@@ -160,14 +160,14 @@
   {% if evorg %}
   <h3 style="margin:22px 0 6px">Publicaciones de Instagram del evento</h3>
   <div class="tbl"><table>
-    <thead><tr><th>Cuenta</th><th>Publicaciones del evento</th><th>Nombran la fecha</th><th>Salieron en esos días</th><th>Interacción promedio</th><th>Contra su promedio del período</th></tr></thead>
+    <thead><tr><th>Cuenta</th><th>Publicaciones del evento</th><th>Nombran la fecha</th><th>Salieron en esos días</th><th>Interacción promedio</th>{% if not m.event_only %}<th>Contra su promedio del período</th>{% endif %}</tr></thead>
     <tbody>{% for o in evorg %}{% set e = o.event %}
       <tr><td><b>{{ o.brand }}</b>{% if o.own %} (cliente){% endif %}</td><td>{{ e.posts }}</td><td>{{ e.named }}</td><td>{{ e.in_days }}</td>
-        <td>{{ e.avg_interactions if e.posts else '—' }}</td>
-        <td>{% if e.vs_period_pct is not none %}{{ '+' if e.vs_period_pct > 0 else '' }}{{ e.vs_period_pct }}%{% elif not e.posts %}no publicó sobre la fecha{% else %}—{% endif %}</td></tr>
+        <td>{% if o.capped and o.visible_since and o.visible_since > edition.date_to|string %}no se llegó a esas fechas{% else %}{{ e.avg_interactions if e.posts else ('no publicó' if m.event_only else '—') }}{% endif %}</td>
+        {% if not m.event_only %}<td>{% if e.vs_period_pct is not none %}{{ '+' if e.vs_period_pct > 0 else '' }}{{ e.vs_period_pct }}%{% elif not e.posts %}no publicó sobre la fecha{% else %}—{% endif %}</td>{% endif %}</tr>
     {% endfor %}</tbody>
   </table></div>
-  <p class="small muted" style="margin-top:6px">Interacción = likes + comentarios. "Contra su promedio" compara las publicaciones del evento con todas las de esa cuenta en el período: muestra si la fecha le movió la aguja a cada marca. Interacción no es venta.</p>
+  <p class="small muted" style="margin-top:6px">{% if m.event_only %}Interacción = likes + comentarios, por publicación. Interacción no es venta.{% else %}Interacción = likes + comentarios. "Contra su promedio" compara las publicaciones del evento con todas las de esa cuenta en el período: muestra si la fecha le movió la aguja a cada marca. Interacción no es venta.{% endif %}</p>
   {% for o in evorg if o.event.pieces %}
   <h3 style="margin:22px 0 8px">{{ o.brand }}: lo que publicó para el evento</h3>
   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
@@ -184,6 +184,38 @@
     {% endfor %}
   </div>
   {% endfor %}
+  {% endif %}
+</section>
+{% endif %}
+{% if m.compare %}
+{% set allc = [{'label': edition.label, 'from': edition.date_from|string, 'to': edition.date_to|string, 'own_paid': m.own_paid_total or {}, 'organic': m.organic or []}] + m.compare %}
+{% set types = [] %}{% for c in allc %}{% for t in (c.own_paid.by_type or {}).keys() %}{% if t not in types %}{% set _ = types.append(t) %}{% endif %}{% endfor %}{% endfor %}
+<section>
+  <div class="sec-head"><span class="sec-num">VS</span><h2>Cómo fue cada edición</h2></div>
+  <p class="sec-intro">Las mismas cuentas en los días de cada edición de {{ event.name }}. Así se ve qué se repite (y conviene volver a hacer) y qué fue de un solo año.</p>
+  <h3 style="margin:8px 0 6px">Pauta de {{ client.name }}</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Edición</th><th>Días</th><th>Inversión</th>{% for t in types %}<th>{{ t | capitalize }}</th><th>Costo por {{ {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'}.get(t, t) }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for c in allc %}{% set op = c.own_paid or {} %}
+      <tr><td><b>{{ c.label }}</b>{% if loop.first %} <span class="muted small">(base de esta guía)</span>{% endif %}</td><td class="small">{{ c['from'] }} al {{ c['to'] }}</td>
+        <td>{{ (cur ~ ' %.0f' % op.spend) if op.spend else '—' }}</td>
+        {% for t in types %}{% set x = (op.by_type or {}).get(t) %}<td>{{ x.total if x else '—' }}</td><td>{{ (cur ~ ' %.2f' % x.cost) if x and x.cost else '—' }}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% for c in m.compare if (c.own_paid or {}).top %}
+  <p class="small" style="margin:10px 0 2px"><b>{{ c.label }} · anuncios con más inversión:</b></p>
+  <ul class="small" style="margin:0;padding-left:18px">{% for r in c.own_paid.top %}<li>{{ r.ad_name }} · {{ cur }} {{ '%.2f' % (r.spend or 0) }} · {{ (r.results or 0)|round(0)|int }} {{ r.result_type or '' }}{% if r.cost_per_result %} a {{ cur }} {{ '%.2f' % r.cost_per_result }}{% endif %}</li>{% endfor %}</ul>
+  {% endfor %}
+  {% set brands = [] %}{% for c in allc %}{% for o in c.organic %}{% if o.brand not in brands %}{% set _ = brands.append(o.brand) %}{% endif %}{% endfor %}{% endfor %}
+  {% if brands %}
+  <h3 style="margin:22px 0 6px">Instagram en los días de cada edición</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Cuenta</th>{% for c in allc %}<th>{{ c.label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for b in brands %}<tr><td><b>{{ b }}</b></td>
+      {% for c in allc %}{% set o = (c.organic | selectattr('brand', 'equalto', b) | list | first) %}
+      <td class="small">{% if o and o.capped and o.visible_since and o.visible_since > c['to'] %}no se llegó a esas fechas (Apify trajo desde {{ o.visible_since }}){% elif o and o.posts %}{{ o.posts }} publicaciones · {{ o.event.named if o.event else o.event_posts }} nombran la fecha · {{ o.avg_likes }} likes y {{ o.avg_comments }} comentarios en promedio{% elif o %}no publicó{% else %}—{% endif %}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table></div>
   {% endif %}
 </section>
 {% endif %}

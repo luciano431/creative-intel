@@ -163,6 +163,21 @@ class MetaInsightsCollector:
                     d["by_type"][k] = d["by_type"].get(k, 0) + v
         return [days[k] for k in sorted(days)]
 
+    def top_rows(self, competitor: CompetitorConfig, since: dt.date, until: dt.date, limit: int = 5) -> list[dict[str, Any]]:
+        """Los anuncios con más inversión entre dos fechas, solo con sus números (para comparar ediciones)."""
+        time_range = f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}'
+        data: list[dict[str, Any]] = []
+        for acct in self.accounts(competitor.meta_ad_account_id):
+            try:
+                data += self._get(f"{acct}/insights", level="ad", fields=INSIGHT_FIELDS, limit=500, time_range=time_range).get("data", [])
+            except RuntimeError as exc:
+                if "access token" in str(exc).lower():
+                    raise
+                data += self._get(f"{acct}/insights", level="ad", fields=BASIC_FIELDS, limit=500, time_range=time_range).get("data", [])
+        top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[:limit]
+        return [{"ad_name": r.get("ad_name") or "", **{k: v for k, v in performance_row(r).items() if k in
+                ("spend", "results", "result_type", "cost_per_result", "ctr", "roas", "stage")}} for r in top]
+
     def collect(self, competitor: CompetitorConfig, since: dt.date | None = None, until: dt.date | None = None,
                 limit: int | None = None) -> list[RawCreative]:
         window = since is not None
