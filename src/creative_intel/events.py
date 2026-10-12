@@ -244,11 +244,26 @@ def _gemini_ideas(plan: dict[str, Any], event: EventConfig, metrics: dict[str, A
         "anuncios_del_mercado": _compact_items([it for it in items if it.get("tier") != "own"], limit=40),
         "anuncios_propios": _compact_items([it for it in items if it.get("tier") == "own"], limit=20),
     }
-    ideas = write_ideas(client, context, f"Escribí 4 ideas para {event.name}, una para cada momento clave del calendario "
-                                         "(for_what = el momento). Cada una con un producto distinto de la marca.")
-    if ideas:
-        plan = {**plan, "ideas": [strip_for(i) | {"moment": i.get("for_what", "")} for i in ideas], "ideas_by": "Gemini"}
-    return plan
+    base = plan.get("ideas") or []
+    if base:  # el razonamiento (dato, lectura, hipótesis, prueba) queda del análisis; Gemini reescribe la pieza
+        context["ideas_a_reescribir"] = [{k: i.get(k) for k in ("title", "format", "angle", "evidence", "reading", "hypothesis", "hook_line", "copy_draft")}
+                                         for i in base]
+        ask = (f"Reescribí estas {len(base)} ideas para {event.name} (for_what = el título original, tal cual): misma idea y "
+               "mismo dato de origen, con mejor gancho, guion, copy y dirección visual.")
+    else:
+        ask = (f"Escribí 4 ideas para {event.name}, una para cada momento clave del calendario "
+               "(for_what = el momento). Cada una con un producto distinto de la marca.")
+    ideas = write_ideas(client, context, ask)
+    if not ideas:
+        return plan
+    if base:
+        by_title = {i.get("for_what", "").strip().lower(): i for i in ideas}
+        merged = []
+        for n, b in enumerate(base):
+            g = by_title.get((b.get("title") or "").strip().lower()) or (ideas[n] if n < len(ideas) else None)
+            merged.append({**b, **{k: v for k, v in strip_for(g).items() if v}} if g else b)
+        return {**plan, "ideas": merged, "ideas_by": "Gemini (piezas) sobre el análisis"}
+    return {**plan, "ideas": [strip_for(i) | {"moment": i.get("for_what", "")} for i in ideas], "ideas_by": "Gemini"}
 
 
 def _organic_for_report(organic: dict[str, Any], out: Path) -> list[dict[str, Any]]:
@@ -329,6 +344,11 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
                                                    if ((it.get("engagement") or {}).get("performance") or {}).get("currency")), None))
     metrics["collect_errors"] = ((run.stats or {}).get("collect") or {}).get("errors") or []
     metrics["organic"] = _organic_for_report((run.stats or {}).get("organic") or {}, out)
+    from .ai.synthesize import sample_note
+    from .analysis.data_coverage import event_coverage
+
+    metrics["data_coverage"] = event_coverage(metrics, live=edition.label.startswith("vivo-"))
+    metrics["sample"] = sample_note(items, 150)  # qué anuncios vio la IA
     next_dates = {"start": event.next_start.isoformat() if event.next_start else None,
                   "end": event.next_end.isoformat() if event.next_end else None}
     if mock_ai:

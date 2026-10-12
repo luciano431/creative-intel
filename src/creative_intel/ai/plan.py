@@ -38,7 +38,10 @@ class Idea(_Strict):
     reference_creative_id: int | None = Field(description="id de un anuncio de los datos que respalda la idea, o null")
     reference_url: str = Field(description="link de un hallazgo de la investigación que respalda la idea, o ''")
     reference_note: str = Field(description="Qué hace la referencia, citando su copy textual entre comillas y su fecha si la hay")
-    how_to_measure: str = Field(description="Métrica concreta y contra qué se compara")
+    evidence: str = Field(description="DATO: el hecho de los datos que origina la idea, con números y de dónde sale")
+    reading: str = Field(description="LECTURA: qué significa ese dato para el cliente, en una oración")
+    hypothesis: str = Field(description="HIPÓTESIS: qué creemos que va a pasar si se hace, empezando con 'Creemos que'")
+    how_to_measure: str = Field(description="PRUEBA: cómo se comprueba (contra qué se compara, cuánto tiempo, inversión mínima) y el umbral para seguir o cortar")
 
 
 class Step(_Strict):
@@ -70,7 +73,8 @@ Orden de trabajo (es el orden del informe):
 5. Por dónde empezar: los próximos 3 meses desde {next_month}, cruzados con las fechas comerciales de `calendar`.
 
 Reglas:
-- Castellano de Uruguay, voseo, frases cortas. Hechos y números de los datos; nada de "probablemente", "podría", "busca".
+- Castellano de Uruguay, voseo, frases cortas. Separá siempre el DATO (números de los datos, sin adjetivos), la LECTURA (qué significa) y la HIPÓTESIS ("Creemos que..."). Auditoría y diagnóstico van con datos; las ideas llevan su cadena completa (`evidence`, `reading`, `hypothesis`, `how_to_measure`). Nunca presentes una hipótesis como hecho.
+- `data_coverage` dice con qué datos se armó el plan y qué faltó. Si la confianza es media o baja, decilo en `method_note` y planteá las ideas como pruebas chicas.
 - La hoja del cliente (`client_brief`) es ley: tono, qué vender, qué evitar, promos posibles. No inventes precios ni descuentos.
 - El copy suena a una persona, no a un folleto: nada de "descubrí", "elevá", "no es solo X, es Y", "¿Sabías que...?", adjetivos vacíos.
 - Solo productos y categorías que vende el cliente.
@@ -95,7 +99,13 @@ def synthesize_plan(metrics: dict[str, Any], items: list[dict[str, Any]], client
     today = dt.date.today()
     own = [it for it in items if it.get("tier") == "own"]
     market = [it for it in items if it.get("tier") != "own"]
+    from ..analysis.data_coverage import plan_coverage
+    from .synthesize import sample_note
+
+    metrics["data_coverage"] = plan_coverage(metrics, len(market), len(findings))
+    metrics["sample"] = sample_note(market, 120)
     payload = {
+        "data_coverage": metrics["data_coverage"],
         "client": {"name": client_info.name, "industry": client_info.industry, "market": client_info.market, "description": client_info.description},
         "client_brief": client_info.brief or None,
         "period": period,
@@ -116,11 +126,13 @@ def synthesize_plan(metrics: dict[str, Any], items: list[dict[str, Any]], client
                                 next_month=next_month)
     content = [{"type": "text", "text": "Datos (JSON):\n" + json.dumps(payload, ensure_ascii=False, default=str) + "\n\nEscribí el plan."}]
     out = structured_call(PlanOutput, system, content, model=settings.synth_model, max_tokens=20000, effort="high", stream=True)
-    return {"version": 2, **out.model_dump(), "research": findings}
+    return {"version": 2, **out.model_dump(), "research": findings, "data_coverage": metrics["data_coverage"], "sample": metrics["sample"]}
 
 
 def mock_plan(metrics: dict[str, Any], items: list[dict[str, Any]], client_name: str) -> dict[str, Any]:
     """Versión sin IA: el esqueleto con los datos calculados (para probar el circuito)."""
+    from ..analysis.data_coverage import plan_coverage
+
     audit = metrics.get("own_audit") or {}
     ex = metrics.get("execution") or {}
     own = [it for it in items if it.get("tier") == "own" and it.get("source") != "meta_insights"]
@@ -129,7 +141,8 @@ def mock_plan(metrics: dict[str, Any], items: list[dict[str, Any]], client_name:
     ideas = [{"title": f"(Sin IA) Resolver: {g['title']}", "start_now": True, "tags": ["venta", "meta"], "effort": "bajo",
               "what_to_do": ["Correr con IA para obtener la idea completa."], "copy_lines": [],
               "reference_creative_id": market[i]["id"] if i < len(market) else None, "reference_url": "",
-              "reference_note": (market[i].get("headline") or "") if i < len(market) else "", "how_to_measure": "—"}
+              "reference_note": (market[i].get("headline") or "") if i < len(market) else "", "how_to_measure": "—",
+              "evidence": g["detail"], "reading": "", "hypothesis": ""}
              for i, g in enumerate(gaps[:4])]
     return {
         "version": 2,
@@ -144,4 +157,5 @@ def mock_plan(metrics: dict[str, Any], items: list[dict[str, Any]], client_name:
         "roadmap": [],
         "method_note": "La Biblioteca de anuncios muestra qué se publica, no qué rinde.",
         "research": [],
+        "data_coverage": plan_coverage(metrics, len(market), 0),
     }

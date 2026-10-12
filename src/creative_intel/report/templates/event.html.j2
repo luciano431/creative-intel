@@ -44,7 +44,17 @@
 </header>
 <main class="wrap">
 {% set cur = m.currency or 'US$' %}
-{% if m.collect_errors %}
+{% set dc = m.data_coverage %}
+{% if dc %}
+<section><div class="card" style="border-left:4px solid {{ {'alta':'#2F7D4F','media':'#B7791F','baja':'#9B2F25'}[dc.level] }}">
+  <b>Con qué datos se armó esta guía · confianza {{ dc.level }}</b>
+  <ul class="small" style="margin:6px 0 0;padding-left:18px;list-style:none">
+    {% for r in dc.rows %}<li>{{ '✓' if r.ok else '✗' }} <b>{{ r.source }}:</b> {{ r.detail }}</li>{% endfor %}
+  </ul>
+  {% if m.sample and m.sample.sent < m.sample.total %}<p class="small muted" style="margin:6px 0 0">La IA vio {{ m.sample.sent }} de {{ m.sample.total }} anuncios, repartidos entre marcas y entre los más viejos y los más nuevos.</p>{% endif %}
+  {% if dc.errors %}<details class="small" style="margin-top:6px"><summary>Errores al traer datos ({{ dc.errors | length }})</summary><ul style="margin:4px 0 0;padding-left:18px">{% for e in dc.errors[:8] %}<li>{{ e[:300] }}</li>{% endfor %}</ul></details>{% endif %}
+</div></section>
+{% elif m.collect_errors %}
 <section><div class="card" style="border-left:4px solid #B7791F"><b>Lo que no se pudo traer en esta corrida</b>
   <ul class="small" style="margin:6px 0 0;padding-left:18px">{% for e in m.collect_errors[:8] %}<li>{{ e[:300] }}</li>{% endfor %}</ul></div></section>
 {% endif %}
@@ -219,6 +229,12 @@
       {% if c.script %}<div class="k" style="margin:10px 0 4px">Guion</div><ol class="script">{% for b in c.script %}<li>{{ b }}</li>{% endfor %}</ol>{% endif %}
       {% if c.copy_draft %}<p><b>Copy:</b> {{ c.copy_draft }}</p>{% endif %}
       <p class="small"><b>CTA:</b> {{ c.cta }} · <b>Visual:</b> {{ c.visual_direction }}</p>
+      {% if c.evidence %}<dl class="small chain" style="margin:10px 0 0;border-top:1px solid var(--line, #ddd);padding-top:8px">
+        <dt><b>Dato</b></dt><dd style="margin:0 0 4px">{{ c.evidence }}</dd>
+        <dt><b>Lectura</b></dt><dd style="margin:0 0 4px">{{ c.reading }}</dd>
+        <dt><b>Hipótesis</b></dt><dd style="margin:0 0 4px">{{ c.hypothesis }}</dd>
+        <dt><b>Cómo se prueba</b></dt><dd style="margin:0">{{ c.test }}</dd>
+      </dl>{% endif %}
     </div>
     {% endfor %}
   </div>

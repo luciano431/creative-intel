@@ -11,7 +11,7 @@ from pydantic import Field
 
 from ..config import settings
 from .client import structured_call
-from .synthesize import ConceptIdea, _compact_items, _Strict
+from .synthesize import ReasonedIdea, _compact_items, _Strict
 
 
 class EventFact(_Strict):
@@ -31,7 +31,7 @@ class EventPlan(_Strict):
     summary: list[EventFact] = Field(description="3 a 4 hechos de cómo lo encaró el mercado en la edición anterior")
     offer_recommendation: str = Field(description="Qué oferta conviene comunicar y por qué, citando lo que hizo el mercado y respetando la hoja del cliente")
     calendar: list[CalendarItem] = Field(description="4 a 8 piezas en orden de salida")
-    ideas: list[ConceptIdea] = Field(description="3 a 5 ideas completas y listas para producir")
+    ideas: list[ReasonedIdea] = Field(description="3 a 5 ideas completas y listas para producir, cada una con dato, lectura, hipótesis y prueba")
     avoid: list[str] = Field(description="2 a 4 cosas a no hacer, basadas en datos o en la hoja del cliente")
 
 
@@ -39,7 +39,7 @@ EVENT_PROMPT = """Sos el/la director/a de estrategia creativa de Ranker. Armás 
 Recibís cómo lo encaró el mercado en la edición anterior (`event_metrics`: cuándo arrancaron los anuncios respecto del día del evento, qué ofertas y qué tan profundas, cuánta urgencia, formatos, quién pautó), los anuncios de esa edición, la hoja del cliente y las fechas de la próxima edición si están.
 
 Reglas:
-1. Castellano claro, voseo, sin jerga en inglés. Solo hechos de los datos: conteos, porcentajes, días. Nada de "probablemente" ni "busca".
+1. Castellano claro, voseo, sin jerga en inglés. Separá siempre tres cosas: el DATO (conteos, porcentajes, días, montos de los datos, sin adjetivos), la LECTURA (qué significa para {client}) y la HIPÓTESIS (qué creemos que va a pasar, con "Creemos que..."). Nunca presentes una lectura o una hipótesis como si fuera un dato. El resumen (`summary`) lleva solo datos.
 2. El calendario sale del timing real del mercado (si 6 de cada 10 anuncios arrancaron en la previa, la previa importa) y se escribe relativo al evento.
 3. La oferta respeta la hoja del cliente: si no tiene promociones, no inventes descuentos; proponé beneficios que no bajen el precio y marcalos como propuesta.
 4. Las ideas las escribís completas: título, gancho textual, guion por escenas con tiempos (o placa por placa), copy listo, CTA y dirección visual, con el tono de la hoja.
@@ -49,8 +49,9 @@ Reglas:
 8. Nunca escribas "resultados" a secas: decí siempre qué son (compras, conversaciones por WhatsApp/Messenger, leads o clics al sitio) y no sumes tipos distintos. Compará costos solo dentro del mismo tipo. No nombres campos ni variables (own_daily, own_results, event_metrics).
 10. `event_metrics.organic`: publicaciones orgánicas de Instagram de {client} y de cada competidor en esa ventana (cantidad, likes y comentarios promedio, interacción sobre seguidores, cuántas nombraron el evento y las de más interacción con su texto). Es el dato de la competencia de esa edición: usalo para comparar qué temas, formatos y mensajes generaron más interacción. Interacción no es venta: decilo así. Si una cuenta tiene `source: perfil_publico`, solo se ven sus últimas publicaciones (desde `visible_since`): con 0 publicaciones en la ventana no digas que no publicó, decí que no se ve.
 11. Cada anuncio propio trae `stage` (tofu = que nos conozcan, mofu = consideración, bofu = conversión) y el resultado que buscaba su campaña. Un anuncio de tráfico o alcance (tofu) no se juzga por leads ni ventas: se compara solo con los de su misma etapa y tipo de resultado.
-12. Las ideas (`ideas`) son obligatorias: 3 a 5, completas, con guion escena por escena, copy y dirección visual, una por momento clave del calendario.
+12. Las ideas (`ideas`) son obligatorias: 3 a 5, completas, con guion escena por escena, copy y dirección visual, una por momento clave del calendario. Cada una con su cadena: `evidence` (el dato que la origina, citando de dónde sale), `reading`, `hypothesis` y `test` (cómo se prueba y con qué umbral se decide seguir o cortar). Si el dato es débil (pocos anuncios, una sola cuenta), decilo en `reading`.
 13. Los montos están en la moneda de la cuenta (`currency`: "$" = pesos uruguayos, "US$" = dólares). Escribilos siempre con ese símbolo. Si no hay anuncios de la competencia de esa edición, decilo en una línea y trabajá con los resultados propios y el orgánico.
+14. `event_metrics.data_coverage` dice con qué datos se armó la guía y qué faltó. Si la confianza es media o baja, el primer hecho del resumen dice qué faltó y las ideas se plantean como pruebas chicas, no como apuestas grandes.
 9. `event_metrics` (ofertas, urgencia, timing, quién pautó) es SOLO de la competencia. Si tiene 0 anuncios, decí que no hay datos de la competencia de esa edición y no saques conclusiones del mercado."""
 
 

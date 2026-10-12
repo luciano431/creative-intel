@@ -117,6 +117,17 @@
   {% if review.status and review.status != 'approved' %}<span class="draft">Borrador · pendiente de validación</span>{% endif %}
 </header>
 
+{% set dc = P.data_coverage %}
+{% if dc %}
+<section class="coverage" style="border-left:3px solid {{ {'alta':'#2F7D4F','media':'#B7791F','baja':'#9B2F25'}[dc.level] }};padding:4px 0 4px 16px;margin:-16px 0 40px">
+  <div class="kick" style="margin-bottom:8px"><span>Con qué datos se armó · confianza {{ dc.level }}</span></div>
+  <ul style="margin:0;padding:0;list-style:none;font-size:14px;color:var(--soft)">
+    {% for r in dc.rows %}<li>{{ '✓' if r.ok else '✗' }} <b>{{ r.source }}:</b> {{ r.detail }}</li>{% endfor %}
+  </ul>
+  {% if P.sample and P.sample.sent < P.sample.total %}<p style="margin:6px 0 0;font-size:13px;color:var(--faint)">La IA vio {{ P.sample.sent }} de {{ P.sample.total }} anuncios de referencia, repartidos entre marcas y entre los más viejos y los más nuevos.</p>{% endif %}
+</section>
+{% endif %}
+
 <section>
   <div class="sh"><h2>Lo que ya están haciendo</h2><span>Auditoría</span></div>
   <p>{{ client.name }} tiene hoy <strong>{{ audit.active or 0 }} anuncios activos</strong>{% if audit.platforms %} ({% for k, v in audit.platforms.items() %}{{ v }} en {{ k | capitalize }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif %}. Antes de proponer nada, esto es lo que ya está ocupado.</p>
@@ -186,7 +197,10 @@
         {% endif %}
       </dd></div>
       {% endif %}
-      <div class="row"><dt>Cómo se mide</dt><dd>{{ i.how_to_measure }}</dd></div>
+      {% if i.evidence %}<div class="row"><dt>Dato</dt><dd>{{ i.evidence }}</dd></div>{% endif %}
+      {% if i.reading %}<div class="row"><dt>Lectura</dt><dd>{{ i.reading }}</dd></div>{% endif %}
+      {% if i.hypothesis %}<div class="row"><dt>Hipótesis</dt><dd>{{ i.hypothesis }}</dd></div>{% endif %}
+      <div class="row"><dt>{{ 'Cómo se prueba' if i.hypothesis else 'Cómo se mide' }}</dt><dd>{{ i.how_to_measure }}</dd></div>
     </dl>
   </article>
   {% endfor %}

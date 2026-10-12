@@ -44,7 +44,7 @@ Sin `RADAR_CLIENT` se usa `config/` (el cliente por defecto). La marca del infor
 config/competitors.yaml ──► COLECTORES ──► BASE DE CREATIVOS ──► IA etapa 1 ──► MOTOR COMPARATIVO ──► IA etapa 2 ──► QA HUMANA ──► REPORTE ──► BASECAMP
 (países > local/global/own)  meta_api        creatives           clasificación    mes vs mes            síntesis       approve /     HTML + MD    documento
                              meta_web        sightings           JSON cerrado     local vs global       estratégica    edit /        + capturas   + to-dos
-                             google_serpapi  classifications     (taxonomy.yaml)  white space           (Claude)       reject
+                             google_serpapi  classifications     (taxonomy.yaml)  white space           (GPT-5.4)      reject
                              google_web      concepts                             nosotros vs mercado
                              manual          syntheses                            longevidad / familias
 ```

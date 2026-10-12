@@ -52,6 +52,15 @@ class ConceptIdea(_Strict):
     visual_direction: str = Field(description="Cómo se ve: escena, casting, recursos visuales")
 
 
+class ReasonedIdea(ConceptIdea):
+    """Idea con su razonamiento a la vista: qué dato la sostiene, qué se lee de ese dato, qué se cree que va a pasar
+    y cómo se comprueba. Así no se presenta una hipótesis como si fuera un hecho."""
+    evidence: str = Field(description="DATO: el hecho de los datos que la origina, con números y de dónde sale (anuncio, cuenta, fecha)")
+    reading: str = Field(description="LECTURA: qué significa ese dato para el cliente, en una oración")
+    hypothesis: str = Field(description="HIPÓTESIS: qué creemos que va a pasar si se hace, empezando con 'Creemos que'")
+    test: str = Field(description="PRUEBA: cómo se comprueba (contra qué se compara, cuánto tiempo, qué inversión mínima) y la métrica con su umbral para seguir o cortar")
+
+
 class Opportunity(_Strict):
     title: str
     priority: str = Field(description="alta | media | baja")
@@ -120,9 +129,56 @@ def _system_prompt(client: str, industry: str, market: str) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(client=client, industry=industry or "sin industria definida", market=market or "mercado local")
 
 
+def _spend(it: dict[str, Any]) -> float:
+    return float(((it.get("engagement") or {}).get("performance") or {}).get("spend") or 0)
+
+
+def sample_items(items: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    """Qué anuncios ve la IA cuando hay más que el tope: repartidos entre marcas (ninguna se lleva toda la muestra)
+    y, dentro de cada marca, alternando el que más tiempo lleva al aire con el más nuevo (para no perder los
+    lanzamientos recientes). Los propios con resultados van primero, del de más inversión al de menos."""
+    if len(items) <= limit:
+        return list(items)
+    own = sorted([it for it in items if it.get("tier") == "own"], key=lambda x: (-_spend(x), -(x.get("days_active") or 0)))
+    rest = [it for it in items if it.get("tier") != "own"]
+    by_brand: dict[str, list[dict[str, Any]]] = {}
+    for it in rest:
+        by_brand.setdefault(it.get("competitor") or "?", []).append(it)
+    queues = []
+    for group in by_brand.values():
+        oldest = sorted(group, key=lambda x: -(x.get("days_active") or 0))
+        newest = sorted(group, key=lambda x: x.get("first_seen") or "", reverse=True)
+        order, seen = [], set()
+        for a, b in zip(oldest, newest):
+            for it in (a, b):
+                if id(it) not in seen:
+                    seen.add(id(it))
+                    order.append(it)
+        queues.append(order)
+    out = own[: max(limit // 3, min(len(own), limit - len(rest)))] if rest else own[:limit]
+    i = 0
+    while len(out) < limit and any(i < len(q) for q in queues):
+        for q in queues:
+            if i < len(q) and len(out) < limit:
+                out.append(q[i])
+        i += 1
+    return out
+
+
+def sample_note(items: list[dict[str, Any]], limit: int) -> dict[str, Any]:
+    """Cuántos anuncios había y cuántos vio la IA, por marca (queda registrado en el informe)."""
+    picked = sample_items(items, limit)
+    count: dict[str, list[int]] = {}
+    for it in items:
+        count.setdefault(it.get("competitor") or "?", [0, 0])[0] += 1
+    for it in picked:
+        count[it.get("competitor") or "?"][1] += 1
+    return {"total": len(items), "sent": len(picked), "by_brand": {k: {"total": v[0], "sent": v[1]} for k, v in count.items()}}
+
+
 def _compact_items(items: list[dict[str, Any]], limit: int = 400) -> list[dict[str, Any]]:
     out = []
-    for it in sorted(items, key=lambda x: -x["days_active"])[:limit]:
+    for it in sample_items(items, limit):
         cls = it.get("cls") or {}
         out.append(
             {

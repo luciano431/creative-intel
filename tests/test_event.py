@@ -61,10 +61,19 @@ def test_event_pipeline_end_to_end_without_network_or_ai(tmp_path, monkeypatch):
                                             start=dt.date(2025, 6, 2), end=dt.date(2025, 6, 4))])
     monkeypatch.setattr("creative_intel.collectors.meta_web.MetaAdLibraryWebCollector", FakeCol)
     monkeypatch.setattr("creative_intel.meta_token.token_problem", lambda *a, **k: None)
+    import creative_intel.ai.event as aiev
+
+    real_mock = aiev.mock_event_plan
+    idea = {"title": "Tu celu cubierto", "format": "video", "hook_type": "demo", "angle": "proteccion", "hook_line": "Se cae el celu",
+            "script": ["0–3 s · Se ve: un celular cae"], "copy_draft": "Cubrilo hoy", "cta": "Cotizá", "visual_direction": "Casa",
+            "evidence": "El anuncio de 12 cuotas salió 1 día antes", "reading": "Las cuotas se usan para cerrar",
+            "hypothesis": "Creemos que mostrar la caída baja el costo por lead", "test": "2 versiones, 7 días, corta si el CPL sube 20%"}
+    monkeypatch.setattr(aiev, "mock_event_plan", lambda *a, **k: {**real_mock(*a, **k), "ideas": [idea]})
     with session_scope(url) as s:
         out = evmod.run_event(s, ev, ev.edition(), mock_ai=True, out_dir=tmp_path / "rep")
     html = (tmp_path / "rep" / "report.html").read_text(encoding="utf-8")
     assert out["ads"] == 2 and "Guía de CyberLunes" in html and "Tienda X" in html and "1 a 7 días antes" in html
+    assert "Con qué datos se armó esta guía" in html and "Creemos que mostrar la caída" in html and "Cómo se prueba" in html
 
 
 def test_live_edition_uses_next_dates_only_when_close():
