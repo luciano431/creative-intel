@@ -100,7 +100,12 @@ def apify_profile(username: str, since: dt.date | None, until: dt.date | None, t
         except ValueError:
             msg = resp.text[:200]
         raise RuntimeError(f"Apify: {msg}")
-    items = [it for it in resp.json() if isinstance(it, dict) and it.get("timestamp") and not it.get("error")]
+    data = [it for it in resp.json() if isinstance(it, dict)]
+    items = [it for it in data if it.get("timestamp") and not it.get("error")]
+    errs = [it for it in data if it.get("error")]
+    if not items and errs:  # cuenta que no existe, privada, etc.: mejor decirlo que mostrar 0 publicaciones
+        e = errs[0]
+        raise RuntimeError(f"Apify: @{username.lstrip('@')}: {e.get('errorDescription') or e.get('error')}")
     posts = [{
         "id": str(it.get("id") or it.get("shortCode")), "caption": it.get("caption") or "", "timestamp": it["timestamp"],
         "like_count": it["likesCount"] if (it.get("likesCount") or 0) >= 0 else None, "comments_count": it.get("commentsCount"),

@@ -100,3 +100,16 @@ def test_competitor_uses_apify_back_to_event_date(monkeypatch):
     assert seen["onlyPostsNewerThan"] == "2026-05-11" and seen["resultsLimit"] == 50
     assert prof["source"] == "apify" and prof["followers_count"] == 4000 and [p["id"] for p in prof["posts"]] == ["1"]
     assert prof["posts"][0]["media_type"] == "CAROUSEL_ALBUM" and summarize(prof, ["ciberlunes"])["event_posts"] == 1
+
+
+def test_apify_reports_missing_account():
+    import pytest
+
+    from creative_intel.collectors.ig_organic import apify_profile
+
+    def apify(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[{"url": "https://www.instagram.com/noexiste/", "error": "not_found",
+                                          "errorDescription": "Page not found"}])
+
+    with pytest.raises(RuntimeError, match="noexiste: Page not found"):
+        apify_profile("noexiste", dt.date(2026, 5, 1), None, "x", client=httpx.Client(transport=httpx.MockTransport(apify)))
