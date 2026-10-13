@@ -175,8 +175,30 @@ class MetaInsightsCollector:
                     raise
                 data += self._get(f"{acct}/insights", level="ad", fields=BASIC_FIELDS, limit=500, time_range=time_range).get("data", [])
         top = sorted(data, key=lambda r: -float(r.get("spend") or 0))[:limit]
-        return [{"ad_name": r.get("ad_name") or "", **{k: v for k, v in performance_row(r).items() if k in
-                ("spend", "results", "result_type", "cost_per_result", "ctr", "roas", "stage")}} for r in top]
+        rows = []
+        for r in top:
+            row = {"ad_id": str(r.get("ad_id")), "ad_name": r.get("ad_name") or "", **{k: v for k, v in performance_row(r).items() if k in
+                   ("spend", "results", "result_type", "cost_per_result", "ctr", "roas", "stage")}}
+            row["image"] = self._ad_image(row["ad_id"])
+            rows.append(row)
+        return rows
+
+    def _ad_image(self, ad_id: str) -> str:
+        """Imagen del anuncio (la miniatura grande de Meta), guardada para el informe. '' si no se pudo."""
+        path = settings.assets_dir / "own_ads" / f"{ad_id}.jpg"
+        if path.exists():
+            return str(path)
+        try:
+            ad = self._get(ad_id, fields=AD_FIELDS.replace("creative{", "creative.thumbnail_width(600).thumbnail_height(600){"))
+            cr = ad.get("creative") or {}
+            url = cr.get("image_url") or cr.get("thumbnail_url")
+            if not url:
+                return ""
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(self.client.get(url, follow_redirects=True).content)
+            return str(path)
+        except Exception:
+            return ""
 
     def collect(self, competitor: CompetitorConfig, since: dt.date | None = None, until: dt.date | None = None,
                 limit: int | None = None) -> list[RawCreative]:

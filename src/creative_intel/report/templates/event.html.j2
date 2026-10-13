@@ -64,7 +64,7 @@
 {% set od = m.own_daily or {} %}
 {% if od.phases or m.own_groups %}
 <section>
-  <div class="sec-head"><span class="sec-num">01</span><h2>Lo que le funcionó a {{ client.name }}{% if m.event_only %} en los días del evento{% endif %}</h2></div>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Lo que le funcionó a {{ client.name }}{% if m.event_only %} en los días del evento{% elif m.previa %} en el evento y su previa{% endif %}</h2></div>
   <p class="sec-intro">Datos reales de la cuenta publicitaria de {{ client.name }} en Meta, del {{ edition.date_from }} al {{ edition.date_to }}. Cada tipo de resultado va por separado: compras, conversaciones (WhatsApp / Messenger), leads y clics al sitio no se suman entre sí.</p>
   {% if od.phases %}
   <h3 style="margin:8px 0 6px">Antes, durante y después del evento</h3>
@@ -204,10 +204,37 @@
         {% for t in types %}{% set x = (op.by_type or {}).get(t) %}<td>{{ x.total if x else '—' }}</td><td>{{ (cur ~ ' %.2f' % x.cost) if x and x.cost else '—' }}</td>{% endfor %}</tr>
     {% endfor %}</tbody>
   </table></div>
-  {% for c in m.compare if (c.own_paid or {}).top %}
-  <p class="small" style="margin:10px 0 2px"><b>{{ c.label }} · anuncios con más inversión:</b></p>
-  <ul class="small" style="margin:0;padding-left:18px">{% for r in c.own_paid.top %}<li>{{ r.ad_name }} · {{ cur }} {{ '%.2f' % (r.spend or 0) }} · {{ (r.results or 0)|round(0)|int }} {{ r.result_type or '' }}{% if r.cost_per_result %} a {{ cur }} {{ '%.2f' % r.cost_per_result }}{% endif %}</li>{% endfor %}</ul>
-  {% endfor %}
+  {% set own_org_base = (m.organic or []) | selectattr('own') | list | first %}
+  <h3 style="margin:22px 0 8px">Nuestros anuncios, año contra año</h3>
+  <div class="grid" style="grid-template-columns:repeat({{ allc | length }},minmax(0,1fr));align-items:start">
+    {% for c in allc %}
+    <div>
+      <p class="small" style="margin:0 0 6px"><b>{{ c.label }}</b> · {{ c['from'] }} al {{ c['to'] }}</p>
+      {% set ads = (m.own_results[:4] if loop.first else (c.own_paid.top or [])[:4]) %}
+      {% for r in ads %}
+      <div class="cr" style="margin-bottom:10px">
+        {% set img = r.thumbnail_rel or r.image_rel %}
+        <div class="pv" style="height:220px;aspect-ratio:auto">{% if img %}<img src="{{ img }}" alt="{{ r.headline or r.ad_name }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}</div>
+        <div class="cr-body small"><b>{{ r.headline or r.ad_name or 'Sin título' }}</b><br>{{ cur }} {{ '%.2f' % (r.spend or 0) }} · {{ (r.results or 0)|round(0)|int }} {{ r.result_type or '' }}{% if r.cost_per_result %} a {{ cur }} {{ '%.2f' % r.cost_per_result }}{% endif %}{% if r.ctr is not none %} · CTR {{ r.ctr }}%{% endif %}</div>
+      </div>
+      {% else %}<p class="small muted">Sin anuncios con inversión en esos días.</p>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  <h3 style="margin:22px 0 8px">Nuestro Instagram, año contra año</h3>
+  <div class="grid" style="grid-template-columns:repeat({{ allc | length }},minmax(0,1fr));align-items:start">
+    {% for c in allc %}{% set o = own_org_base if loop.first else c.own_organic %}
+    <div>
+      <p class="small" style="margin:0 0 6px"><b>{{ c.label }}</b>{% if loop.first and (m.organic_edition or {}).label and m.organic_edition.label != edition.label %} (Instagram de {{ m.organic_edition.label }}){% endif %}{% if o %} · {{ o.posts }} publicaciones, {{ o.avg_likes }} likes y {{ o.avg_comments }} comentarios en promedio{% endif %}</p>
+      {% for q in (o.top if o else [])[:3] %}
+      <div class="cr" style="margin-bottom:10px">
+        <div class="pv" style="height:220px;aspect-ratio:auto">{% if q.image_rel %}<img src="{{ q.image_rel }}" alt="Publicación de {{ client.name }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}</div>
+        <div class="cr-body small"><span class="tag">{{ q.timestamp[:10] }}</span> {{ q.like_count if q.like_count is not none else '—' }} likes · {{ q.comments_count or 0 }} comentarios<br>{{ (q.caption or '')[:110] }}{% if (q.caption or '')|length > 110 %}…{% endif %}</div>
+      </div>
+      {% else %}<p class="small muted">Sin publicaciones en esos días.</p>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
 </section>
 {% endif %}
 {% set ms = m.market_search or {} %}

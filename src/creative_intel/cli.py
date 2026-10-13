@@ -736,6 +736,7 @@ def evento(
     comparar: list[str] = typer.Option([], "--comparar", "-c", help="Otra edición para comparar la pauta propia (repetible), ej. --comparar 2024-11"),
     organico_de: Optional[str] = typer.Option(None, "--organico-de", help="Edición de la que sale el Instagram (por defecto, la misma), ej. 2026-06"),
     sin_apify: bool = typer.Option(False, "--sin-apify", help="Instagram de la competencia: solo lo ya guardado, sin gastar Apify"),
+    previa: int = typer.Option(10, "--previa", help="Días antes del evento que entran en la guía (0 = solo los días del evento)"),
 ) -> None:
     """Guía de un evento comercial: cómo lo encara el mercado (edición en curso o archivada) y qué hace el cliente.
 
@@ -766,7 +767,7 @@ def evento(
         usage.reset()
         with session_scope() as s:
             summary = run_event(s, ev, ed, mock_ai=mock_ai, skip_collect=skip_collect, compare=[ev.edition(x) for x in comparar],
-                                organic_edition=ev.edition(organico_de) if organico_de else None, saved_only=sin_apify)
+                                organic_edition=ev.edition(organico_de) if organico_de else None, saved_only=sin_apify, previa=previa)
     except (pipeline.NoData, ValueError) as exc:
         rprint(f"[red]{exc}[/red]")
         raise typer.Exit(1)
@@ -800,6 +801,7 @@ def run_all(
     comparar: list[str] = typer.Option([], "--comparar", help="evento: otra edición para comparar la pauta propia (repetible)"),
     organico_de: Optional[str] = typer.Option(None, "--organico-de", help="evento: edición de la que sale el Instagram"),
     sin_apify: bool = typer.Option(False, "--sin-apify", help="evento: Instagram de la competencia solo con lo ya guardado"),
+    previa: Optional[int] = typer.Option(None, "--previa", help="evento: días antes del evento que entran (0 = solo sus días)"),
     live: bool = typer.Option(False, "--live", help="evento: edición en curso"),
     mock_ai: bool = typer.Option(False, "--mock-ai", help="evento o informe: sin IA"),
 ) -> None:
@@ -814,7 +816,8 @@ def run_all(
     if step.startswith("evento:"):
         args = ["evento", step.split(":", 1)[1]] + (["--live"] if live else ["--edition", edition] if edition else []) \
             + [x for c in comparar for x in ("--comparar", c)] + (["--organico-de", organico_de] if organico_de else []) \
-            + (["--sin-apify"] if sin_apify else []) + (["--mock-ai"] if mock_ai else [])
+            + (["--sin-apify"] if sin_apify else []) + (["--previa", str(previa)] if previa is not None else []) \
+            + (["--mock-ai"] if mock_ai else [])
     elif step.startswith("vivo:"):  # archivo del evento en curso, sin IA (gratis): correrlo cada 2-3 días antes y durante
         args = ["evento", step.split(":", 1)[1], "--live", "--mock-ai"]
     elif step not in commands:

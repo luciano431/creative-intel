@@ -121,7 +121,7 @@ def test_events_page_and_multi_client_job(site, monkeypatch):
     assert r.status_code == 200
     c, title, cmds, links = started[0]
     assert c is None and "Black Friday (2025)" in title
-    assert cmds[0][3:] == ["all", "evento:black-friday", "--only", "miseguro", "--edition", "2025", "--mock-ai"]
+    assert cmds[0][3:] == ["all", "evento:black-friday", "--only", "miseguro", "--edition", "2025", "--previa", "10", "--mock-ai"]
     assert links[0]["url"].endswith("/eventos/black-friday-2025/report.html")
     assert client.post("/api/eventos", json={"event": "black-friday", "edition": "2025", "clients": []}).status_code == 400
     assert client.post("/api/eventos", json={"event": "nada", "clients": ["miseguro"]}).status_code == 400

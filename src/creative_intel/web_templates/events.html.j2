@@ -23,6 +23,8 @@
     </div>
   </div>
   <p class="small muted" id="ed-help" style="margin:0 0 12px"></p>
+  <div id="prev-box" class="field" style="max-width:420px;margin-bottom:12px"><label for="previa">Qué días entran</label>
+    <select id="previa"><option value="10" selected>El evento y su previa (10 días antes)</option><option value="0">Solo los días del evento</option></select></div>
   <div id="cmp-box" style="margin-bottom:12px">
     <label>Comparar con</label>
     <div class="row" id="cmp">
@@ -89,7 +91,7 @@ function syncEd() {
   $('ai').disabled = vivo; if (vivo) $('ai').checked = false;
   $('ai-help').textContent = vivo ? '' : ($('ai').checked ? '' : 'Sin IA la guía trae solo los números: sin resumen, oferta ni ideas.');
   $('go').textContent = vivo ? 'Archivar ahora' : 'Generar guías';
-  $('cmp-box').hidden = vivo; $('org-box').hidden = vivo;
+  $('cmp-box').hidden = vivo; $('org-box').hidden = vivo; $('prev-box').hidden = vivo;
   [...$('org').options].forEach(o => { if (o.value) { o.hidden = o.dataset.ev !== ev; if (o.hidden && o.selected) $('org').value = ''; } });
   document.querySelectorAll('#cmp label').forEach(l => {
     const own = l.querySelector('input').value === $('ed').value;
@@ -122,7 +124,7 @@ $('go').addEventListener('click', async () => {
   const clients = [...document.querySelectorAll('.cl:checked')].map(x => x.value);
   try { addJob(await api('/api/eventos', {event: $('ev').value, edition: $('ed').value, clients, ai: $('ai').checked,
                                        compare: [...document.querySelectorAll('.cmp:checked')].map(x => x.value),
-                                       organic_from: $('org').value, saved_only: $('saved').checked})); }
+                                       organic_from: $('org').value, saved_only: $('saved').checked, previa: $('previa').value})); }
   catch (e) { $('err').textContent = e.message; }
 });
 </script>
