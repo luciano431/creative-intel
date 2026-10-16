@@ -42,3 +42,34 @@ def test_chain_and_nolabel_filters():
     assert html.count("<p><b>") == 3 and "<b>Hipótesis:</b>" in html and "&lt;sí&gt;" in html
     assert chain("sin etiquetas") == "sin etiquetas"
     assert nolabel("PRUEBA: correr 5 días") == "correr 5 días" and nolabel("Creemos que sí") == "Creemos que sí"
+
+
+def test_anthropic_call_with_web_search_resumes_pause_turn(monkeypatch):
+    from types import SimpleNamespace
+
+    from pydantic import BaseModel
+
+    from creative_intel.ai import client as ai
+    from creative_intel.config import settings
+
+    monkeypatch.setattr(settings, "ai_provider", "anthropic")
+
+    class Out(BaseModel):
+        ok: bool
+
+    calls = []
+
+    def create(**kw):
+        calls.append(kw)
+        use = SimpleNamespace(input_tokens=10, output_tokens=5, server_tool_use=SimpleNamespace(web_search_requests=2))
+        if len(calls) == 1:
+            return SimpleNamespace(stop_reason="pause_turn", model="claude-opus-5-5", usage=use,
+                                   content=[SimpleNamespace(type="text", text="buscando…")])
+        return SimpleNamespace(stop_reason="end_turn", model="claude-opus-5-5", usage=use,
+                               content=[SimpleNamespace(type="text", text="encontré esto"), SimpleNamespace(type="text", text='{"ok": true}')])
+
+    fake = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create)))
+    out = ai.structured_call(Out, "sys", "hola", model="claude-opus-5-5", client=fake, tools=[{"type": "web_search"}])
+    assert out.ok and len(calls) == 2
+    assert calls[0]["tools"] == [{"type": "web_search_20260209", "name": "web_search", "max_uses": 8}]
+    assert calls[1]["messages"][-1]["role"] == "assistant"

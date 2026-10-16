@@ -341,7 +341,7 @@
   {% if plan.avoid %}<div class="card" style="margin-top:16px"><h3>Qué no hacer</h3><ul>{% for a in plan.avoid %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
 </section>
 {% endif %}
-<section><p class="small muted">Fuentes: Biblioteca de anuncios de Meta{% if not live %} y Centro de transparencia de Google (anuncios que se mostraron entre {{ edition.date_from }} y {{ edition.date_to }}){% endif %}, de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}; resultados de {{ client.name }}: su cuenta publicitaria de Meta. Las cifras del mercado cuentan anuncios, no inversión.{% if plan.ideas_by %} Análisis: GPT. Piezas, guiones y textos del calendario: {{ plan.ideas_by }}.{% endif %}</p></section>
+<section><p class="small muted">Fuentes: Biblioteca de anuncios de Meta{% if not live %} y Centro de transparencia de Google (anuncios que se mostraron entre {{ edition.date_from }} y {{ edition.date_to }}){% endif %}, de las marcas configuradas y de quien mencionó {{ event.keywords | join(', ') }}; resultados de {{ client.name }}: su cuenta publicitaria de Meta. Las cifras del mercado cuentan anuncios, no inversión.{% if plan.ideas_by %} Análisis: {{ plan.analysis_by or 'GPT' }}. Piezas, guiones y textos del calendario: {{ plan.ideas_by }}.{% endif %}</p></section>
 </main>
 </body>
 </html>

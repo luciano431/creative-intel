@@ -82,7 +82,8 @@ def check_api(model: str | None = None) -> None:
             get_openai_client().responses.create(model=model or settings.classify_model, input="Respondé solo: ok", max_output_tokens=16,
                                                  reasoning={"effort": "low"})
         else:
-            get_client().messages.create(model=model or settings.classify_model, max_tokens=1, messages=[{"role": "user", "content": "ok"}])
+            get_client().messages.create(model=model or settings.classify_model, max_tokens=16, output_config={"effort": "low"},
+                                         messages=[{"role": "user", "content": "Respondé solo: ok"}])
     except Exception as exc:
         problem = api_problem(exc)
         if problem:
@@ -169,27 +170,47 @@ def structured_call(
     if settings.ai_provider == "openai" and client is None:
         return _openai_structured_call(schema_model, system, content, model, max_tokens, effort, tools=tools)
     client = client or get_client()
+    messages: list[dict[str, Any]] = [{"role": "user", "content": content}]
     kwargs: dict[str, Any] = dict(
         model=model,
         max_tokens=max_tokens,
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-        messages=[{"role": "user", "content": content}],
+        messages=messages,
         output_config={"format": {"type": "json_schema", "schema": schema_model.model_json_schema()}, "effort": effort},
         **_fallback_kwargs(),
     )
-    if stream:
-        with client.beta.messages.stream(**kwargs) as s:
-            response = s.get_final_message()
-    else:
-        response = client.beta.messages.create(**kwargs)
-    usage.add(getattr(response, "model", model) or model, getattr(response, "usage", None))
+    anthropic_tools = _anthropic_tools(tools)
+    if anthropic_tools:
+        kwargs["tools"] = anthropic_tools
+    for _ in range(4):  # con búsqueda web el servidor puede pausar el turno (pause_turn): se retoma tal cual
+        if stream:
+            with client.beta.messages.stream(**kwargs) as s:
+                response = s.get_final_message()
+        else:
+            response = client.beta.messages.create(**kwargs)
+        usage.add(getattr(response, "model", model) or model, getattr(response, "usage", None))
+        searches = int(getattr(getattr(getattr(response, "usage", None), "server_tool_use", None), "web_search_requests", 0) or 0)
+        usage.usd += 0.01 * searches  # búsqueda web: US$ 10 cada 1.000 búsquedas
+        if response.stop_reason != "pause_turn":
+            break
+        messages.append({"role": "assistant", "content": response.content})
     if response.stop_reason == "refusal":
         details = getattr(response, "stop_details", None)
         raise RefusedError(f"El modelo rechazó el pedido: {getattr(details, 'category', None)} {getattr(details, 'explanation', '')}")
     if response.stop_reason == "max_tokens":
         raise RuntimeError("Respuesta truncada (max_tokens); subir el límite")
-    text = next(b.text for b in response.content if b.type == "text")
+    # con búsqueda web hay texto intermedio: el JSON es el último bloque de texto
+    text = [b.text for b in response.content if b.type == "text"][-1]
     return schema_model.model_validate(json.loads(text))
+
+
+def _anthropic_tools(tools: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    """Herramientas pedidas en forma neutra ({'type': 'web_search'}) → herramientas de servidor de Claude."""
+    out = []
+    for t in tools or []:
+        if t.get("type") == "web_search":
+            out.append({"type": "web_search_20260209", "name": "web_search", "max_uses": 8})
+    return out
 
 
 def _openai_content(content: list[dict[str, Any]] | str) -> list[dict[str, Any]]:

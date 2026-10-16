@@ -317,7 +317,7 @@ def event_related(items: list[dict[str, Any]], keywords: list[str], date_from: d
 def _gemini_pieces(plan: dict[str, Any], event: EventConfig, metrics: dict[str, Any], items: list[dict[str, Any]], client: Any) -> dict[str, Any]:
     """La parte creativa la escribe Gemini, entera: cada pieza (título, gancho, guion, copy, CTA, visual) a partir del
     brief del análisis, y el texto de cada momento del calendario. El análisis (dato, lectura, hipótesis, prueba) queda
-    de GPT. Si Gemini falla, la guía queda con los briefs y lo dice; no se reemplaza por texto de otro modelo."""
+    del modelo de análisis (Claude o GPT). Si Gemini falla, la guía queda con los briefs y lo dice; no se reemplaza por texto de otro modelo."""
     from .ai.creative import GeminiFailed, strip_for, write_event_pieces
     from .ai.synthesize import _compact_items
 
@@ -497,6 +497,7 @@ def run_event(session: Session, event: EventConfig, edition: EventEdition, mock_
         labels = {k: taxonomy.label(k) for k in taxonomy.labels} if getattr(taxonomy, "labels", None) else {}
         pipeline.stage("Escribiendo la guía con IA")
         plan = synthesize_event(event.name, metrics, items, client, next_dates, labels=labels)
+        plan["analysis_by"] = "Claude" if settings.ai_provider == "anthropic" else "GPT"
         pipeline.stage("Escribiendo las piezas con Gemini")
         plan = _gemini_pieces(plan, event, metrics, items, client)
     run.metrics = {"event": metrics, "plan": plan}

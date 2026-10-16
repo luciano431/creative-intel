@@ -321,7 +321,7 @@ def gemini_concepts(data: dict[str, Any], metrics: dict[str, Any], items: list[d
 
 
 def gemini_plan_pieces(data: dict[str, Any], metrics: dict[str, Any], client_info: Any) -> dict[str, Any]:
-    """Plan editorial: el análisis (dato, lectura, hipótesis, prueba, referencia) es de GPT; cómo se cuenta y se
+    """Plan editorial: el análisis (dato, lectura, hipótesis, prueba, referencia) es del modelo de análisis; cómo se cuenta y se
     escribe cada idea (título, qué se hace, copy) lo escribe Gemini. Si Gemini falla, el plan lo dice."""
     from .ai.creative import GeminiFailed, write_plan_pieces
 
