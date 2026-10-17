@@ -783,6 +783,38 @@ def evento(
 
 
 @app.command()
+def historial(
+    desde: int = typer.Option(2024, "--desde", help="Primer año a analizar"),
+    hasta: Optional[int] = typer.Option(None, "--hasta", help="Último año (por defecto, el actual)"),
+    mock_ai: bool = typer.Option(False, "--mock-ai", help="Sin IA: prueba el circuito sin gastar"),
+    reusar: bool = typer.Option(False, "--reusar", help="Usar los datos de Meta ya bajados (no vuelve a consultar)"),
+) -> None:
+    """Informe «Qué hicimos»: la pauta propia año por año (solo pauta), qué funcionó y el plan que sale de ahí."""
+    import datetime as _dt
+
+    from .ai.client import ApiUnavailable, api_problem, usage
+    from .history import run_history
+
+    hasta = hasta or _dt.date.today().year
+    own = next((c for c in load_competitors() if c.is_own), None)
+    usage.reset()
+    try:
+        summary = run_history(own, list(range(desde, hasta + 1)), mock_ai=mock_ai, reuse=reusar)
+    except pipeline.NoData as exc:
+        rprint(f"[red]{exc}[/red]")
+        raise typer.Exit(1)
+    except Exception as exc:
+        problem = str(exc) if isinstance(exc, ApiUnavailable) else api_problem(exc)
+        if not problem:
+            raise
+        rprint(f"[red]No se pudo usar la IA.[/red] {problem}")
+        raise typer.Exit(1)
+    rprint(summary)
+    if not mock_ai:
+        rprint(usage.summary())
+
+
+@app.command()
 def eventos() -> None:
     """Lista los eventos cargados y sus ediciones."""
     from .config import load_events
@@ -794,7 +826,7 @@ def eventos() -> None:
 
 @app.command("all")
 def run_all(
-    step: str = typer.Argument(..., help="ids = completar IDs · ig = buscar los Instagram · informe = informe del mes · audit = revisar datos · evento:<clave> = guía de un evento · vivo:<clave> = archivar lo que está activo del evento (gratis)"),
+    step: str = typer.Argument(..., help="ids = completar IDs · ig = buscar los Instagram · informe = informe del mes · historial = qué hicimos (pauta propia por año) · audit = revisar datos · evento:<clave> = guía de un evento · vivo:<clave> = archivar lo que está activo del evento (gratis)"),
     period: Optional[str] = PeriodOpt,
     only: list[str] = typer.Option([], "--only", help="identificador de cliente (repetible); por defecto, todos"),
     edition: Optional[str] = typer.Option(None, "--edition", help="evento: edición a estudiar"),
@@ -812,8 +844,11 @@ def run_all(
 
     from .clients import list_clients
 
-    commands = {"ids": ["fill-ids", "--write"], "ig": ["fill-ig", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"]}
-    if step.startswith("evento:"):
+    commands = {"ids": ["fill-ids", "--write"], "ig": ["fill-ig", "--write"], "informe": ["run-cycle", "--no-notify"], "audit": ["audit"],
+                "historial": ["historial"]}
+    if step == "historial":
+        args = ["historial"] + (["--mock-ai"] if mock_ai else [])
+    elif step.startswith("evento:"):
         args = ["evento", step.split(":", 1)[1]] + (["--live"] if live else ["--edition", edition] if edition else []) \
             + [x for c in comparar for x in ("--comparar", c)] + (["--organico-de", organico_de] if organico_de else []) \
             + (["--sin-apify"] if sin_apify else []) + (["--previa", str(previa)] if previa is not None else []) \
@@ -821,10 +856,10 @@ def run_all(
     elif step.startswith("vivo:"):  # archivo del evento en curso, sin IA (gratis): correrlo cada 2-3 días antes y durante
         args = ["evento", step.split(":", 1)[1], "--live", "--mock-ai"]
     elif step not in commands:
-        raise typer.BadParameter("Usá: ids, informe, audit, evento:<clave> o vivo:<clave> (ej. vivo:cyberlunes)")
+        raise typer.BadParameter("Usá: ids, informe, historial, audit, evento:<clave> o vivo:<clave> (ej. vivo:cyberlunes)")
     else:
         args = commands[step] + (["--period", period] if period and step not in ("ids", "ig") else []) + (["--mock-ai"] if mock_ai and step == "informe" else [])
-    if (args[0] == "evento" and "--live" not in args) or step == "informe":
+    if (args[0] == "evento" and "--live" not in args) or step in ("informe", "historial"):
         from .meta_token import token_problem
 
         problem = token_problem(settings.meta_access_token)

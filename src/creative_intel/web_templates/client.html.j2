@@ -27,6 +27,17 @@
       <div class="err" id="err-informe"></div>
     </div>
     <div class="card">
+      <h2>Qué hicimos: la pauta por año</h2>
+      <p class="muted small" style="margin:0 0 14px">Solo pauta de Meta (nada orgánico): qué se hizo cada año desde el que elijas hasta hoy, qué dio más resultado, qué repetir, iterar o cortar, y el plan. El análisis lo hace {{ ai_name or 'Claude' }} y las piezas Gemini.</p>
+      <div class="field"><label for="h-desde">Desde el año</label><input type="number" id="h-desde" value="2024" min="2015" max="2030" style="max-width:120px"></div>
+      <label class="check"><input type="checkbox" id="h-ai" {{ 'checked' if has_api_key }}> Con IA</label>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="h-reuse"> Usar los datos de Meta ya bajados</label>
+      <div class="row" style="margin-top:16px"><button class="btn" id="go-h" {{ 'disabled' if running }}>Generar informe</button></div>
+      <div class="err" id="err-h"></div>
+      {% set hr = c.history_reports() %}
+      {% if hr %}<table style="margin-top:12px"><tbody>{% for r in hr %}<tr><td>{{ r.name }} <span class="muted small">· {{ r.updated }}</span></td><td style="text-align:right"><a href="{{ r.url }}" target="_blank" rel="noopener">Abrir</a> · <button class="del-guide" data-f="historial" data-n="{{ r.name }}" style="border:0;background:none;color:#9B2F25;cursor:pointer;font:inherit;padding:0">borrar</button></td></tr>{% endfor %}</tbody></table>{% endif %}
+    </div>
+    <div class="card">
       <h2>Guías de fechas especiales</h2>
       <p class="muted small" style="margin:0 0 14px">CyberLunes, Black Friday y las demás fechas se generan desde <a href="/eventos">Eventos</a>.</p>
       <a class="btn" href="/eventos">Ir a Eventos</a>
@@ -108,7 +119,7 @@ const KEY = {{ c.key | tojson }};
 const $ = id => document.getElementById(id);
 document.querySelectorAll('.del-guide').forEach(b => b.addEventListener('click', async () => {
   if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = '¿seguro? clic de nuevo'; return; }
-  try { await api('/api/c/' + KEY + '/borrar-guia', {name: b.dataset.n}); b.closest('tr').remove(); }
+  try { await api('/api/c/' + KEY + '/borrar-guia', {name: b.dataset.n, folder: b.dataset.f || 'eventos'}); b.closest('tr').remove(); }
   catch (e) { b.textContent = e.message; }
 }));
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
@@ -122,7 +133,7 @@ function addJob(j) {
   $('jobs').style.display = '';
   const el = document.createElement('div'); el.className = 'job'; el.dataset.id = j.id; el.style.marginTop = '12px';
   el.innerHTML = JOB_HTML; $('job-list').prepend(el); paintJob(el, j);
-  document.querySelectorAll('#go, #ids, #disc, #go-ev').forEach(b => { if (b) b.disabled = true; });
+  document.querySelectorAll('#go, #ids, #disc, #go-ev, #go-h').forEach(b => { if (b) b.disabled = true; });
   $('jobs').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 async function poll() {
@@ -148,6 +159,7 @@ if ($('go-ev')) {
   $('ev').addEventListener('change', syncEd); syncEd();
   $('go-ev').addEventListener('click', () => start({kind: 'evento', event: $('ev').value, edition: $('ed').value, ai: $('ev-ai').checked}, 'err-ev'));
 }
+$('go-h').addEventListener('click', () => start({kind: 'historial', desde: $('h-desde').value, ai: $('h-ai').checked, reuse: $('h-reuse').checked}, 'err-h'));
 $('ids').addEventListener('click', () => start({kind: 'ids'}, 'err-comp'));
 $('disc').addEventListener('click', () => start({kind: 'competidores', keywords: $('kw').value, countries: $('ct').value, tier: $('tier').value, top: $('top').value}, 'err-comp'));
 $('save').addEventListener('click', async () => {

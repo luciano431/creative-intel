@@ -131,8 +131,12 @@ class ClientEntry:
             return []
         return sorted((d.name for d in self.reports_dir.iterdir() if PERIOD_RE.match(d.name) and (d / "report.html").exists()), reverse=True)
 
-    def event_reports(self) -> list[dict[str, str]]:
-        d = self.reports_dir / "eventos"
+    def history_reports(self) -> list[dict[str, str]]:
+        """Informes «Qué hicimos» (pauta propia por año)."""
+        return self.event_reports("historial")
+
+    def event_reports(self, folder: str = "eventos") -> list[dict[str, str]]:
+        d = self.reports_dir / folder
         if not d.is_dir():
             return []
         rel = self.reports_dir.relative_to(ROOT / "reports")
@@ -143,7 +147,7 @@ class ClientEntry:
                 mtime = int(f.stat().st_mtime)
                 # ?v=: cada versión nueva tiene otra dirección, así el navegador no muestra la vieja guardada
                 out.append({"name": x.name, "updated": dt.datetime.fromtimestamp(mtime).strftime("%d/%m %H:%M"),
-                            "url": "/reports/" + "/".join([*rel.parts, "eventos", x.name, "report.html"]) + f"?v={mtime}"})
+                            "url": "/reports/" + "/".join([*rel.parts, folder, x.name, "report.html"]) + f"?v={mtime}"})
         return out
 
     def report_url(self, period: str) -> str:

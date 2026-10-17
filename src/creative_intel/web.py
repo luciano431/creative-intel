@@ -266,8 +266,10 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
     async def delete_guide(key: str, request: Request) -> JSONResponse:
         """Borra una guía de evento generada (la carpeta del informe; los anuncios archivados quedan)."""
         c = client_or_404(key)
-        name = str((await request.json()).get("name") or "")
-        target = c.reports_dir / "eventos" / name
+        body = await request.json()
+        name = str(body.get("name") or "")
+        folder = "historial" if body.get("folder") == "historial" else "eventos"
+        target = c.reports_dir / folder / name
         if not re.fullmatch(r"[a-z0-9-]+", name) or not (target / "report.html").exists():
             raise HTTPException(400, "Guía no encontrada")
         shutil.rmtree(target)
@@ -341,6 +343,19 @@ def create_app(root: Path | None = None, password: str | None = None) -> FastAPI
             job = jobs.start(c, kind, f"Guía de {events[key_ev].name} ({ed.label})" + (" con IA" if body.get("ai") else " sin IA"),
                              [_radar("init-db"), _radar(*args)],
                              result_url=c.report_url("x").rsplit("/x/", 1)[0] + f"/eventos/{key_ev}-{ed.label}/report.html")
+        elif kind == "historial":
+            import datetime as _dt
+
+            desde = int(body.get("desde") or 2024)
+            hasta = _dt.date.today().year
+            if not 2015 <= desde <= hasta:
+                raise HTTPException(400, "Año inválido")
+            args = ["historial", "--desde", str(desde)] + ([] if body.get("ai") else ["--mock-ai"])
+            if body.get("reuse"):
+                args.append("--reusar")
+            job = jobs.start(c, kind, f"Qué hicimos {desde}–{hasta}" + (" con IA" if body.get("ai") else " sin IA"),
+                             [_radar("init-db"), _radar(*args)],
+                             result_url=c.report_url("x").rsplit("/x/", 1)[0] + f"/historial/{desde}-{hasta}/report.html")
         elif kind == "ids":
             job = jobs.start(c, kind, "Completar IDs de Meta y Google", [_radar("init-db"), _radar("fill-ids", "--write")])
         elif kind == "competidores":

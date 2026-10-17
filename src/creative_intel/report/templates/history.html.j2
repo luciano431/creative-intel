@@ -1,0 +1,177 @@
+{%- set C = brand.colors -%}
+{%- set MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'] -%}
+{%- set UNIT = {'compras':'compra','conversaciones':'conversación','leads':'lead','clics al sitio':'clic'} -%}
+{%- macro ad(a) -%}
+  <div class="cr">
+    <div class="pv" style="aspect-ratio:1/1">{% if a.image_rel %}<img src="{{ a.image_rel }}" alt="{{ a.title or a.ad_name }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}{% if a.format %}<span class="pv-tag">{{ a.format }}</span>{% endif %}</div>
+    <div class="cr-body small">
+      <b>{{ a.ad_name or 'Sin nombre' }}</b>
+      {% if a.campaign %}<span class="muted">Campaña: {{ a.campaign }}</span>{% endif %}
+      <span>{{ cur }} {{ '%.2f' % (a.spend or 0) }} · {% if a.results %}{{ a.results | round(0) | int }} {{ a.result_type }}{% if a.cost_per_result %} a {{ cur }} {{ '%.2f' % a.cost_per_result }}{% endif %}{% else %}sin {{ a.result_type or 'resultados' }}{% endif %}{% if a.ctr is not none %} · CTR {{ a.ctr }}%{% endif %}{% if a.roas %} · ROAS {{ a.roas }}{% endif %}</span>
+      {% if a.title or a.body %}<span class="muted">«{{ (a.title ~ (' · ' if a.title and a.body else '') ~ (a.body or ''))[:140] }}{% if (a.title ~ a.body)|length > 140 %}…{% endif %}»</span>{% endif %}
+    </div>
+  </div>
+{%- endmacro -%}
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qué hicimos · {{ client.name }} {{ years[0] }}–{{ years[-1] }}</title>
+{% if brand.font_url %}<link rel="stylesheet" href="{{ brand.font_url }}">{% endif %}
+<style>
+{% include "_style.css.j2" %}
+  .g4 { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .verdict { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 6px; color: #fff; }
+  .v-repetir { background: #2F7D4F; } .v-iterar { background: #2B6CB0; } .v-cortar { background: #9B2F25; } .v-probar { background: #B7791F; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mbar { display: inline-block; height: 8px; background: var(--accent); border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+</style>
+</head>
+<body>
+<header class="cover">
+  <div class="wrap">
+    <div class="brandbar">
+      <a class="logo" href="/" title="Volver al inicio del Radar creativo">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span><span class="word">{{ brand.agency }}</span><span class="app">Radar creativo</span></span></a>
+      <div class="meta">{{ client.industry }}{% if client.market %} · {{ client.market }}{% endif %}</div>
+    </div>
+    <p class="kicker">Qué hicimos · solo pauta</p>
+    <h1>La pauta de <span>{{ client.name }}</span>, {{ years[0] }} a {{ years[-1] }}</h1>
+    <p class="lead">Qué se hizo cada año en Meta, qué dio más resultado y qué conviene repetir, iterar o cortar. Comparado con el mismo tramo de cada año (1 de enero al {{ m.today[8:10] }}/{{ m.today[5:7] }}) para que el año en curso compare parejo.</p>
+    <div class="chips">
+      {% for y in years %}{% set yd = m.years.get(y) %}{% if yd %}<span class="chip">{{ y }}: {{ cur }} {{ yd.total.spend | round(0) | int | n }} invertidos</span>{% endif %}{% endfor %}
+      <span class="chip">Generado {{ generated_at }}</span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+{% set dc = m.data_coverage %}
+{% if dc %}
+<section><div class="card" style="border-left:4px solid {{ {'alta':'#2F7D4F','media':'#B7791F','baja':'#9B2F25'}[dc.level] }}">
+  <b>Con qué datos se armó · confianza {{ dc.level }}</b>
+  <ul class="small" style="margin:6px 0 0;padding-left:18px;list-style:none">{% for r in dc.rows %}<li>{{ '✓' if r.ok else '✗' }} <b>{{ r.source }}:</b> {{ r.detail }}</li>{% endfor %}</ul>
+  {% if dc.errors %}<details class="small" style="margin-top:6px"><summary>Errores al traer datos ({{ dc.errors | length }})</summary><ul style="margin:4px 0 0;padding-left:18px">{% for e in dc.errors[:8] %}<li>{{ e[:300] }}</li>{% endfor %}</ul></details>{% endif %}
+</div></section>
+{% endif %}
+
+{% if plan.summary %}
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>En pocas palabras</h2></div>
+  <div class="grid g2">{% for f in plan.summary %}<div class="card sum"><h4 style="margin:0 0 6px">{{ f.headline }}</h4><p class="small" style="margin:0">{{ f.detail }}</p></div>{% endfor %}</div>
+</section>
+{% endif %}
+
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Año contra año</h2></div>
+  <p class="sec-intro">Arriba, el mismo tramo de cada año (1 de enero al {{ m.today[8:10] }}/{{ m.today[5:7] }}): es la comparación pareja. Abajo, el año completo{% if years[-1] == m.today[:4] %} ({{ years[-1] }} todavía está en curso){% endif %}. Cada tipo de resultado va por separado: no se suman entre sí.</p>
+  {% for key, title in [('ytd', 'Mismo tramo de cada año'), ('total', 'Año completo')] %}
+  <h3 style="margin:14px 0 6px">{{ title }}</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Año</th><th class="num">Inversión</th><th class="num">CTR</th>{% for t in m.types %}<th class="num">{{ t | capitalize }}</th><th class="num">Costo por {{ UNIT.get(t, t) }}</th>{% endfor %}<th class="num">ROAS</th></tr></thead>
+    <tbody>{% for y in years %}{% set yd = m.years.get(y) %}{% if yd %}{% set t = yd[key] %}
+      <tr><td><b>{{ y }}</b>{% if key == 'ytd' %} <span class="muted small">al {{ yd.ytd_until[8:10] }}/{{ yd.ytd_until[5:7] }}</span>{% endif %}</td>
+        <td class="num">{{ cur }} {{ t.spend | round(0) | int | n }}</td><td class="num">{{ (t.ctr ~ '%') if t.ctr else '—' }}</td>
+        {% for ty in m.types %}{% set x = (t.by_type or {}).get(ty) %}<td class="num">{{ x.total | n if x else '—' }}</td><td class="num">{{ (cur ~ ' %.2f' % x.cost) if x and x.cost else '—' }}</td>{% endfor %}
+        <td class="num">{{ t.roas or '—' }}</td></tr>
+    {% endif %}{% endfor %}</tbody>
+  </table></div>
+  {% endfor %}
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Mes a mes</h2></div>
+  {% set main = m.types[0] if m.types else None %}
+  <p class="sec-intro">Inversión de cada mes{% if main %} y {{ main }} con su costo{% endif %}. Sirve para ver en qué meses se apostó y en cuáles rindió.</p>
+  {% set ns = namespace(top=1) %}
+  {% for y in years %}{% for mo in (m.years.get(y) or {}).get('months', []) %}{% if mo.spend > ns.top %}{% set ns.top = mo.spend %}{% endif %}{% endfor %}{% endfor %}
+  <div class="tbl"><table>
+    <thead><tr><th>Mes</th>{% for y in years %}{% if m.years.get(y) %}<th>{{ y }}</th>{% endif %}{% endfor %}</tr></thead>
+    <tbody>{% for i in range(12) %}<tr><td><b>{{ MES[i] }}</b></td>
+      {% for y in years %}{% set yd = m.years.get(y) %}{% if yd %}{% set mo = yd.months | selectattr('month', 'equalto', y ~ '-' ~ ('%02d' % (i + 1))) | list | first %}
+        <td class="small">{% if mo and mo.spend %}<span class="mbar" style="width:{{ (60 * mo.spend / ns.top) | round(0) | int + 2 }}px"></span>{{ cur }} {{ mo.spend | round(0) | int | n }}{% set x = (mo.by_type or {}).get(main) %}{% if x %}<br><span class="muted">{{ x.total }} {{ main }}{% if x.cost %} a {{ cur }} {{ '%.2f' % x.cost }}{% endif %}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+      {% endif %}{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+{% if m.events %}
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Fechas comerciales</h2></div>
+  <p class="sec-intro">La pauta en cada fecha, contando su previa (los 10 días antes). Así se ve qué fechas se trabajaron cada año y cuánto rindieron.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Fecha</th><th>Días</th><th class="num">Inversión</th>{% for t in m.types %}<th class="num">{{ t | capitalize }}</th><th class="num">Costo por {{ UNIT.get(t, t) }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for e in m.events | sort(attribute='start') | sort(attribute='name') %}
+      <tr><td><b>{{ e.name }} {{ MES[e.start[5:7] | int - 1] | lower }} {{ e.year }}</b></td><td class="small">{{ e['from'][8:10] }}/{{ e['from'][5:7] }} al {{ e.end[8:10] }}/{{ e.end[5:7] }}</td>
+        <td class="num">{{ (cur ~ ' ' ~ (e.spend | round(0) | int | n)) if e.spend else '—' }}</td>
+        {% for t in m.types %}{% set x = (e.by_type or {}).get(t) %}<td class="num">{{ x.total if x else '—' }}</td><td class="num">{{ (cur ~ ' %.2f' % x.cost) if x and x.cost else '—' }}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% for e in m.events | selectattr('top') | sort(attribute='spend', reverse=true) %}
+  {% if loop.first %}<h3 style="margin:22px 0 8px">Los anuncios de cada fecha</h3>{% endif %}
+  <details style="margin:10px 0"{% if loop.index <= 2 %} open{% endif %}><summary class="small"><b>{{ e.name }} {{ MES[e.start[5:7] | int - 1] | lower }} {{ e.year }}</b> · {{ cur }} {{ e.spend | round(0) | int | n }}</summary>
+  <div class="grid g4" style="margin-top:8px">{% for a in e.top %}{{ ad(a) }}{% endfor %}</div></details>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Qué se hizo cada año</h2></div>
+  {% for y in years %}{% set yd = m.years.get(y) %}{% if yd %}
+  {% set r = (plan.years or []) | selectattr('year', 'equalto', y) | list | first %}
+  <h3 style="margin:26px 0 8px">{{ y }}</h3>
+  {% if r %}<div class="card" style="margin-bottom:14px">
+    <p style="margin:0 0 6px"><b>Qué se hizo:</b> {{ r.what_was_done }}</p>
+    <p style="margin:0 0 6px"><b>Qué funcionó:</b> {{ r.what_worked }}</p>
+    <p style="margin:0"><b>Qué no:</b> {{ r.what_didnt }}</p>
+  </div>{% endif %}
+  {% if yd.campaigns %}<details class="small" style="margin-bottom:12px"><summary>Campañas con más inversión ({{ yd.campaign_count }} en total)</summary>
+    <div class="tbl" style="margin-top:6px"><table><thead><tr><th>Campaña</th><th class="num">Inversión</th>{% for t in m.types %}<th class="num">{{ t | capitalize }}</th>{% endfor %}</tr></thead><tbody>
+    {% for c in yd.campaigns %}<tr><td>{{ c.name }}</td><td class="num">{{ cur }} {{ c.spend | round(0) | int | n }}</td>{% for t in m.types %}{% set x = (c.by_type or {}).get(t) %}<td class="num">{{ x.total if x else '—' }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody></table></div></details>{% endif %}
+  {% for key, title in [('best_purchase', 'Mejor costo por compra'), ('best_conversation', 'Mejor costo por conversación o lead'), ('top_spend', 'Los de más inversión'), ('no_results', 'Gastaron sin traer lo que buscaban')] %}
+  {% set lst = yd.picks.get(key) or [] %}
+  {% if lst %}<p class="small" style="margin:14px 0 6px"><b>{{ title }}</b></p><div class="grid g4">{% for a in lst[:4] %}{{ ad(a) }}{% endfor %}</div>{% endif %}
+  {% endfor %}
+  {% endif %}{% endfor %}
+</section>
+
+{% if plan.learnings %}
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Qué aprendimos</h2></div>
+  <div class="grid g2">{% for l in plan.learnings %}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h4 style="margin:0 0 6px">{{ l.title }}</h4><span class="verdict v-{{ l.verdict | lower }}">{{ l.verdict }}</span></div>
+      <dl class="small chain" style="margin:6px 0 0">
+        <dt><b>Dato</b></dt><dd style="margin:0 0 4px">{{ l.evidence | nolabel }}</dd>
+        <dt><b>Lectura</b></dt><dd style="margin:0 0 4px">{{ l.reading | nolabel }}</dd>
+        <dt><b>Hipótesis</b></dt><dd style="margin:0">{{ l.hypothesis | nolabel }}</dd>
+      </dl>
+    </div>{% endfor %}</div>
+</section>
+{% endif %}
+
+<section>
+  <div class="sec-head"><span class="sec-num">07</span><h2>Plan para los próximos meses</h2></div>
+  {% if next_dates %}<p class="sec-intro">Fechas que vienen: {% for d in next_dates %}{{ d.name }} ({{ d.start[8:10] }}/{{ d.start[5:7] }}){{ ', ' if not loop.last else '.' }}{% endfor %}</p>{% endif %}
+  {% if plan.creative_error %}<div class="card" style="margin-bottom:16px;border-left:4px solid #9B2F25"><b>Las piezas no se escribieron:</b> Gemini falló ({{ plan.creative_error }}). Abajo quedan los briefs del análisis.</div>{% endif %}
+  {% if plan.plan %}
+  <div class="grid g2">{% for c in plan.plan %}
+    <div class="card idea">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h4 style="margin:0 0 6px">{{ c.piece_title or c.title }}</h4>{% if c.based_on %}<span class="verdict v-{{ c.based_on | lower }}">{{ c.based_on }}</span>{% endif %}</div>
+      <p class="small muted" style="margin:0 0 8px">{{ c.when }} · {{ c.goal }} · {{ c.format }}{% if c.product %} · {{ c.product }}{% endif %}{% if c.angle %} · {{ c.angle }}{% endif %}</p>
+      {% if c.what_to_do %}{% for p in c.what_to_do %}<p style="margin:0 0 6px">{{ p }}</p>{% endfor %}{% else %}<p><b>Brief:</b> {{ c.brief }}</p>{% endif %}
+      {% if c.copy_lines %}<div class="idea-hook" style="margin:8px 0">{% for l in c.copy_lines %}«{{ l }}»{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+      <dl class="small chain" style="margin:10px 0 0;border-top:1px solid var(--line);padding-top:8px">
+        <dt><b>Dato</b></dt><dd style="margin:0 0 4px">{{ c.evidence | nolabel }}</dd>
+        <dt><b>Lectura</b></dt><dd style="margin:0 0 4px">{{ c.reading | nolabel }}</dd>
+        <dt><b>Hipótesis</b></dt><dd style="margin:0 0 4px">{{ c.hypothesis | nolabel }}</dd>
+        <dt><b>Cómo se prueba</b></dt><dd style="margin:0">{{ c.test | nolabel }}</dd>
+      </dl>
+    </div>{% endfor %}</div>
+  {% else %}<div class="card small muted">Sin plan (corrida sin IA).</div>{% endif %}
+  {% if plan.avoid %}<div class="card" style="margin-top:16px"><h3>Qué no repetir</h3><ul>{% for a in plan.avoid %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
+</section>
+
+<section><p class="small muted">Fuente: la cuenta publicitaria de Meta de {{ client.name }} (solo pauta; lo orgánico no entra). Montos en la moneda de la cuenta.{% if plan.analysis_by %} Análisis: {{ plan.analysis_by }}.{% endif %}{% if plan.ideas_by %} Piezas: {{ plan.ideas_by }}.{% endif %}</p></section>
+</main>
+</body>
+</html>

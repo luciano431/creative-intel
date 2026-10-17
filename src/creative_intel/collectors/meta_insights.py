@@ -183,6 +183,66 @@ class MetaInsightsCollector:
             rows.append(row)
         return rows
 
+    def _paged(self, path: str, **params: Any) -> list[dict[str, Any]]:
+        """Todas las filas de una consulta, siguiendo las páginas de Meta."""
+        page = self._get(path, **params)
+        rows = list(page.get("data") or [])
+        while (page.get("paging") or {}).get("next") and len(rows) < 20000:
+            resp = self.client.get(page["paging"]["next"])
+            if resp.status_code >= 400:
+                raise RuntimeError(f"Meta Marketing API: {resp.text[:300]}")
+            page = resp.json()
+            rows += page.get("data") or []
+        return rows
+
+    def insights(self, competitor: CompetitorConfig, since: dt.date, until: dt.date, level: str = "account",
+                 increment: str | None = None, fields: str | None = None) -> list[dict[str, Any]]:
+        """Insights crudos de todas las cuentas del cliente entre dos fechas (por cuenta, campaña o anuncio; por mes si
+        increment='monthly'). Si la cuenta rechaza los campos de objetivo, se reintenta sin ellos."""
+        time_range = f'{{"since":"{since.isoformat()}","until":"{until.isoformat()}"}}'
+        extra = {"time_increment": increment} if increment else {}
+        base = fields or (INSIGHT_FIELDS if level == "ad" else "spend,impressions,reach,clicks,ctr,actions,action_values,account_currency")
+        if level == "campaign" and not fields:
+            base = "campaign_id,campaign_name,objective,spend,impressions,clicks,ctr,actions,action_values,account_currency"
+        if level == "ad" and not fields:
+            base += ",campaign_name,adset_name"
+        out: list[dict[str, Any]] = []
+        for acct in self.accounts(competitor.meta_ad_account_id):
+            try:
+                out += self._paged(f"{acct}/insights", level=level, fields=base, limit=500, time_range=time_range, **extra)
+            except RuntimeError as exc:
+                if "access token" in str(exc).lower() or level != "ad":
+                    raise
+                out += self._paged(f"{acct}/insights", level=level, fields=BASIC_FIELDS, limit=500, time_range=time_range, **extra)
+        return out
+
+    def ad_details(self, ad_id: str) -> dict[str, Any]:
+        """Texto, formato, fecha e imagen de un anuncio (queda guardado: la segunda vez no consulta a Meta)."""
+        import json
+
+        cache = settings.assets_dir / "own_ads" / f"{ad_id}.json"
+        if cache.exists():
+            try:
+                return json.loads(cache.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        try:
+            ad = self._get(ad_id, fields=AD_FIELDS)
+        except RuntimeError as exc:
+            if "access token" in str(exc).lower():
+                raise
+            return {"ad_id": ad_id, "image": self._ad_image(ad_id)}
+        cr = ad.get("creative") or {}
+        title, body = cr.get("title") or "", cr.get("body") or ""
+        catalog = "{{" in title + body
+        out = {"ad_id": ad_id, "title": "" if catalog else title, "body": "" if catalog else body[:600],
+               "format": "catálogo" if catalog else "video" if cr.get("video_id") or cr.get("object_type") == "VIDEO" else "imagen",
+               "created": (ad.get("created_time") or "")[:10], "status": ad.get("effective_status") or "",
+               "image": self._ad_image(ad_id)}
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+        return out
+
     def _ad_image(self, ad_id: str) -> str:
         """Imagen del anuncio (la miniatura grande de Meta), guardada para el informe. '' si no se pudo."""
         path = settings.assets_dir / "own_ads" / f"{ad_id}.jpg"
