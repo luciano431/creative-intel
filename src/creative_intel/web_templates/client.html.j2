@@ -28,7 +28,7 @@
     </div>
     <div class="card">
       <h2>Qué hicimos: la pauta por año</h2>
-      <p class="muted small" style="margin:0 0 14px">Solo pauta de Meta (nada orgánico): qué se hizo cada año desde el que elijas hasta hoy, qué dio más resultado, qué repetir, iterar o cortar, y el plan. El análisis lo hace {{ ai_name or 'Claude' }} y las piezas Gemini.</p>
+      <p class="muted small" style="margin:0 0 14px">Solo pauta de Meta (nada orgánico): qué se hizo cada año desde el que elijas hasta hoy, qué dio más resultado, qué tiene corriendo hoy la competencia, qué repetir, iterar o cortar, y el plan. El análisis lo hace {{ ai_name or 'Claude' }} y las piezas Gemini.</p>
       <div class="field"><label for="h-desde">Desde el año</label><input type="number" id="h-desde" value="2024" min="2015" max="2030" style="max-width:120px"></div>
       <label class="check"><input type="checkbox" id="h-ai" {{ 'checked' if has_api_key }}> Con IA</label>
       <label class="check" style="margin-top:6px"><input type="checkbox" id="h-reuse"> Usar los datos de Meta ya bajados</label>

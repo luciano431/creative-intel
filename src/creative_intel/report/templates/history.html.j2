@@ -35,9 +35,9 @@
       <a class="logo" href="/" title="Volver al inicio del Radar creativo">{% if brand.logo_svg %}{{ brand.logo_svg | safe }}{% endif %}<span><span class="word">{{ brand.agency }}</span><span class="app">Radar creativo</span></span></a>
       <div class="meta">{{ client.industry }}{% if client.market %} · {{ client.market }}{% endif %}</div>
     </div>
-    <p class="kicker">Qué hicimos · solo pauta</p>
+    <p class="kicker">Qué hicimos y qué hace la competencia · solo pauta</p>
     <h1>La pauta de <span>{{ client.name }}</span>, {{ years[0] }} a {{ years[-1] }}</h1>
-    <p class="lead">Qué se hizo cada año en Meta, qué dio más resultado y qué conviene repetir, iterar o cortar. Comparado con el mismo tramo de cada año (1 de enero al {{ m.today[8:10] }}/{{ m.today[5:7] }}) para que el año en curso compare parejo.</p>
+    <p class="lead">Qué se hizo cada año en Meta, qué dio más resultado, qué tiene corriendo hoy la competencia y qué conviene repetir, iterar o cortar. Comparado con el mismo tramo de cada año (1 de enero al {{ m.today[8:10] }}/{{ m.today[5:7] }}) para que el año en curso compare parejo.</p>
     <div class="chips">
       {% for y in years %}{% set yd = m.years.get(y) %}{% if yd %}<span class="chip">{{ y }}: {{ cur }} {{ yd.total.spend | round(0) | int | n }} invertidos</span>{% endif %}{% endfor %}
       <span class="chip">Generado {{ generated_at }}</span>
@@ -149,8 +149,37 @@
 </section>
 {% endif %}
 
+{% if m.competition is not none %}
 <section>
-  <div class="sec-head"><span class="sec-num">07</span><h2>Plan para los próximos meses</h2></div>
+  <div class="sec-head"><span class="sec-num">07</span><h2>Qué está haciendo la competencia hoy</h2></div>
+  <p class="sec-intro">Los anuncios que cada marca tiene activos hoy{% if m.competition_date %} ({{ m.competition_date[8:10] }}/{{ m.competition_date[5:7] }}){% endif %} en la Biblioteca de anuncios de Meta. Meta no muestra cuánto invierten ni qué resultados tienen: lo que se lee es qué dicen y desde cuándo están al aire. Un anuncio que lleva 30 días o más prendido es una señal de que les rinde, no un dato de resultado.</p>
+  {% if plan.competition_summary %}<div class="card sum" style="margin-bottom:16px"><p style="margin:0">{{ plan.competition_summary }}</p></div>{% endif %}
+  <div class="tbl"><table>
+    <thead><tr><th>Marca</th><th class="num">Activos hoy</th><th class="num">30 días o más</th><th>Formatos</th><th>Lectura</th></tr></thead>
+    <tbody>{% for c in m.competition %}{% set r = (plan.competition or []) | selectattr('brand', 'equalto', c.name) | list | first %}
+      <tr><td><b>{{ c.name }}</b></td><td class="num">{{ c.ads | length }}</td><td class="num">{{ c.long_running }}</td>
+        <td class="small">{% for f, n in c.formats.items() %}{{ n }} {{ f }}{{ ', ' if not loop.last }}{% else %}—{% endfor %}</td>
+        <td class="small">{% if r %}<b>Corre:</b> {{ r.what_they_run }}<br><b>Parece rendirle:</b> {{ r.what_seems_to_work }}<br><b>Para nosotros:</b> {{ r.for_us }}{% elif not c.ads %}Sin anuncios activos hoy.{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% for c in m.competition if c.ads %}
+  <details style="margin:10px 0"{% if loop.index <= 2 %} open{% endif %}><summary class="small"><b>{{ c.name }}</b> · los que llevan más tiempo al aire</summary>
+    <div class="grid g4" style="margin-top:8px">{% for a in c.ads[:4] %}
+      <div class="cr">
+        <div class="pv" style="aspect-ratio:1/1">{% if a.image_rel %}<img src="{{ a.image_rel }}" alt="Anuncio de {{ c.name }}">{% else %}<div class="pv-empty">Sin vista previa</div>{% endif %}<span class="pv-tag">{{ a.format }}</span></div>
+        <div class="cr-body small">
+          <span>{% if a.days_running is not none %}<b>{{ a.days_running }} días al aire</b>{% else %}Activo{% endif %}{% if a.versions %} · varias versiones{% endif %}</span>
+          {% if a.headline or a.body %}<span class="muted">«{{ (a.headline ~ (' · ' if a.headline and a.body else '') ~ (a.body or ''))[:140] }}{% if (a.headline ~ a.body)|length > 140 %}…{% endif %}»</span>{% endif %}
+          {% if a.url %}<a href="{{ a.url }}" target="_blank" rel="noopener">Ver en la Biblioteca</a>{% endif %}
+        </div>
+      </div>{% endfor %}</div>
+  </details>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section>
+  <div class="sec-head"><span class="sec-num">{{ '08' if m.competition is not none else '07' }}</span><h2>Plan para los próximos meses</h2></div>
   {% if next_dates %}<p class="sec-intro">Fechas que vienen: {% for d in next_dates %}{{ d.name }} ({{ d.start[8:10] }}/{{ d.start[5:7] }}){{ ', ' if not loop.last else '.' }}{% endfor %}</p>{% endif %}
   {% if plan.creative_error %}<div class="card" style="margin-bottom:16px;border-left:4px solid #9B2F25"><b>Las piezas no se escribieron:</b> Gemini falló ({{ plan.creative_error }}). Abajo quedan los briefs del análisis.</div>{% endif %}
   {% if plan.plan %}
@@ -171,7 +200,7 @@
   {% if plan.avoid %}<div class="card" style="margin-top:16px"><h3>Qué no repetir</h3><ul>{% for a in plan.avoid %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
 </section>
 
-<section><p class="small muted">Fuente: la cuenta publicitaria de Meta de {{ client.name }} (solo pauta; lo orgánico no entra). Montos en la moneda de la cuenta.{% if plan.analysis_by %} Análisis: {{ plan.analysis_by }}.{% endif %}{% if plan.ideas_by %} Piezas: {{ plan.ideas_by }}.{% endif %}</p></section>
+<section><p class="small muted">Fuentes: la cuenta publicitaria de Meta de {{ client.name }} y, de la competencia, la Biblioteca de anuncios de Meta (solo lo activo hoy). Solo pauta; lo orgánico no entra. Montos en la moneda de la cuenta.{% if plan.analysis_by %} Análisis: {{ plan.analysis_by }}.{% endif %}{% if plan.ideas_by %} Piezas: {{ plan.ideas_by }}.{% endif %}</p></section>
 </main>
 </body>
 </html>

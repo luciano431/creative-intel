@@ -61,6 +61,17 @@ def _fake_meta(req: httpx.Request) -> httpx.Response:
                                      "creative": {"title": "Asegurá tu bici", "body": "Hasta 25% off", "object_type": "SHARE"}})
 
 
+class _FakeLibrary:
+    def collect_window(self, c, country, date_from, date_to, limit):
+        from creative_intel.collectors.base import RawCreative
+
+        assert date_from is None and date_to is None  # solo lo activo hoy
+        return [RawCreative(competitor_slug=c.slug, platform="meta", source="meta_web", external_id=f"{c.slug}-1", format="imagen",
+                            headline="Seguro de bici", body_text="Cotizá online", first_seen=dt.date(2026, 8, 31), is_active=True,
+                            raw={"multiple_versions": True}),
+                RawCreative(competitor_slug=c.slug, platform="meta", source="meta_web", external_id=f"{c.slug}-2", is_active=False)]
+
+
 def test_history_report_end_to_end_without_ai(tmp_path, monkeypatch):
     from creative_intel.collectors import meta_insights
     from creative_intel.config import settings
@@ -72,7 +83,8 @@ def test_history_report_end_to_end_without_ai(tmp_path, monkeypatch):
     monkeypatch.setattr("creative_intel.meta_token.token_problem", lambda token: "")
     own = CompetitorConfig(slug="miseguro", name="miSeguroOk", country="UY", tier="own", meta_ad_account_id="461")
     out = tmp_path / "rep"
-    s = history.run_history(own, [2024, 2025, 2026], mock_ai=True, out_dir=out, today=dt.date(2026, 10, 17))
+    s = history.run_history(own, [2024, 2025, 2026], mock_ai=True, out_dir=out, today=dt.date(2026, 10, 17),
+                            competition_collector=_FakeLibrary())
     html = (out / "report.html").read_text(encoding="utf-8")
     assert set(s["years"]) == {"2024", "2025", "2026"} and s["events"] > 0
     assert "Año contra año" in html and "Mismo tramo de cada año" in html and "Fechas comerciales" in html
@@ -86,6 +98,10 @@ def test_history_report_end_to_end_without_ai(tmp_path, monkeypatch):
     assert yd["total"]["spend"] == 125 and yd["ytd"]["spend"] == 50  # mismo tramo: hasta el 17/10
     bf = next(e for e in stored["data"]["events"] if e["key"] == "black-friday" and e["year"] == 2025)
     assert bf["spend"] == 25 and bf["top"]
+    comp = stored["data"]["competition"]
+    assert comp and all(len(c["ads"]) == 1 for c in comp)  # el finalizado no entra: solo lo que corre hoy
+    assert comp[0]["ads"][0]["days_running"] == 47 and comp[0]["long_running"] == 1
+    assert "Qué está haciendo la competencia hoy" in html and "47 días al aire" in html
     # Segunda corrida con --reusar: no consulta a Meta
     monkeypatch.setattr(meta_insights, "MetaInsightsCollector", lambda *a, **k: (_ for _ in ()).throw(AssertionError("consultó a Meta")))
     history.run_history(own, [2024, 2025, 2026], mock_ai=True, reuse=True, out_dir=out, today=dt.date(2026, 10, 17))

@@ -31,6 +31,13 @@ class Learning(_Strict):
     hypothesis: str = Field(description="Qué creemos que va a pasar si se aplica, empezando con 'Creemos que'")
 
 
+class CompetitorRead(_Strict):
+    brand: str = Field(description="La marca, tal cual viene en los datos")
+    what_they_run: str = Field(description="Qué tiene corriendo hoy: productos, ofertas, mensajes y formatos, con cantidades. Solo datos")
+    what_seems_to_work: str = Field(description="Qué parece estar rindiéndole y por qué señal (días al aire, varias versiones, lo que repite). Decir que es una señal, no un resultado")
+    for_us: str = Field(description="Qué significa para el cliente: qué tomar como aprendizaje, qué evitar o qué hueco deja, en una o dos oraciones")
+
+
 class PlanItem(_Strict):
     title: str = Field(description="Nombre de trabajo de la pieza o acción (máx. 6 palabras)")
     when: str = Field(description="Cuándo: mes o fecha comercial con su previa (ej. 'CyberLunes, 10 días antes')")
@@ -50,6 +57,8 @@ class HistoryPlan(_Strict):
     summary: list[HFact] = Field(description="4 a 6 hechos de la pauta de esos años, solo datos")
     years: list[YearRead] = Field(description="Un bloque por año, del más viejo al más nuevo")
     learnings: list[Learning] = Field(description="4 a 8 aprendizajes, cada uno con su veredicto")
+    competition_summary: str = Field(description="Qué está haciendo la competencia hoy, en 2 a 4 oraciones con datos (vacío si no hay datos de la competencia)")
+    competition: list[CompetitorRead] = Field(description="Una lectura por marca con anuncios activos hoy (vacía si no hay)")
     plan: list[PlanItem] = Field(description="5 a 8 piezas o acciones para los próximos meses, en orden de salida")
     avoid: list[str] = Field(description="2 a 4 cosas a no repetir, basadas en datos")
 
@@ -69,7 +78,9 @@ Reglas:
 9. El plan cubre las fechas de `next_dates` y los meses que vienen. Cada pieza sale de un aprendizaje y cita su dato. Formato: imagen, carrusel o catálogo; video solo si los datos muestran que el video rindió claramente mejor (y decilo).
 10. Si un año no tiene inversión o tiene pocos anuncios, decilo y no generalices. `data_coverage` dice qué faltó.
 11. Vos hacés el análisis y los briefs; las piezas (texto, copy) las escribe después un redactor. No escribas copy.
-12. Los campos `evidence`, `reading`, `hypothesis` y `test` van sin la etiqueta adelante. No nombres campos ni variables."""
+12. Los campos `evidence`, `reading`, `hypothesis` y `test` van sin la etiqueta adelante. No nombres campos ni variables.
+13. `competition` son los anuncios que cada competidor tiene activos HOY en la Biblioteca de Meta (`competition_date`): texto, formato, desde cuándo están al aire (`days_running`) y si tienen varias versiones. Meta no muestra inversión ni resultados de otras marcas: nunca digas que a un competidor "le funcionó" algo como dato; decí que es una señal (un anuncio que lleva 30 días o más prendido, o con varias versiones, probablemente le rinde). Si una marca no tiene anuncios activos, decilo en una línea.
+14. Cruzá la competencia con lo propio: si algo que la competencia sostiene hace semanas coincide con lo que a {client} le funcionó, eso refuerza el aprendizaje; si la competencia satura un mensaje, es un hueco para diferenciarse. El plan puede apoyarse en esto citando la marca y el anuncio."""
 
 
 def synthesize_history(metrics: dict[str, Any], client_info: Any, next_dates: list[dict[str, str]]) -> dict[str, Any]:
@@ -92,5 +103,7 @@ def mock_history_plan(metrics: dict[str, Any], client_name: str) -> dict[str, An
         summary.append({"headline": f"{y}: {t['spend']} invertidos", "detail": f"{buy.get('total', 0)} compras, costo {buy.get('cost') or '—'}."})
         years.append({"year": y, "what_was_done": f"{yd['ads_with_spend']} anuncios en {yd['campaign_count']} campañas.",
                       "what_worked": "(Sin IA)", "what_didnt": "(Sin IA)"})
-    return {"summary": summary, "years": years, "learnings": [], "plan": [],
+    comp = [{"brand": c["name"], "what_they_run": f"{len(c['ads'])} anuncios activos hoy.", "what_seems_to_work": f"{c['long_running']} llevan 30 días o más.",
+             "for_us": "(Sin IA)"} for c in metrics.get("competition") or []]
+    return {"summary": summary, "years": years, "learnings": [], "plan": [], "competition_summary": "", "competition": comp,
             "avoid": [f"(Sin IA) Correr sin --mock-ai para el análisis de {client_name}."]}

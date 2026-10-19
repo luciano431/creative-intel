@@ -190,6 +190,41 @@ def collect_history(own: Any, years: list[int], today: dt.date, errors: list[str
     return data
 
 
+def collect_competition(today: dt.date, errors: list[str], per_brand: int = 8, collector: Any = None) -> list[dict[str, Any]]:
+    """Lo que la competencia tiene corriendo HOY en la Biblioteca de anuncios de Meta (solo pauta, solo activos).
+
+    Meta no muestra inversión ni resultados de otras marcas: lo que se puede leer es qué dicen, con qué formato, desde
+    cuándo están al aire y si tienen varias versiones. Un anuncio que lleva semanas prendido es señal de que les rinde."""
+    from .collectors.meta_web import MetaAdLibraryWebCollector
+    from .config import load_competitors
+
+    col = collector or MetaAdLibraryWebCollector()
+    out = []
+    for c in load_competitors():
+        if not c.active or c.is_own or c.tier != "local" or not c.meta_page_id:
+            continue
+        ads: list[dict[str, Any]] = []
+        for country in (c.ad_countries or [c.country]):
+            try:
+                raws = col.collect_window(c, country, None, None, per_brand)
+            except Exception as exc:
+                errors.append(f"competencia {c.name}: {str(exc)[:200]}")
+                continue
+            for r in raws:
+                if not r.is_active:
+                    continue
+                days = (today - r.first_seen).days if r.first_seen else None
+                ads.append({"id": r.external_id, "format": r.format, "headline": r.headline[:160], "body": r.body_text[:500],
+                            "cta": r.cta_text, "landing": r.landing_url, "since": r.first_seen.isoformat() if r.first_seen else None,
+                            "days_running": days, "versions": bool((r.raw or {}).get("multiple_versions")),
+                            "image": (r.raw or {}).get("screenshot") or "", "url": r.snapshot_url})
+        ads.sort(key=lambda a: -(a["days_running"] or 0))
+        out.append({"slug": c.slug, "name": c.name, "ads": ads, "long_running": sum(1 for a in ads if (a["days_running"] or 0) >= 30),
+                    "formats": {f: sum(1 for a in ads if a["format"] == f) for f in sorted({a["format"] for a in ads})}})
+        print(f"[historial] competencia {c.name}: {len(ads)} anuncios activos hoy")
+    return out
+
+
 def repeated_names(data: dict[str, Any]) -> list[dict[str, Any]]:
     """Nombres de anuncio (sin versión ni fecha) que aparecen en más de un año."""
     seen: dict[str, list[str]] = {}
@@ -216,7 +251,8 @@ def history_metrics(data: dict[str, Any]) -> dict[str, Any]:
     currency = next((yd["total"]["currency"] for yd in data["years"].values() if yd["total"].get("currency")), "")
     types = [t for t in TYPE_ORDER if any(t in (yd["total"].get("by_type") or {}) for yd in data["years"].values())]
     return {"years": years, "events": events, "repeated": repeated_names(data), "currency": currency, "types": types,
-            "today": data.get("today")}
+            "today": data.get("today"), "competition": data.get("competition"),
+            "competition_date": data.get("competition_date")}
 
 
 def coverage(metrics: dict[str, Any], errors: list[str]) -> dict[str, Any]:
@@ -228,13 +264,20 @@ def coverage(metrics: dict[str, Any], errors: list[str]) -> dict[str, Any]:
                                 if t["spend"] else "sin inversión registrada en la cuenta")})
     rows.append({"ok": bool(metrics["events"]), "source": "Fechas comerciales",
                  "detail": f"{len(metrics['events'])} fechas con su previa de {PREVIA} días" if metrics["events"] else "ninguna fecha cargada en esos años"})
+    comp = metrics.get("competition")
+    if comp is not None:
+        n = sum(len(c["ads"]) for c in comp)
+        rows.append({"ok": bool(n), "source": "Competencia hoy",
+                     "detail": f"{n} anuncios activos hoy de {sum(1 for c in comp if c['ads'])} de {len(comp)} marcas (Biblioteca de Meta; sin inversión ni resultados, que Meta no muestra)"
+                     if comp else "no hay competidores locales cargados"})
     rows.append({"ok": True, "source": "Orgánico", "detail": "no entra en este informe (solo pauta)"})
     missing = sum(1 for r in rows if not r["ok"])
     return {"level": "alta" if not missing and not errors else "media" if missing <= 1 else "baja", "rows": rows, "errors": errors}
 
 
 def _copy_images(metrics: dict[str, Any], out: Path) -> None:
-    lists = [lst for yd in metrics["years"].values() for lst in yd["picks"].values()] + [e["top"] for e in metrics["events"]]
+    lists = [lst for yd in metrics["years"].values() for lst in yd["picks"].values()] + [e["top"] for e in metrics["events"]] \
+        + [c["ads"] for c in metrics.get("competition") or []]
     for lst in lists:
         for a in lst:
             img = a.get("image")
@@ -279,6 +322,7 @@ def gemini_pieces(plan: dict[str, Any], metrics: dict[str, Any], client: Any) ->
         return plan
     best = [a for yd in metrics["years"].values() for a in yd["picks"]["best_purchase"][:3] + yd["picks"]["best_conversation"][:2]]
     context = {"aprendizajes": plan.get("learnings"), "no_hacer": plan.get("avoid"), "moneda": metrics.get("currency"),
+               "competencia_hoy": plan.get("competition_summary"),
                "anuncios_propios_que_mejor_funcionaron": [{k: a.get(k) for k in ("ad_name", "title", "body", "format", "result_type", "results", "cost_per_result")}
                                                           for a in best[:10]],
                "formato": "Piezas estáticas (imagen, carrusel o catálogo), no video, salvo que el brief diga video."}
@@ -299,7 +343,7 @@ def gemini_pieces(plan: dict[str, Any], metrics: dict[str, Any], client: Any) ->
 
 
 def run_history(own: Any, years: list[int], mock_ai: bool = False, reuse: bool = False, out_dir: str | Path | None = None,
-                today: dt.date | None = None) -> dict[str, Any]:
+                today: dt.date | None = None, competition: bool = True, competition_collector: Any = None) -> dict[str, Any]:
     from . import pipeline
     from .config import REPORTS_DIR, load_brand, load_client
     from .report.build import _env
@@ -333,7 +377,11 @@ def run_history(own: Any, years: list[int], mock_ai: bool = False, reuse: bool =
             raise pipeline.NoData(problem)
         pipeline.stage("Bajando la pauta de cada año")
         data = collect_history(own, years, today, errors)
-        saved.write_text(json.dumps({"data": data, "errors": errors}, ensure_ascii=False, default=str), encoding="utf-8")
+    if competition and data.get("competition") is None:
+        pipeline.stage("Mirando qué tiene corriendo hoy la competencia")
+        data["competition"] = collect_competition(today, errors, collector=competition_collector)
+        data["competition_date"] = today.isoformat()
+    saved.write_text(json.dumps({"data": data, "errors": errors}, ensure_ascii=False, default=str), encoding="utf-8")
     if not any(yd["total"]["spend"] for yd in data["years"].values()):
         raise pipeline.NoData(f"La cuenta no tiene inversión registrada entre {years[0]} y {years[-1]}." + (f" Errores: {'; '.join(errors)[:400]}" if errors else ""))
     metrics = history_metrics(data)
@@ -360,4 +408,5 @@ def run_history(own: Any, years: list[int], mock_ai: bool = False, reuse: bool =
         generated_at=dt.datetime.now().strftime("%d/%m/%Y %H:%M"))
     (out / "report.html").write_text(html, encoding="utf-8")
     return {"report": str(out / "report.html"), "years": {y: yd["total"]["spend"] for y, yd in metrics["years"].items()},
-            "events": len(metrics["events"]), "errors": errors}
+            "events": len(metrics["events"]), "competition_ads": sum(len(c["ads"]) for c in metrics.get("competition") or []),
+            "errors": errors}

@@ -788,8 +788,9 @@ def historial(
     hasta: Optional[int] = typer.Option(None, "--hasta", help="Último año (por defecto, el actual)"),
     mock_ai: bool = typer.Option(False, "--mock-ai", help="Sin IA: prueba el circuito sin gastar"),
     reusar: bool = typer.Option(False, "--reusar", help="Usar los datos de Meta ya bajados (no vuelve a consultar)"),
+    sin_competencia: bool = typer.Option(False, "--sin-competencia", help="Sin la sección de lo que la competencia tiene corriendo hoy"),
 ) -> None:
-    """Informe «Qué hicimos»: la pauta propia año por año (solo pauta), qué funcionó y el plan que sale de ahí."""
+    """Informe «Qué hicimos»: la pauta propia año por año, lo que la competencia tiene corriendo hoy (solo pauta) y el plan."""
     import datetime as _dt
 
     from .ai.client import ApiUnavailable, api_problem, usage
@@ -799,7 +800,7 @@ def historial(
     own = next((c for c in load_competitors() if c.is_own), None)
     usage.reset()
     try:
-        summary = run_history(own, list(range(desde, hasta + 1)), mock_ai=mock_ai, reuse=reusar)
+        summary = run_history(own, list(range(desde, hasta + 1)), mock_ai=mock_ai, reuse=reusar, competition=not sin_competencia)
     except pipeline.NoData as exc:
         rprint(f"[red]{exc}[/red]")
         raise typer.Exit(1)
