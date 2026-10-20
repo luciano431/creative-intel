@@ -343,7 +343,8 @@ def gemini_pieces(plan: dict[str, Any], metrics: dict[str, Any], client: Any) ->
 
 
 def run_history(own: Any, years: list[int], mock_ai: bool = False, reuse: bool = False, out_dir: str | Path | None = None,
-                today: dt.date | None = None, competition: bool = True, competition_collector: Any = None) -> dict[str, Any]:
+                today: dt.date | None = None, competition: bool = True, competition_collector: Any = None,
+                pieces_only: bool = False) -> dict[str, Any]:
     from . import pipeline
     from .config import REPORTS_DIR, load_brand, load_client
     from .report.build import _env
@@ -391,11 +392,19 @@ def run_history(own: Any, years: list[int], mock_ai: bool = False, reuse: bool =
     pipeline.stage("Escribiendo el análisis y el plan")
     from .ai.history import mock_history_plan, synthesize_history
 
+    analysis = out / "analisis.json"  # el análisis queda guardado: si falla Gemini, se rehacen solo las piezas
     if mock_ai:
         plan = mock_history_plan(metrics, client.name)
     else:
-        plan = synthesize_history(_for_ai(metrics), client, next_dates)
-        plan["analysis_by"] = "Claude" if settings.ai_provider == "anthropic" else "GPT"
+        if pieces_only and analysis.exists():
+            plan = json.loads(analysis.read_text(encoding="utf-8"))
+            print(f"[historial] uso el análisis ya escrito ({analysis}); solo se rehacen las piezas")
+        else:
+            if pieces_only:
+                print("[historial] no hay un análisis guardado todavía: se escribe ahora")
+            plan = synthesize_history(_for_ai(metrics), client, next_dates)
+            plan["analysis_by"] = "Claude" if settings.ai_provider == "anthropic" else "GPT"
+            analysis.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
         pipeline.stage("Escribiendo las piezas con Gemini")
         plan = gemini_pieces(plan, metrics, client)
     pipeline.stage("Armando el informe")

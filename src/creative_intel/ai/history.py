@@ -91,7 +91,7 @@ def synthesize_history(metrics: dict[str, Any], client_info: Any, next_dates: li
                 + "\n\nArmá el análisis año por año, los aprendizajes y el plan."}]
     system = HISTORY_PROMPT.format(client=client_info.name, industry=client_info.industry or "sin industria definida",
                                    market=client_info.market or "mercado local", years=", ".join(years))
-    return structured_call(HistoryPlan, system, content, model=settings.synth_model, max_tokens=16000, effort="high", stream=True).model_dump()
+    return structured_call(HistoryPlan, system, content, model=settings.synth_model, max_tokens=40000, effort="high", stream=True).model_dump()
 
 
 def mock_history_plan(metrics: dict[str, Any], client_name: str) -> dict[str, Any]:

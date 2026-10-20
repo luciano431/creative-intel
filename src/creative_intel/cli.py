@@ -789,6 +789,7 @@ def historial(
     mock_ai: bool = typer.Option(False, "--mock-ai", help="Sin IA: prueba el circuito sin gastar"),
     reusar: bool = typer.Option(False, "--reusar", help="Usar los datos de Meta ya bajados (no vuelve a consultar)"),
     sin_competencia: bool = typer.Option(False, "--sin-competencia", help="Sin la sección de lo que la competencia tiene corriendo hoy"),
+    solo_piezas: bool = typer.Option(False, "--solo-piezas", help="Usar los datos y el análisis ya hechos; rehacer solo las piezas (Gemini)"),
 ) -> None:
     """Informe «Qué hicimos»: la pauta propia año por año, lo que la competencia tiene corriendo hoy (solo pauta) y el plan."""
     import datetime as _dt
@@ -800,7 +801,8 @@ def historial(
     own = next((c for c in load_competitors() if c.is_own), None)
     usage.reset()
     try:
-        summary = run_history(own, list(range(desde, hasta + 1)), mock_ai=mock_ai, reuse=reusar, competition=not sin_competencia)
+        summary = run_history(own, list(range(desde, hasta + 1)), mock_ai=mock_ai, reuse=reusar or solo_piezas,
+                              competition=not sin_competencia, pieces_only=solo_piezas)
     except pipeline.NoData as exc:
         rprint(f"[red]{exc}[/red]")
         raise typer.Exit(1)

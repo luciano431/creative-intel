@@ -127,13 +127,22 @@ def _generate(client_info: Any, context: dict[str, Any], request: str, schema: t
     system = WRITER_PROMPT.format(client=client_info.name, industry=client_info.industry or client_info.description or "",
                                   brief_rules=_brief_rules(client_info.brief))
     prompt = f"Datos (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)}\n\nPedido: {request}"
-    try:
-        resp = _client().models.generate_content(
-            model=settings.gemini_creative_model, contents=prompt,
-            config=types.GenerateContentConfig(system_instruction=system, response_mime_type="application/json",
-                                               response_schema=schema, temperature=1.0, max_output_tokens=24000))
-    except Exception as exc:
-        raise GeminiFailed(f"{gemini_problem(exc)} (modelo: {settings.gemini_creative_model})") from exc
+    import time
+
+    for wait in (0, 20, 60, 120):  # Gemini saturado (503/429): se reintenta, suele pasar en uno o dos minutos
+        if wait:
+            print(f"[gemini] saturado; reintento en {wait} s")
+            time.sleep(wait)
+        try:
+            resp = _client().models.generate_content(
+                model=settings.gemini_creative_model, contents=prompt,
+                config=types.GenerateContentConfig(system_instruction=system, response_mime_type="application/json",
+                                                   response_schema=schema, temperature=1.0, max_output_tokens=24000))
+            break
+        except Exception as exc:
+            busy = any(x in str(exc) for x in ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "overloaded"))
+            if not busy or wait == 120:
+                raise GeminiFailed(f"{gemini_problem(exc)} (modelo: {settings.gemini_creative_model})") from exc
     meta = getattr(resp, "usage_metadata", None)
     if meta is not None:
         usage.add(settings.gemini_creative_model, SimpleNamespace(

@@ -105,3 +105,25 @@ def test_history_report_end_to_end_without_ai(tmp_path, monkeypatch):
     # Segunda corrida con --reusar: no consulta a Meta
     monkeypatch.setattr(meta_insights, "MetaInsightsCollector", lambda *a, **k: (_ for _ in ()).throw(AssertionError("consultó a Meta")))
     history.run_history(own, [2024, 2025, 2026], mock_ai=True, reuse=True, out_dir=out, today=dt.date(2026, 10, 17))
+
+
+def test_gemini_retries_when_busy(monkeypatch):
+    from types import SimpleNamespace
+
+    from creative_intel.ai import creative
+    from creative_intel.config import settings
+
+    calls = []
+
+    class Models:
+        def generate_content(self, **kw):
+            calls.append(1)
+            if len(calls) == 1:
+                raise RuntimeError("503 UNAVAILABLE. This model is currently experiencing high demand.")
+            return SimpleNamespace(parsed=creative._PlanPieces(ideas=[]), usage_metadata=None, text="")
+
+    monkeypatch.setattr(settings, "gemini_api_key", "AIza" + "x" * 35)
+    monkeypatch.setattr(creative, "_client", lambda: SimpleNamespace(models=Models()))
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    info = SimpleNamespace(name="C", industry="", description="", brief=None)
+    assert creative.write_plan_pieces(info, {}, []) == [] and len(calls) == 2
